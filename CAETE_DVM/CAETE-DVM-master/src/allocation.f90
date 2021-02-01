@@ -94,7 +94,7 @@ module alloc
       real(r_8),intent(in) :: on,sop,op ! Organic N, Sorbed P, Organic P
       real(r_8),dimension(3),intent(in) :: storage ! Three element array- storage pool([C,N,P]) g m-2
       ! O
-      real(r_8),dimension(3),intent(out) :: storage_out_alloc
+      real(r_8),dimension(3),intent(out) :: storage_out_alloc 
       real(r_8),intent(out) :: scl2 ! final carbon content on leaf compartment (KgC/m2)
       real(r_8),intent(out) :: sca2 ! final carbon content on aboveground woody biomass compartment (KgC/m2)
       real(r_8),intent(out) :: scf2 ! final carbon content on fine roots compartment (KgC/m2)
@@ -106,7 +106,7 @@ module alloc
       real(r_8), dimension(2),intent(out) :: nitrogen_uptake ! N plant uptake g(N) m-2  INDEX //avail_n = 1, on = 2//
       real(r_8), dimension(3),intent(out) :: phosphorus_uptake ! P plant uptake g(P) m-2  INDEX //avail_p = 1, sop = 2, op=3//
       real(r_8),dimension(6),intent(out) :: litter_nutrient_content ! [(lln),(rln),(cwdn),(llp),(rlp),(cwdp)] g m-2
-      integer(i_2), dimension(3), intent(out) :: limiting_nutrient
+      integer(i_2), dimension(4), intent(out) :: limiting_nutrient
       real(r_8), intent(out) :: c_costs_of_uptake
       integer(i_4), dimension(2), intent(out) :: uptk_strategy
 
