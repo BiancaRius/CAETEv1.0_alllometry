@@ -356,6 +356,7 @@ contains
             cue(p) = nppa(p)/ph(p)
          endif
 
+
          delta_cveg(1,p) = cl2(p) - cl1_pft(ri)  !kg m-2
          if(dt1(4) .le. 0) then
             delta_cveg(2,p) = 0.0D0
@@ -369,7 +370,8 @@ contains
          if(c_def(p) .gt. 0.0) then
             if(dt1(7) .gt. 0.0) then
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.333333333)
-               ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333)
+               ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
+                                                                        !! the sum of sap and heartwood
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.333333333)
             else
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.5)

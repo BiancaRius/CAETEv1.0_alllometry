@@ -258,9 +258,6 @@ module alloc
       p_uptake(:)            = 0.0D0
       rn_uptake(:)           = 0.0D0
       rp_uptake(:)           = 0.0D0
-      scf2_tmp               = 0.0D0
-      sca2_tmp               = 0.0D0
-      scl2_tmp               = 0.0D0
       leaf_av_n              = 0.0D0
       wood_av_n              = 0.0D0
       root_av_n              = 0.0D0
@@ -366,15 +363,13 @@ module alloc
       !# if you reach this point ---> There is C and nutrients to allocate!
 
       ! INTERNAL VARIABLES
-      scf2_tmp = 0.0D0
-      sca2_tmp = 0.0D0
-      scl2_tmp = 0.0D0
       npp_pot  = 0.0D0
       avail_n = 0.0D0
       avail_p = 0.0D0
-      scs1_previous_day = 0.0D0
-      sch1_previous_day = 0.0D0
-      sca1_previous_day = 0.0D0
+      scs1_previous_day = 0.0D0 !variable just for changing name to use in the allometric restriction functions
+      sch1_previous_day = 0.0D0 !variable just for changing name to use in the allometric restriction functions
+      sca1_previous_day = 0.0D0 !variable just for changing name to use in the allometric restriction functions
+
       ! You have: kg m-2 year-1
       ! You want: g m-2 day-1
       npp_pot = (real(npp,kind=r_8) * (1000.0D0 / 365.242D0)) ! Transform Kg m-2 Year-1 to g m-2 day
