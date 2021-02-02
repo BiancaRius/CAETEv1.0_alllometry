@@ -29,7 +29,7 @@ contains
         &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in, cs1_in, ch1_in&
         &, dleaf_in, dwood_in, droot_in, uptk_costs_in, w2, g2, s2, smavg, ruavg, evavg, epavg, phavg, aravg&
         &, nppavg, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
-        &, cfrootavg_pft, storage_out_bdgt_1, ocpavg, wueavg, cueavg, c_defavg&
+        &, cfrootavg_pft,csapavg_pft,cheartavg_pft, storage_out_bdgt_1, ocpavg, wueavg, cueavg, c_defavg&
         &, vcmax_1, specific_la_1, nupt_1, pupt_1, litter_l_1, cwd_1, litter_fr_1, npp2pay_1, lit_nut_content_1&
         &, delta_cveg_1, limitation_status_1, uptk_strat_1, wp, cp)
 
@@ -104,6 +104,8 @@ contains
       real(r_8),dimension(npls),intent(out) :: cleafavg_pft   !Carbon in plant tissues (kg m-2)
       real(r_8),dimension(npls),intent(out) :: cawoodavg_pft  !
       real(r_8),dimension(npls),intent(out) :: cfrootavg_pft  !
+      real(r_8),dimension(npls),intent(out) :: csapavg_pft
+      real(r_8),dimension(npls),intent(out) :: cheartavg_pft
       real(r_8),dimension(npls),intent(out) :: ocpavg         ! [0-1] Gridcell occupation
       real(r_8),dimension(3,npls),intent(out) :: delta_cveg_1
       real(r_8),dimension(3,npls),intent(out) :: storage_out_bdgt_1
@@ -197,7 +199,7 @@ contains
          cf1_pft(i) = cf1_in(i)
          cs1_pft(i) = cs1_in(i)
          ch1_pft(i) = ch1_in(i)
- !        print*, 'sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i)
+!         print*, 'sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -476,6 +478,8 @@ contains
       cleafavg_pft(:) = 0.0D0
       cawoodavg_pft(:) = 0.0D0
       cfrootavg_pft(:) = 0.0D0
+      csapavg_pft(:) = 0.0D0
+      cheartavg_pft(:) = 0.0D0
       delta_cveg_1(:, :) = 0.0D0
       storage_out_bdgt_1(:, :) = 0.0D0
       limitation_status_1(:,:) = 0
@@ -566,6 +570,9 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
+         csapavg_pft(ri) = ca1_int(p)*0.1 !!number for testing
+         cheartavg_pft(ri) = ca1_int(p)*0.5 !!number for testing
+         print*, 'inside alloc','sap',csapavg_pft(ri),'wood',cawoodavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)

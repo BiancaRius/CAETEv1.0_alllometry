@@ -105,7 +105,7 @@ def neighbours_index(pos, matrix):
 def catch_out_budget(out):
     lst = ["w2", "g2", "s2", "smavg", "ruavg", "evavg", "epavg", "phavg", "aravg", "nppavg",
            "laiavg", "rcavg", "f5avg", "rmavg", "rgavg", "cleafavg_pft", "cawoodavg_pft",
-           "cfrootavg_pft", "stodbg", "ocpavg", "wueavg", "cueavg", "c_defavg", "vcmax",
+           "cfrootavg_pft","csapavg_pft","cheartavg_pft", "stodbg", "ocpavg", "wueavg", "cueavg", "c_defavg", "vcmax",
            "specific_la", "nupt", "pupt", "litter_l", "cwd", "litter_fr", "npp2pay", "lnc", "delta_cveg",
            "limitation_status", "uptk_strat", 'wp', 'cp']
 
@@ -643,9 +643,15 @@ class grd:
                     cleaf[n] = self.vp_cleaf[c]
                     cwood[n] = self.vp_cwood[c]
                     croot[n] = self.vp_croot[c]
-                    csap[n] = cwood[n]*0.05
-                    cheart[n] = cwood[n]*0.95
-     #               print('csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n])
+                    if step == lb: #first day (csap and cheart just for initialization)
+                        csap[n] = cwood[n]*0.05
+                        cheart[n] = cwood[n]*0.95
+                        print('lb0','csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
+                    else: # csap and cheart calculated by allometric restrictions
+                        csap[n] = self.vp_csap[c]
+                        cheart[n] = self.vp_cheart[c]
+                        print('lb dif. 0','csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
+
                     dcl[n] = self.vp_dcl[c]
                     dca[n] = self.vp_dca[c]
                     dcf[n] = self.vp_dcf[c]
@@ -683,6 +689,8 @@ class grd:
                 self.vp_cleaf = daily_output['cleafavg_pft'][self.vp_lsid]
                 self.vp_cwood = daily_output['cawoodavg_pft'][self.vp_lsid]
                 self.vp_croot = daily_output['cfrootavg_pft'][self.vp_lsid]
+                self.vp_csap = daily_output['csapavg_pft'][self.vp_lsid]
+                self.vp_cheart = daily_output['cheartavg_pft'][self.vp_lsid]
                 self.vp_dcl = daily_output['delta_cveg'][0][self.vp_lsid]
                 self.vp_dca = daily_output['delta_cveg'][1][self.vp_lsid]
                 self.vp_dcf = daily_output['delta_cveg'][2][self.vp_lsid]
@@ -928,8 +936,8 @@ class grd:
         cleaf = self.vp_cleaf
         cwood = self.vp_cwood
         croot = self.vp_croot
-        csap= cwood*0.05
-        cheart= cwood*0.95
+        csap = self.vp_csap
+        cheart= self.vp_cheart
         dcl = self.vp_dcl
         dca = self.vp_dca
         dcf = self.vp_dcf
