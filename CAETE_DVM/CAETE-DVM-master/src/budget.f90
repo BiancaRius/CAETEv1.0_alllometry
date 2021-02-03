@@ -112,7 +112,7 @@ contains
       integer(i_2),dimension(3,npls),intent(out) :: limitation_status_1
       integer(i_4),dimension(2,npls),intent(out) :: uptk_strat_1
       real(r_8),dimension(npls),intent(out) ::  npp2pay_1
-      real(r_8),dimension(3),intent(out) :: wp, cp
+      real(r_8),dimension(5),intent(out) :: wp, cp
 
       !     -----------------------Internal Variables------------------------
       integer(i_4) :: p, counter, nlen, ri, i, j
@@ -160,6 +160,8 @@ contains
       real(r_8),dimension(:),allocatable :: cl1_int
       real(r_8),dimension(:),allocatable :: cf1_int
       real(r_8),dimension(:),allocatable :: ca1_int
+      real(r_8),dimension(:),allocatable :: cs1_int
+      real(r_8),dimension(:),allocatable :: ch1_int
       real(r_8),dimension(:),allocatable :: tra
       real(r_8),dimension(:),allocatable :: cl2
       real(r_8),dimension(:),allocatable :: cf2
@@ -199,7 +201,7 @@ contains
          cf1_pft(i) = cf1_in(i)
          cs1_pft(i) = cs1_in(i)
          ch1_pft(i) = ch1_in(i)
-!         print*, 'sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
+         print*,'entrada bdgt', 'sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -271,6 +273,8 @@ contains
       allocate(cl1_int(nlen))
       allocate(cf1_int(nlen))
       allocate(ca1_int(nlen))
+      allocate(ch1_int(nlen))
+      allocate(cs1_int(nlen))
       allocate(cl2(nlen))
       allocate(cf2(nlen))
       allocate(ca2(nlen))
@@ -372,29 +376,39 @@ contains
          if(c_def(p) .gt. 0.0) then
             if(dt1(7) .gt. 0.0) then
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.333333333)
-               ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
+ !              ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
                                                                         !! the sum of sap and heartwood
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.333333333)
+               cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.333333333)
+               ch1_int(p) = ch2(p) - ((c_def(p) * 1e-3) * 0.333333333)
+               ca1_int(p) = cs1_int(p) + ch1_int(p)
             else
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.5)
                ca1_int(p) = 0.0
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.5)
+               cs1_int(p) = 0.0
+               ch1_int(p) = 0.0
             endif
          else
             if(dt1(7) .gt. 0.0) then
                cl1_int(p) = cl2(p)
                ca1_int(p) = ca2(p)
                cf1_int(p) = cf2(p)
+               cs1_int(p) = cs2(p)
+               ch1_int(p) = ch2(p)
             else
                cl1_int(p) = cl2(p)
                ca1_int(p) = 0.0
+               cs1_int(p) = 0.0
+               ch1_int(p) = 0.0
                cf1_int(p) = cf2(p)
             endif
          endif
          if(cl1_int(p) .lt. 0.0D0) cl1_int(p) = 0.0D0
          if(ca1_int(p) .lt. 0.0D0) ca1_int(p) = 0.0D0
          if(cf1_int(p) .lt. 0.0D0) cf1_int(p) = 0.0D0
-
+         if(cs1_int(p) .lt. 0.0D0) cs1_int(p) = 0.0D0
+         if(ch1_int(p) .lt. 0.0D0) ch1_int(p) = 0.0D0
          ! WATER BALANCE - GABRIEL
          !     Precipitation
          !     =============
@@ -519,8 +533,9 @@ contains
       cp(1) = sum(cl1_int * ocp_coeffs)
       cp(2) = sum(ca1_int * ocp_coeffs)
       cp(3) = sum(cf1_int * ocp_coeffs)
-
-      ! print*, ''
+      cp(4) = sum(cs1_int * ocp_coeffs)
+      cp(5) = sum(ch1_int * ocp_coeffs)
+      print*, 'cp1',cp(1),'cp2',cp(2),'cp3',cp(3),'cp4',cp(4),'cp5',cp(5), ocp_coeffs
       ! print*, 'ca', ca1_int
       ! print*, ''
 
@@ -570,9 +585,9 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
-         csapavg_pft(ri) = ca1_int(p)*0.1 !!number for testing
-         cheartavg_pft(ri) = ca1_int(p)*0.5 !!number for testing
-         print*, 'inside alloc','sap',csapavg_pft(ri),'wood',cawoodavg_pft(ri)
+         csapavg_pft(ri) = cs1_int(p)
+         cheartavg_pft(ri) = ch1_int(p)
+         print*, 'saida bdgt','sap',csapavg_pft(ri),'wood',cawoodavg_pft(ri),'hrt', cheartavg_pft
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)
@@ -621,6 +636,8 @@ contains
       deallocate(cl1_int)
       deallocate(cf1_int)
       deallocate(ca1_int)
+      deallocate(cs1_int)
+      deallocate(ch1_int)
       deallocate(cl2)
       deallocate(cf2)
       deallocate(ca2)
