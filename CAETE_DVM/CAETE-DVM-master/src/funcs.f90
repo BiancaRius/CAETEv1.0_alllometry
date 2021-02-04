@@ -1185,7 +1185,8 @@ contains
       enddo
 
       do p = 1,npft
-         total_biomass_pft(p) = cleaf(p) + cfroot(p) + (sapwood * cawood(p)) ! only sapwood?
+!         total_biomass_pft(p) = cleaf(p) + cfroot(p) + (sapwood * cawood(p)) ! only sapwood? OLD LOGIC
+         total_biomass_pft(p) = cleaf(p) + cfroot(p) + cawood(p) !considering total carbon on wood tissues
          total_biomass = total_biomass + total_biomass_pft(p)
          total_wood = total_wood + cawood(p)
          total_w_pft(p) = cawood(p)
