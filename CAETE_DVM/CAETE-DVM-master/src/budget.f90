@@ -160,6 +160,8 @@ contains
       real(r_8),dimension(:),allocatable :: cl1_int
       real(r_8),dimension(:),allocatable :: cf1_int
       real(r_8),dimension(:),allocatable :: ca1_int
+      real(r_8),dimension(:),allocatable :: cs1_int
+      real(r_8),dimension(:),allocatable :: ch1_int
       real(r_8),dimension(:),allocatable :: tra
       real(r_8),dimension(:),allocatable :: cl2
       real(r_8),dimension(:),allocatable :: cf2
@@ -199,7 +201,7 @@ contains
          cf1_pft(i) = cf1_in(i)
          cs1_pft(i) = cs1_in(i)
          ch1_pft(i) = ch1_in(i)
-!         print*, 'sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
+         print*, 'entrada bdgt','sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -271,6 +273,8 @@ contains
       allocate(cl1_int(nlen))
       allocate(cf1_int(nlen))
       allocate(ca1_int(nlen))
+      allocate(cs1_int(nlen))
+      allocate(ch1_int(nlen))
       allocate(cl2(nlen))
       allocate(cf2(nlen))
       allocate(ca2(nlen))
@@ -372,27 +376,38 @@ contains
          if(c_def(p) .gt. 0.0) then
             if(dt1(7) .gt. 0.0) then
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.333333333)
-               ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
-                                                                        !! the sum of sap and heartwood
+ !              ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
+                                                                        !! the sum of sap and heartwood (OLD LOGIC)
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.333333333)
+               cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.333333333)
+               ch1_int(p) = ch2(p)
+               ca1_int(p) = cs1_int(p) + ch1_int(p)
             else
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.5)
                ca1_int(p) = 0.0
+               cs1_int(p) = 0.0
+               ch1_int(p) = 0.0
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.5)
             endif
          else
             if(dt1(7) .gt. 0.0) then
                cl1_int(p) = cl2(p)
                ca1_int(p) = ca2(p)
+               cs1_int(p) = cs2(p)
+               ch1_int(p) = ch2(p)
                cf1_int(p) = cf2(p)
             else
                cl1_int(p) = cl2(p)
                ca1_int(p) = 0.0
+               cs1_int(p) = 0.0
+               ch1_int(p) = 0.0
                cf1_int(p) = cf2(p)
             endif
          endif
          if(cl1_int(p) .lt. 0.0D0) cl1_int(p) = 0.0D0
          if(ca1_int(p) .lt. 0.0D0) ca1_int(p) = 0.0D0
+         if(cs1_int(p) .lt. 0.0D0) cs1_int(p) = 0.0D0
+         if(ch1_int(p) .lt. 0.0D0) ch1_int(p) = 0.0D0
          if(cf1_int(p) .lt. 0.0D0) cf1_int(p) = 0.0D0
 
          ! WATER BALANCE - GABRIEL
@@ -517,7 +532,7 @@ contains
       wp(2) = sum(g * ocp_coeffs)
       wp(3) = sum(s * ocp_coeffs)
       cp(1) = sum(cl1_int * ocp_coeffs)
-      cp(2) = sum(ca1_int * ocp_coeffs)
+      cp(2) = (sum(cs1_int * ocp_coeffs)) + (sum(ch1_int * ocp_coeffs))
       cp(3) = sum(cf1_int * ocp_coeffs)
 
       ! print*, ''
@@ -572,7 +587,7 @@ contains
          cfrootavg_pft(ri) = cf1_int(p)
          csapavg_pft(ri) = ca1_int(p)*0.1 !!number for testing
          cheartavg_pft(ri) = ca1_int(p)*0.5 !!number for testing
-         print*, 'inside alloc','sap',csapavg_pft(ri),'wood',cawoodavg_pft(ri)
+         print*, 'saida bdgt,testing numbers','sap',csapavg_pft(ri),'wood',cawoodavg_pft(ri),'heart', cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)
@@ -621,6 +636,8 @@ contains
       deallocate(cl1_int)
       deallocate(cf1_int)
       deallocate(ca1_int)
+      deallocate(cs1_int)
+      deallocate(ch1_int)
       deallocate(cl2)
       deallocate(cf2)
       deallocate(ca2)
