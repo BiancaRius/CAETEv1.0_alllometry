@@ -315,7 +315,7 @@ module alloc
       amp = dt(17)
 
 
-      print*, 'entrada alloc', 'sap',scs1,'hrt',sch1,'wd',sca1
+
 
      
 
@@ -985,7 +985,7 @@ module alloc
          sca2 = sca2 * 1.0D-3 !TRANSFOR FROM G/M2 TO KG/M2 
          scs2 = scs2 * 1.0D-3 !TRANSFOR FROM G/M2 TO KG/M2
          sch2 = sch2 * 1.0D-3 !TRANSFOR FROM G/M2 TO KG/M2
-         print*,'saida alocação','scs2', scs2,'sch2',sch2,'sca2',sca2
+!         print*,'scs2', scs2,'sch2',sch2,'sca2',sca2,'leaf',scl2,'root',scf2
       else
          sca2 = 0.0D0 !TRANSFOR FROM G/M2 TO KG/M2
          scs2 = 0.0D0 !TRANSFOR FROM G/M2 TO KG/M2
