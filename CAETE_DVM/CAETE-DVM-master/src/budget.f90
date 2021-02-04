@@ -532,7 +532,7 @@ contains
       wp(2) = sum(g * ocp_coeffs)
       wp(3) = sum(s * ocp_coeffs)
       cp(1) = sum(cl1_int * ocp_coeffs)
-      cp(2) = sum(ca1_int * ocp_coeffs)
+      cp(2) = (sum(cs1_int * ocp_coeffs)) + (sum(ch1_int * ocp_coeffs))
       cp(3) = sum(cf1_int * ocp_coeffs)
 
       ! print*, ''
