@@ -644,12 +644,18 @@ class grd:
                     cwood[n] = self.vp_cwood[c]
                     croot[n] = self.vp_croot[c]
                     if step == lb: #first day (csap and cheart just for initialization)
+                        cleaf[n] = self.vp_cleaf[c]
+                        cwood[n] = self.vp_cwood[c]
+                        croot[n] = self.vp_croot[c]
                         csap[n] = cwood[n]*0.05
                         cheart[n] = cwood[n]*0.95
                         print('lb0','csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
                     else: # csap and cheart calculated by allometric restrictions
+                        cleaf[n] = self.vp_cleaf[c]
+                        croot[n] = self.vp_croot[c]
                         csap[n] = self.vp_csap[c]
                         cheart[n] = self.vp_cheart[c]
+                        cwood[n] = csap[n]+cheart[n]
                         print('lb dif. 0','csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
 
                     dcl[n] = self.vp_dcl[c]
@@ -942,7 +948,7 @@ class grd:
         dca = self.vp_dca
         dcf = self.vp_dcf
         uptk_costs = np.zeros(npls, order='F')
-
+    
         for step in range(steps.size):
             loop += 1
             count_days += 1
@@ -961,12 +967,26 @@ class grd:
                     (days - count_days)
 
             co2 += next_year
+            if step == lb: #first day (csap and cheart just for initialization)
+                        cleaf = cleaf
+                        cwood = cwood
+                        croot = croot
+                        csap = cwood*0.05
+                        cheart = cwood*0.95
+                        print('lb0','csap 1=',csap,'cheart 1=',cheart,'cwood 1=', cwood)
+            else: # csap and cheart calculated by allometric restrictions
+                        cleaf = cleaf
+                        croot = croot
+                        csap = csap
+                        cheart = cheart
+                        cwood = csap+cheart
+                        print('lb dif. 0','csap 1=',csap,'cheart 1=',cheart,'cwood 1=', cwood)
             self.soil_temp = st.soil_temp(self.soil_temp, temp[step])
 
             self.wfim = np.zeros(npls, order='F') + self.wp_water
             self.gfim = np.zeros(npls, order='F') + self.wp_ice
             self.sfim = np.zeros(npls, order='F') + self.wp_snow
-
+            print('SPINUPPPPPP')
             out = model.daily_budget(self.pls_table, self.wfim, self.gfim, self.sfim,
                                      self.soil_temp, temp[step], prec[step], p_atm[step],
                                      ipar[step], ru[step], self.sp_available_n, self.sp_available_p,
