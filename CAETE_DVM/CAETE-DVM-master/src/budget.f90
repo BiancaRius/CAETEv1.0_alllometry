@@ -112,7 +112,8 @@ contains
       integer(i_2),dimension(3,npls),intent(out) :: limitation_status_1
       integer(i_4),dimension(2,npls),intent(out) :: uptk_strat_1
       real(r_8),dimension(npls),intent(out) ::  npp2pay_1
-      real(r_8),dimension(3),intent(out) :: wp, cp
+      real(r_8),dimension(3),intent(out) :: wp
+      real(r_8),dimension(3),intent(out) :: cp
 
       !     -----------------------Internal Variables------------------------
       integer(i_4) :: p, counter, nlen, ri, i, j
@@ -376,12 +377,17 @@ contains
          if(c_def(p) .gt. 0.0) then
             if(dt1(7) .gt. 0.0) then
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.333333333)
- !              ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
+!               ca1_int(p) = ca2(p) - ((c_def(p) * 1e-3) * 0.333333333) !!ca2 is the output from allocation and is already
                                                                         !! the sum of sap and heartwood (OLD LOGIC)
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.333333333)
                cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.333333333)
-               ch1_int(p) = ch2(p)
+ !              ch1_int(p) = ch2(p)
+               ! cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.25)
+               ! cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.25) 
+               ! cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.25)
+               ! ch1_int(p) = ch2(p) - ((c_def(p) * 1e-3) * 0.25)
                ca1_int(p) = cs1_int(p) + ch1_int(p)
+ !              print*,'with deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
             else
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.5)
                ca1_int(p) = 0.0
@@ -396,6 +402,7 @@ contains
                cs1_int(p) = cs2(p)
                ch1_int(p) = ch2(p)
                cf1_int(p) = cf2(p)
+!               print*,'without deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
             else
                cl1_int(p) = cl2(p)
                ca1_int(p) = 0.0
@@ -409,6 +416,7 @@ contains
          if(cs1_int(p) .lt. 0.0D0) cs1_int(p) = 0.0D0
          if(ch1_int(p) .lt. 0.0D0) ch1_int(p) = 0.0D0
          if(cf1_int(p) .lt. 0.0D0) cf1_int(p) = 0.0D0
+         print*,'calculo','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
 
          ! WATER BALANCE - GABRIEL
          !     Precipitation
@@ -534,10 +542,9 @@ contains
       cp(1) = sum(cl1_int * ocp_coeffs)
       cp(2) = (sum(cs1_int * ocp_coeffs)) + (sum(ch1_int * ocp_coeffs))
       cp(3) = sum(cf1_int * ocp_coeffs)
-
-      ! print*, ''
-      ! print*, 'ca', ca1_int
-      ! print*, ''
+      ! cp(4) = sum(ch1_int * ocp_coeffs)
+      ! cp(5) = sum(cs1_int * ocp_coeffs) !!!!!!ATENÇÃO AQUI
+      ! print*,'CPPPPPPPPPPPPPPPPPPP ', cp(1),cp(2),cp(3),cp(4),cp(5)
 
       ! FILTER BAD VALUES
       do p = 1,2
@@ -585,9 +592,9 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
-         csapavg_pft(ri) = ca1_int(p)*0.1 !!number for testing
-         cheartavg_pft(ri) = ca1_int(p)*0.5 !!number for testing
-         print*, 'saida bdgt,testing numbers','sap',csapavg_pft(ri),'wood',cawoodavg_pft(ri),'heart', cheartavg_pft(ri)
+         csapavg_pft(ri) = cs1_int(p)
+         cheartavg_pft(ri) = ch2(p)
+         print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)

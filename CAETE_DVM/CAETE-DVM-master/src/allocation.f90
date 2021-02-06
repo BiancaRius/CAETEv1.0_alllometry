@@ -213,7 +213,7 @@ module alloc
       ! real(r_8) :: test_a = 1
       ! real(r_8) :: test_b = 2
 
-
+      print*,'entrada alloc', 'sap', scs1,'hrt',sch1,'wd',sca1
       ! initialize ALL outputs
       storage_out_alloc            = (/0.0D0, 0.0D0, 0.0D0/)
       litter_nutrient_content = (/0.0D0, 0.0D0, 0.0D0, 0.0D0, 0.0D0, 0.0D0/)
@@ -985,14 +985,14 @@ module alloc
          sca2 = sca2 * 1.0D-3 !TRANSFOR FROM G/M2 TO KG/M2 
          scs2 = scs2 * 1.0D-3 !TRANSFOR FROM G/M2 TO KG/M2
          sch2 = sch2 * 1.0D-3 !TRANSFOR FROM G/M2 TO KG/M2
-!         print*,'scs2', scs2,'sch2',sch2,'sca2',sca2,'leaf',scl2,'root',scf2
+         print*,'saida alloc','scs2', scs2,'sch2',sch2,'sca2',sca2
       else
          sca2 = 0.0D0 !TRANSFOR FROM G/M2 TO KG/M2
          scs2 = 0.0D0 !TRANSFOR FROM G/M2 TO KG/M2
          sch2 = 0.0D0 !TRANSFOR FROM G/M2 TO KG/M2
       endif
 
-      !print*, 'LEAF =', scl2, 'ROOT =', scf2, 'WOOD =', sca2
+
 
       !======================================================================================================
 
