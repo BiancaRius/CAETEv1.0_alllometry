@@ -169,6 +169,8 @@ contains
       real(r_8),dimension(:),allocatable :: ca2    ! carbon pos-allocation
       real(r_8),dimension(:),allocatable :: cs2    ! carbon pos-allocation
       real(r_8),dimension(:),allocatable :: ch2    ! carbon pos-allocation
+      real(r_8),dimension(:),allocatable :: delta_sap_aux    ! auxiliary variable for calculating wood delta
+      real(r_8),dimension(:),allocatable :: delta_hrt_aux    ! auxiliary variable for calculating wood delta
       real(r_8),dimension(:,:),allocatable :: day_storage      ! D0=3 g m-2
       real(r_8),dimension(:),allocatable   :: vcmax            ! µmol m-2 s-1
       real(r_8),dimension(:),allocatable   :: specific_la      ! m2 g(C)-1
@@ -281,6 +283,8 @@ contains
       allocate(ca2(nlen))
       allocate(ch2(nlen))
       allocate(cs2(nlen))
+      allocate(delta_sap_aux(nlen))
+      allocate(delta_hrt_aux(nlen))
       allocate(day_storage(3,nlen))
 
       !     Maximum evapotranspiration   (emax)
@@ -300,6 +304,8 @@ contains
 
          carbon_in_storage = 0.0D0
          testcdef = 0.0D0
+         delta_sap_aux(p) = 0.0D0
+         delta_hrt_aux(p) = 0.0D0
          sr = 0.0D0
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
@@ -368,7 +374,10 @@ contains
          if(dt1(4) .le. 0) then
             delta_cveg(2,p) = 0.0D0
          else
-            delta_cveg(2,p) = ca2(p) - ca1_pft(ri)
+            
+            delta_sap_aux(p)= cs2(p) - cs1_pft(ri)
+            delta_hrt_aux(p)= ch2(p) - ch1_pft(ri)
+            delta_cveg(2,p) = delta_sap_aux(p)+delta_hrt_aux(p)
          endif
          delta_cveg(3,p) = cf2(p) - cf1_pft(ri)
 
@@ -593,7 +602,7 @@ contains
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
          csapavg_pft(ri) = cs1_int(p)
-         cheartavg_pft(ri) = ch2(p)
+         cheartavg_pft(ri) = 17.1
          print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
@@ -650,6 +659,8 @@ contains
       deallocate(ca2)
       deallocate(ch2)
       deallocate(cs2)
+      deallocate(delta_sap_aux)
+      deallocate(delta_hrt_aux)
       deallocate(day_storage)
 
    end subroutine daily_budget
