@@ -553,6 +553,7 @@ contains
       cp(3) = sum(cf1_int * ocp_coeffs)
       ! cp(4) = sum(ch1_int * ocp_coeffs)
       ! cp(5) = sum(cs1_int * ocp_coeffs) !!!!!!ATENÇÃO AQUI
+      !tentativa de entender o cp
       ! print*,'CPPPPPPPPPPPPPPPPPPP ', cp(1),cp(2),cp(3),cp(4),cp(5)
 
       ! FILTER BAD VALUES
