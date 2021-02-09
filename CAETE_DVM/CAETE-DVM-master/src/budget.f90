@@ -377,7 +377,7 @@ contains
             
             delta_sap_aux(p)= cs2(p) - cs1_pft(ri)
             delta_hrt_aux(p)= ch2(p) - ch1_pft(ri)
-            delta_cveg(2,p) = ca2(p) - ca1_pft(ri)!((cs2(p) - cs1_pft(ri)+(ch2(p) - ch1_pft(ri))))!delta_sap_aux(p)+delta_hrt_aux(p)
+            delta_cveg(2,p) = ((cs2(p) - cs1_pft(ri)+(ch2(p) - ch1_pft(ri))))!delta_sap_aux(p)+delta_hrt_aux(p)
          endif
          delta_cveg(3,p) = cf2(p) - cf1_pft(ri)
 
