@@ -26,7 +26,7 @@ module productivity
 contains
 
   subroutine prod(dt,light_limit,catm,temp,ts,p0,w,ipar,rh,emax,cl1_prod,&
-       & ca1_prod,cf1_prod,beta_leaf,beta_awood,beta_froot,ph,ar,&
+       & ca1_prod,cf1_prod,cs1_prod,beta_leaf,beta_awood,beta_froot,ph,ar,&
        & nppa,laia,f5,vpd,rm,rg,rc,wue,c_defcit,vm_out,sla, e)
 
     use types
@@ -43,7 +43,7 @@ contains
     real(r_4), intent(in) :: w                    !Soil moisture kg m-2
     real(r_4), intent(in) :: ipar                 !Incident photosynthetic active radiation (w/m2)
     real(r_4), intent(in) :: rh,emax !Relative humidity/MAXIMUM EVAPOTRANSPIRATION
-    real(r_8), intent(in) :: catm, cl1_prod, cf1_prod, ca1_prod        !Carbon in plant tissues (kg/m2)
+    real(r_8), intent(in) :: catm, cl1_prod, cf1_prod, ca1_prod, cs1_prod        !Carbon in plant tissues (kg/m2)
     real(r_8), intent(in) :: beta_leaf            !npp allocation to carbon pools (kg/m2/day)
     real(r_8), intent(in) :: beta_awood
     real(r_8), intent(in) :: beta_froot
@@ -161,7 +161,7 @@ contains
 !     Autothrophic respiration
 !     ========================
 !     Maintenance respiration (kgC/m2/yr) (based in Ryan 1991)
-    rm = m_resp(temp,ts,cl1_prod,cf1_prod,ca1_prod &
+    rm = m_resp(temp,ts,cl1_prod,cf1_prod,ca1_prod,cs1_prod &
          &,n2cl_resp,n2cw_resp,n2cf_resp,awood)
 
 ! c     Growth respiration (KgC/m2/yr)(based in Ryan 1991; Sitch et al.

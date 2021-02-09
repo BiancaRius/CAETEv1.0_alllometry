@@ -951,7 +951,7 @@ contains
   !===================================================================
   !===================================================================
 
-   function m_resp(temp, ts,cl1_mr,cf1_mr,ca1_mr,&
+   function m_resp(temp, ts,cl1_mr,cf1_mr,ca1_mr,cs1_mr,&
         & n2cl,n2cw,n2cf,aawood_mr) result(rm)
 
       use types, only: r_4,r_8
@@ -962,6 +962,7 @@ contains
       real(r_8), intent(in) :: cl1_mr
       real(r_8), intent(in) :: cf1_mr
       real(r_8), intent(in) :: ca1_mr
+      real(r_8), intent(in) :: cs1_mr
       real(r_8), intent(in) :: n2cl
       real(r_8), intent(in) :: n2cw
       real(r_8), intent(in) :: n2cf
@@ -978,7 +979,8 @@ contains
       ! sapwood carbon content (kgC/m2). X% of woody tissues (Pavlick, 2013)
       ! only for woody PLSs
       if(aawood_mr .gt. 0.0) then
-         csa = sapwood * ca1_mr
+         !csa = sapwood * ca1_mr !old logic
+         csa = cs1_mr
          rms64 = ((n2cw * (csa * 1D3)) * 27.0D0 * dexp(0.07D0*temp))
       else
          rms64 = 0.0
