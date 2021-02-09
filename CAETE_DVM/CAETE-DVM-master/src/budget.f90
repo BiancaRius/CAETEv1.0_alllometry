@@ -390,12 +390,12 @@ contains
                                                                         !! the sum of sap and heartwood (OLD LOGIC)
                cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.333333333)
                cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.333333333)
- !              ch1_int(p) = ch2(p)
+               ch1_int(p) = ch2(p)
+               ca1_int(p) = cs1_int(p) + ch1_int(p)
                ! cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.25)
                ! cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.25) 
                ! cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.25)
                ! ch1_int(p) = ch2(p) - ((c_def(p) * 1e-3) * 0.25)
-               ca1_int(p) = cs1_int(p) + ch1_int(p)
  !              print*,'with deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
             else
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.5)
@@ -549,7 +549,7 @@ contains
       wp(2) = sum(g * ocp_coeffs)
       wp(3) = sum(s * ocp_coeffs)
       cp(1) = sum(cl1_int * ocp_coeffs)
-      cp(2) = (sum(cs1_int * ocp_coeffs)) + (sum(ch1_int * ocp_coeffs))
+      cp(2) = (sum(ca1_int * ocp_coeffs))
       cp(3) = sum(cf1_int * ocp_coeffs)
       ! cp(4) = sum(ch1_int * ocp_coeffs)
       ! cp(5) = sum(cs1_int * ocp_coeffs) !!!!!!ATENÇÃO AQUI
