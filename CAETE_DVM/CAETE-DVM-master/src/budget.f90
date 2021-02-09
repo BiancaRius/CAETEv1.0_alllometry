@@ -377,7 +377,7 @@ contains
             
             delta_sap_aux(p)= cs2(p) - cs1_pft(ri)
             delta_hrt_aux(p)= ch2(p) - ch1_pft(ri)
-            delta_cveg(2,p) = ca2(p) - ca1_pft(ri)! delta_sap_aux(p)+delta_hrt_aux(p)
+            delta_cveg(2,p) = ca2(p) - ca1_pft(ri)!((cs2(p) - cs1_pft(ri)+(ch2(p) - ch1_pft(ri))))!delta_sap_aux(p)+delta_hrt_aux(p)
          endif
          delta_cveg(3,p) = cf2(p) - cf1_pft(ri)
 
@@ -602,8 +602,8 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
-         csapavg_pft(ri) = cs1_int(p)
-         cheartavg_pft(ri) = 18.12
+         csapavg_pft(ri) = 0.3
+         cheartavg_pft(ri) = 12.1
          print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
