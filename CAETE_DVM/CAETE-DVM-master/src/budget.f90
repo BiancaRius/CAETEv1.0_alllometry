@@ -602,7 +602,7 @@ contains
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
          csapavg_pft(ri) = cs1_int(p)
-         cheartavg_pft(ri) = 17.12
+         cheartavg_pft(ri) = 18.12
          print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
