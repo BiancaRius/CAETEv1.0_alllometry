@@ -171,6 +171,7 @@ contains
       real(r_8),dimension(:),allocatable :: ch2    ! carbon pos-allocation
       real(r_8),dimension(:),allocatable :: delta_sap_aux    ! auxiliary variable for calculating wood delta
       real(r_8),dimension(:),allocatable :: delta_hrt_aux    ! auxiliary variable for calculating wood delta
+      real(r_8),dimension(:),allocatable :: cs1_int_aux    ! auxiliary variable for calculating wood delta
       real(r_8),dimension(:,:),allocatable :: day_storage      ! D0=3 g m-2
       real(r_8),dimension(:),allocatable   :: vcmax            ! µmol m-2 s-1
       real(r_8),dimension(:),allocatable   :: specific_la      ! m2 g(C)-1
@@ -204,7 +205,7 @@ contains
          cf1_pft(i) = cf1_in(i)
          cs1_pft(i) = cs1_in(i)
          ch1_pft(i) = ch1_in(i)
-         print*, 'entrada bdgt','sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
+!         print*, 'entrada bdgt','sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -278,6 +279,7 @@ contains
       allocate(ca1_int(nlen))
       allocate(cs1_int(nlen))
       allocate(ch1_int(nlen))
+      allocate(cs1_int_aux(nlen))
       allocate(cl2(nlen))
       allocate(cf2(nlen))
       allocate(ca2(nlen))
@@ -425,7 +427,7 @@ contains
          if(cs1_int(p) .lt. 0.0D0) cs1_int(p) = 0.0D0
          if(ch1_int(p) .lt. 0.0D0) ch1_int(p) = 0.0D0
          if(cf1_int(p) .lt. 0.0D0) cf1_int(p) = 0.0D0
-         print*,'calculo','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
+        ! print*,'calculo','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
 
          ! WATER BALANCE - GABRIEL
          !     Precipitation
@@ -602,9 +604,9 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
-         csapavg_pft(ri) = 0.3
+         csapavg_pft(ri) = 0.5
          cheartavg_pft(ri) = 12.1
-         print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
+ !        print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)
@@ -655,6 +657,7 @@ contains
       deallocate(ca1_int)
       deallocate(cs1_int)
       deallocate(ch1_int)
+      deallocate(cs1_int)
       deallocate(cl2)
       deallocate(cf2)
       deallocate(ca2)
