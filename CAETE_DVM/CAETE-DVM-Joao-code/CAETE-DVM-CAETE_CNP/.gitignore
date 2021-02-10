@@ -1,0 +1,15 @@
+src/*.o
+src/*.mod
+src/*.pyf
+src/*.so
+src/__pycache__
+src/*.npy
+src/*.csv
+src/*.txt
+outputs/*
+src/.python-version
+src/logfile.log
+input/.python-version
+run_debug
+.vscode
+.python-version
