@@ -19,7 +19,7 @@ import caete
 from caete import grd, mask, npls, print_progress, run_breaks
 import plsgen as pls
 
-from post_processing import write_h5
+# from post_processing import write_h5
 
 __author__ = "João Paulo Darela Filho"
 __descr__ = """RUN CAETÊ --- TODO"""
@@ -97,8 +97,8 @@ if sombrero:
 
 else:
     grid_mn = []
-    for Y in range(168, 171):
-        for X in range(225, 228):
+    for Y in range(168, 169):
+        for X in range(225, 226):
             if not mask[Y, X]:
                 grid_mn.append(grd(X, Y))
 

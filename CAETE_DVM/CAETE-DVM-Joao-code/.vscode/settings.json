@@ -1,0 +1,14 @@
+// This an example file meant to live inside .vscode folder of your CAETE-DVM project.
+// Dont mind the errors.
+{
+    "python.languageServer": "Pylance",
+    "[fortran]": {
+        "editor.acceptSuggestionOnEnter": "off"
+    },
+    "[fortran_fixed-form]": {
+        "editor.acceptSuggestionOnEnter": "off"
+    },
+    "[FortranFreeForm]": {
+        "editor.acceptSuggestionOnEnter": "off"
+    }
+}
