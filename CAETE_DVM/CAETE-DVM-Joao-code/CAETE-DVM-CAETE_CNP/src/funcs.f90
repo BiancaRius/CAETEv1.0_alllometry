@@ -46,7 +46,8 @@ module photo
         g_resp                 ,& ! (f), growth Respiration (kg m-2 yr-1)
         pft_area_frac          ,& ! (s), area fraction by biomass
         water_ue               ,&
-        leap
+        leap                   ,&
+        bisection_method          ! (f) auxiliary function for allocation calculus
 
 contains
 
@@ -1007,6 +1008,24 @@ contains
    !====================================================================
    !====================================================================
 
+   function bisection_method(a,b) result(midpoint)
+      use types, only: r_4,r_8
+      !implicit none
+
+      real(r_8), intent(in) :: a
+      real(r_8), intent(in) :: b
+      real(r_4) :: midpoint
+
+      real(r_8):: aux_a, aux_b !internal variable
+
+      !     Bisection Method - auxiliary function for npp_leaf calculus
+      !     Based in LPJ (Philip's script) 
+
+
+   end function bisection_method
+   !====================================================================
+   !====================================================================
+
    function tetens(t) result(es)
       ! returns Saturation Vapor Pressure (hPa), using Buck equation
 
@@ -1150,6 +1169,7 @@ contains
 
    end subroutine pft_area_frac
 
+      
    !====================================================================
    !====================================================================
 
