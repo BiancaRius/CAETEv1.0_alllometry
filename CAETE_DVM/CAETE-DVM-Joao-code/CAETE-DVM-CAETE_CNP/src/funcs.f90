@@ -47,7 +47,11 @@ module photo
         pft_area_frac          ,& ! (s), area fraction by biomass
         water_ue               ,&
         leap                   ,&
-        bisection_method          ! (f) auxiliary function for allocation calculus
+        bisection_method       ,&   ! (f) auxiliary function for allocation calculus
+        f                      ,&   ! (f) auxiliary function for allocation calculus
+        calc_tau1              ,&   ! (f) auxiliary function for allocation calculus
+        calc_tau2              ,&   ! (f) auxiliary function for allocation calculus
+        calc_tau3
 
 contains
 
@@ -1010,21 +1014,125 @@ contains
 
    function bisection_method(a,b) result(midpoint)
       use types, only: r_4,r_8
+      use allometry_par
       !implicit none
 
       real(r_8), intent(in) :: a
       real(r_8), intent(in) :: b
-      real(r_4) :: midpoint
+      real(r_8) :: midpoint
 
       real(r_8):: aux_a, aux_b !internal variable
 
-      !     Bisection Method - auxiliary function for npp_leaf calculus
+      !     Bisection Method - auxiliary function for allocation calculus
       !     Based in LPJ (Philip's script) 
+
+      aux_a = a
+      aux_b = b
+ 
+      if((f(aux_a) * f(aux_b)) .gt. 0) then
+         midpoint = -2.0
+         return
+      endif
+         
+      do while((aux_b - aux_a) / 2.0 .gt. tol)
+         midpoint = (aux_a + aux_b) / 2
+             
+         if(f(midpoint) .eq. 0.0) then
+            exit            
+         elseif(f(aux_a) * f(midpoint) .lt. 0) then
+            aux_b = midpoint
+         else
+            aux_a = midpoint
+         endif
+      end do
 
 
    end function bisection_method
    !====================================================================
    !====================================================================
+   function f(x) result(searched_x)
+      use types, only: r_4,r_8
+      use allometry_par
+      use global_par
+      !implicit none
+
+      real(r_8), intent(in) :: x
+      real(r_8) :: searched_x
+
+      !     Function f- auxiliary function for allocation calculus
+      !     Based in LPJ (Philip's script) 
+
+      ! searched_x = & 
+      !        calc_tau1() * &
+      !        (sapwood2() - x - x / ltor + sch1) - &
+      !        ( &
+      !            (sapwood2() - x - x / ltor) / &
+      !            (scl1 + x) * calc_tau3() &
+      !        ) ** calc_tau2()
+
+             searched_x = & 
+             calc_tau1() * &
+             (sapwood - x - x / ltor + 12.1) - &
+             ( &
+                 (sapwood - x - x / ltor) / &
+                 (0.33 + x) * calc_tau3() &
+             ) ** calc_tau2()
+
+   end function f
+   !====================================================================
+   !====================================================================
+   function calc_tau1() result(tau1)
+      use types, only: r_4,r_8
+      use allometry_par
+      !implicit none
+
+      real(r_8) :: tau1
+
+      !     Function calc_tau1- auxiliary function for allocation calculus
+      !     Based in LPJ (Philip's script)
+
+      tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dw)
+
+   end function calc_tau1
+   !====================================================================
+   !====================================================================
+   function calc_tau2() result(tau2)
+      use types, only: r_4,r_8
+      use allometry_par
+
+      real(r_8) :: tau2 
+      
+      !     Function calc_tau2- auxiliary function for allocation calculus
+      !     Based in LPJ (Philip's script)
+
+      tau2 = 1.0 + 2.0 / k_allom3
+
+   end function calc_tau2
+
+   !====================================================================
+   !====================================================================
+   function calc_tau3() result(tau3)
+      use types, only: r_4,r_8
+      use allometry_par
+
+      real(r_8) :: tau3
+
+      !     Function calc_tau2- auxiliary function for allocation calculus
+      !     Based in LPJ (Philip's script)
+      
+      tau3 = klatosa / dw / spec_leaf
+
+   end function calc_tau3
+   !====================================================================
+   !====================================================================
+   ! function sapwood2() result (SS) 
+   !    real(r_8) :: SS
+     
+   !    SS = scs1 + npp_pot - scl1 / ltor + scf1
+   ! end function sapwood2
+   !====================================================================
+   !====================================================================
+
 
    function tetens(t) result(es)
       ! returns Saturation Vapor Pressure (hPa), using Buck equation
