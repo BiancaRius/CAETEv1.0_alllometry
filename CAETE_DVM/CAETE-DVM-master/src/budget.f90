@@ -205,7 +205,7 @@ contains
          cf1_pft(i) = cf1_in(i)
          cs1_pft(i) = cs1_in(i)
          ch1_pft(i) = ch1_in(i)
-         print*, 'entrada bdgt','sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
+         !print*, 'entrada bdgt','sap2=', cs1_pft(i), 'heart 2=', ch1_pft(i), 'wood2=', ca1_pft(i),'i',i
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -398,7 +398,7 @@ contains
                ! cf1_int(p) = cf2(p) - ((c_def(p) * 1e-3) * 0.25) 
                ! cs1_int(p) = cs2(p) - ((c_def(p) * 1e-3) * 0.25)
                ! ch1_int(p) = ch2(p) - ((c_def(p) * 1e-3) * 0.25)
-               print*,'with deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
+              ! print*,'with deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
             else
                cl1_int(p) = cl2(p) - ((c_def(p) * 1e-3) * 0.5)
                ca1_int(p) = 0.0
@@ -413,7 +413,7 @@ contains
                cs1_int(p) = cs2(p)
                ch1_int(p) = ch2(p)
                cf1_int(p) = cf2(p)
-               print*,'without deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
+             !  print*,'without deficit','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
             else
                cl1_int(p) = cl2(p)
                ca1_int(p) = 0.0
@@ -427,7 +427,7 @@ contains
          if(cs1_int(p) .lt. 0.0D0) cs1_int(p) = 0.0D0
          if(ch1_int(p) .lt. 0.0D0) ch1_int(p) = 0.0D0
          if(cf1_int(p) .lt. 0.0D0) cf1_int(p) = 0.0D0
-         print*,'calculo','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
+        ! print*,'calculo','cs1_int',cs1_int(p),'ch1_int',ch1_int(p),'ca1_int',ca1_int(p)
 
          ! WATER BALANCE - GABRIEL
          !     Precipitation
@@ -604,9 +604,9 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
-         csapavg_pft(ri) = cs1_int(p)
-         cheartavg_pft(ri) = (ca1_int(p) - cs1_int(p))
-         print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
+         csapavg_pft(ri) = ca1_int(p)*0.05 !cs1_int(p)
+         cheartavg_pft(ri) = ca1_int(p)*0.95!(ca1_int(p) - cs1_int(p))
+         !print*, 'saida bdgt','sap',cs1_int(p),'wood',ca1_int(p),'heart', ch1_int(p),'chavg',cheartavg_pft(ri)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)

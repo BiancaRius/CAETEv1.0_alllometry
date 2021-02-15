@@ -208,7 +208,7 @@ module alloc
       real(r_8) :: scs1_previous_day !previous day day carbon content on sapwood (in order to updt using allometric restrictions)
       real(r_8) :: sch1_previous_day !previous day day carbon content on heart (in order to updt using allometric restrictions)
       real(r_8) :: sca1_previous_day !previous day day carbon content on heart (in order to updt using allometric restrictions)
-
+      real(r_8) :: funcs_calc_tau1
 
       ! real(r_8) :: test_a = 1
       ! real(r_8) :: test_b = 2
@@ -418,7 +418,7 @@ module alloc
 
       ! Use the bisection method (function below) to solve the leaf mass increment
       npp_leaf = bisection_method(0.0, 3.0) !the new allocation logic, considering allometry
-
+      print*, 'bisection', npp_leaf
       ! Once we have the leaf mass increment we can cant get 
       ! root mass increment based on the LTOR constant
       npp_root = (npp_leaf + scl1) / ltor - scf1
@@ -1002,7 +1002,8 @@ module alloc
 
       ! teste_one = diameter(dw, k_allom2, k_allom3, pi, sca2)
       ! print*, 'RESULTADO TESTE/DELTA_LEAF =', teste_one
-
+      funcs_calc_tau1=calc_tau1()
+      print*,'TAU1', funcs_calc_tau1
 
    contains
 

@@ -46,12 +46,14 @@ module photo
         g_resp                 ,& ! (f), growth Respiration (kg m-2 yr-1)
         pft_area_frac          ,& ! (s), area fraction by biomass
         water_ue               ,&
-        leap                   ,&
-        bisection_method       ,&   ! (f) auxiliary function for allocation calculus
-        f                      ,&   ! (f) auxiliary function for allocation calculus
-        calc_tau1              ,&   ! (f) auxiliary function for allocation calculus
-        calc_tau2              ,&   ! (f) auxiliary function for allocation calculus
-        calc_tau3
+        leap                   
+      !   calc_tau1              ,& ! (f) auxiliary function for allocation calculus
+      !   calc_tau2              ,& ! (f) auxiliary function for allocation calculus
+      !   calc_tau3              ,& ! (f) auxiliary function for allocation calculus
+      !   f                      ,&
+      !   bisection_method          ! (f) auxiliary function for allocation calculus
+      ! !   f                      ,&   ! (f) auxiliary function for allocation calculus
+      
 
 contains
 
@@ -1012,124 +1014,163 @@ contains
    !====================================================================
    !====================================================================
 
-   function bisection_method(a,b) result(midpoint)
-      use types, only: r_4,r_8
-      use allometry_par
-      !implicit none
+   ! function bisection_method(cawood,cleaf) result(midpoint)
+      ! use types, only: r_4,r_8
+   !    use allometry_par
+   !    !implicit none
 
-      real(r_8), intent(in) :: a
-      real(r_8), intent(in) :: b
-      real(r_8) :: midpoint
+      
+   !    real(r_8), intent(in) :: cawood
+   !    real(r_8), intent(in) :: cleaf
+   !    real(r_8) :: midpoint
 
-      real(r_8):: aux_a, aux_b !internal variable
+   !    real(r_8):: aux_a, aux_b
+   !    real(r_8):: aux_cawood, aux_cleaf !internal variable
 
-      !     Bisection Method - auxiliary function for allocation calculus
-      !     Based in LPJ (Philip's script) 
+   !    !     Bisection Method - auxiliary function for allocation calculus
+   !    !     Based in LPJ (Philip's script) 
 
-      aux_a = a
-      aux_b = b
+   !    aux_a = 0.0D0
+   !    aux_b = 3.0D0
+   !    aux_cawood = cawood
+   !    aux_cleaf = cleaf
  
-      if((f(aux_a) * f(aux_b)) .gt. 0) then
-         midpoint = -2.0
-         return
-      endif
+   !    if((f(aux_a,aux_cawood,aux_cleaf) * f(aux_b,aux_cawood,aux_cleaf)) .gt. 0) then
+   !       midpoint = -2.0
+   !       return
+   !    endif
          
-      do while((aux_b - aux_a) / 2.0 .gt. tol)
-         midpoint = (aux_a + aux_b) / 2
+   !    do while((aux_b - aux_a) / 2.0 .gt. tol)
+   !       midpoint = (aux_a + aux_b) / 2
              
-         if(f(midpoint) .eq. 0.0) then
-            exit            
-         elseif(f(aux_a) * f(midpoint) .lt. 0) then
-            aux_b = midpoint
-         else
-            aux_a = midpoint
-         endif
-      end do
+   !       if(f(midpoint,aux_cawood,aux_cleaf) .eq. 0.0) then
+   !          exit            
+   !       elseif(f(aux_a,aux_cawood,aux_cleaf) * f(midpoint,aux_cawood,aux_cleaf) .lt. 0) then
+   !          aux_b = midpoint
+   !       else
+   !          aux_a = midpoint
+   !       endif
+   !    end do
 
 
-   end function bisection_method
+   ! end function bisection_method
    !====================================================================
    !====================================================================
-   function f(x) result(searched_x)
-      use types, only: r_4,r_8
-      use allometry_par
-      use global_par
-      !implicit none
-
-      real(r_8), intent(in) :: x
-      real(r_8) :: searched_x
-
-      !     Function f- auxiliary function for allocation calculus
-      !     Based in LPJ (Philip's script) 
-
-      ! searched_x = & 
-      !        calc_tau1() * &
-      !        (sapwood2() - x - x / ltor + sch1) - &
-      !        ( &
-      !            (sapwood2() - x - x / ltor) / &
-      !            (scl1 + x) * calc_tau3() &
-      !        ) ** calc_tau2()
-
-             searched_x = & 
-             calc_tau1() * &
-             (sapwood - x - x / ltor + 12.1) - &
-             ( &
-                 (sapwood - x - x / ltor) / &
-                 (0.33 + x) * calc_tau3() &
-             ) ** calc_tau2()
-
-   end function f
-   !====================================================================
-   !====================================================================
-   function calc_tau1() result(tau1)
-      use types, only: r_4,r_8
-      use allometry_par
-      !implicit none
-
-      real(r_8) :: tau1
-
-      !     Function calc_tau1- auxiliary function for allocation calculus
-      !     Based in LPJ (Philip's script)
-
-      tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dw)
-
-   end function calc_tau1
-   !====================================================================
-   !====================================================================
-   function calc_tau2() result(tau2)
-      use types, only: r_4,r_8
-      use allometry_par
-
-      real(r_8) :: tau2 
+   ! function carbon_pools_wood(cawood) result(carbon_wood)
+   !    use types, only: r_4,r_8
       
-      !     Function calc_tau2- auxiliary function for allocation calculus
-      !     Based in LPJ (Philip's script)
+   !    real(r_8), intent(in) :: cawood
+   !    real(r_8) :: carbon_wood
 
-      tau2 = 1.0 + 2.0 / k_allom3
+   !        !     Function carbon_pools_wood - auxiliary function for allocation calculus
+   !        !     to be used in function f(x)
+        
 
-   end function calc_tau2
+   !    carbon_wood = cawood
 
+   ! end function carbon_pools_wood
    !====================================================================
    !====================================================================
-   function calc_tau3() result(tau3)
-      use types, only: r_4,r_8
-      use allometry_par
 
-      real(r_8) :: tau3
+   ! function f(x,cawood,cleaf) result(searched_x)
+   !    use types, only: r_4,r_8
+   !    use allometry_par
+   !    use global_par
+   ! !    !implicit none
 
-      !     Function calc_tau2- auxiliary function for allocation calculus
-      !     Based in LPJ (Philip's script)
+   !    real(r_8), intent(in) :: x
+   !    real(r_8), intent(in) :: cawood
+   !    real(r_8), intent(in) :: cleaf
+   !    real(r_8) :: searched_x
+
+
+   !     !     Function f- auxiliary function for allocation calculus
+   !     !     Based in LPJ (Philip's script) 
+    
+
+   !Original:
+   ! !    ! searched_x = & 
+   ! !    !        calc_tau1() * &
+   ! !    !        (sapwood2() - x - x / ltor + sch1) - &
+   ! !    !        ( &
+   ! !    !            (sapwood2() - x - x / ltor) / &
+   ! !    !            (scl1 + x) * calc_tau3() &
+   ! ! !    !        ) ** calc_tau2()
+
+   !    !!using generic value for sapwood2()
+   !    searched_x = & 
+   !           calc_tau1() * &
+   !           (0.3 - x - x / ltor + cawood) - &
+   !           ( &
+   !               (0.3 - x - x / ltor) / &
+   !               (cleaf + x) * calc_tau3() &
+   !           ) ** calc_tau2()
+
+   
+
+   ! end function f
+   ! !====================================================================
+   ! !====================================================================
+   ! function calc_tau1() result(tau1)
+   !    use types, only: r_4,r_8
+   !    use allometry_par
+   !    !implicit none
+
+   !    real(r_8) :: tau1
+
+   !    !     Function calc_tau1- auxiliary function for allocation calculus
+   !    !     Based in LPJ (Philip's script)
+
+   !    tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dw)
+
+   ! end function calc_tau1
+   ! !====================================================================
+   ! !====================================================================
+   ! function calc_tau2() result(tau2)
+   !    use types, only: r_4,r_8
+   !    use allometry_par
+
+   !    real(r_8) :: tau2 
       
-      tau3 = klatosa / dw / spec_leaf
+   !    !     Function calc_tau2- auxiliary function for allocation calculus
+   !    !     Based in LPJ (Philip's script)
 
-   end function calc_tau3
-   !====================================================================
-   !====================================================================
-   ! function sapwood2() result (SS) 
-   !    real(r_8) :: SS
+   !    tau2 = 1.0 + 2.0 / k_allom3
+
+   ! end function calc_tau2
+
+   ! !====================================================================
+   ! !====================================================================
+   ! function calc_tau3() result(tau3)
+   !    use types, only: r_4,r_8
+   !    use allometry_par
+
+   !    real(r_8) :: tau3
+
+   !    !     Function calc_tau2- auxiliary function for allocation calculus
+   !    !     Based in LPJ (Philip's script)
+      
+   !    tau3 = klatosa / dw / spec_leaf
+
+   ! end function calc_tau3
+   ! ! !====================================================================
+   ! ! !====================================================================
+   ! ! function teste_wood(cawood) result(carbon_wood)
+   ! !    use types, only: r_4,r_8
+   ! !    real(r_8), intent(in) :: cawood
+   ! !    real(r_8) :: carbon_wood
+
+   ! !    carbon_wood=cawood+1.33
+
+
+   ! ! end function teste_wood
+   ! !====================================================================
+   ! !====================================================================
+   ! ! function sapwood2() result (SS) 
+   ! !    real(r_8) :: SS
      
-   !    SS = scs1 + npp_pot - scl1 / ltor + scf1
-   ! end function sapwood2
+   ! !    SS = scs1 + npp_pot - scl1 / ltor + scf1
+   ! ! end function sapwood2
    !====================================================================
    !====================================================================
 

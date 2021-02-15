@@ -22,7 +22,7 @@ module alloc
                           & prep_out_n, prep_out_p,&
                           & retran_nutri_cost, select_active_strategy
     use global_par, only: ntraits, sapwood
-    use photo, only: f_four, spec_leaf_area, realized_npp
+    use photo
 
     implicit none
     private
@@ -127,6 +127,7 @@ module alloc
 
       real(r_8) :: npp_wood , npp_root , npp_leaf  ! Partitioned npp (g(C) m-2 day-1)
       real(r_8) :: npp_aux
+      
 
       ! Auxiliary variables to calculate Plant Nutrient Uptake
       real(r_8) :: aux1
@@ -182,6 +183,7 @@ module alloc
       real(r_8) :: p_cost_resorpt, n_cost_resorpt
       real(r_8) :: negative_one
       real(r_8) :: aux_on, aux_sop, aux_op
+      real(r_8) :: funcs_calc_tau1,funcs_calc_tau2
 
 
       ! initialize ALL outputs
@@ -362,6 +364,7 @@ module alloc
       endif
 29 continue
 
+  
       ! Potential NPP for each compartment
       ! Partitioning NPP for CVEG pools
 
@@ -903,6 +906,14 @@ module alloc
       &                   + n_cost_resorpt + p_cost_resorpt + negative_one
       ! END OF CALCULATIONS
 
+   !testing allocation functions
+      funcs_calc_tau1=calc_tau1()
+      print*,'TAU1', funcs_calc_tau1
+
+      funcs_calc_tau2=calc_tau2()
+      print*,'TAU2', funcs_calc_tau2
+   !================================================================   
+   !================================================================
    contains
 
       function add_pool(a1, a2) result(new_amount)
@@ -916,6 +927,41 @@ module alloc
             new_amount = a1
          endif
       end function add_pool
+
+
+   !====================================================================
+   !====================================================================
+      function calc_tau1() result(tau1)
+         use types, only: r_4,r_8
+         use allometry_par
+         !implicit none
+   
+         real(r_8) :: tau1
+         real(r_8) :: dw_aux = 200.0D0 !for testing if it is equal to Philip's value (kgC/m3)
+   
+         !     Function calc_tau1- auxiliary function for allocation calculus
+         !     Based in LPJ (Philip's script)
+   
+         ! tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dw) !verify dw unit
+          tau1 = (k_allom2 ** (2.0 / k_allom3)) * 4.0 / 3.14159 / dw_aux !verify dw unit
+
+      end function calc_tau1
+    !====================================================================
+    !====================================================================
+      function calc_tau2() result(tau2)
+            use types, only: r_4,r_8
+            use allometry_par
+      
+            real(r_8) :: tau2 
+            
+            !     Function calc_tau2- auxiliary function for allocation calculus
+            !     Based in LPJ (Philip's script)
+      
+            tau2 = 1.0 + 2.0 / k_allom3
+      
+         end function calc_tau2
+    !====================================================================
+    !====================================================================
 
    end subroutine allocation
 

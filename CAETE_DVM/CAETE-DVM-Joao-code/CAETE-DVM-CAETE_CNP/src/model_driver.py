@@ -253,5 +253,5 @@ if __name__ == "__main__":
 
     fh.close()
 
-    print("Salvando db")
-    write_h5()
+    # print("Salvando db")
+    # write_h5()
