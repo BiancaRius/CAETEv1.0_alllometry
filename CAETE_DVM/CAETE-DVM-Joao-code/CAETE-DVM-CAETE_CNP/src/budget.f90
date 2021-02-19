@@ -60,9 +60,9 @@ contains
 
 
       real(r_8),dimension(3,npls),intent(in)  :: sto_budg_in ! Rapid Storage Pool (C,N,P)  g m-2
-      real(r_8),dimension(npls),intent(in) :: cl1_in  ! initial BIOMASS cleaf compartment kgm-2
-      real(r_8),dimension(npls),intent(in) :: cf1_in  !                 froot
-      real(r_8),dimension(npls),intent(in) :: ca1_in  !                 cawood
+      real(r_8),dimension(npls),intent(in) :: cl1_in  ! initial carbon content leaf compartment kgC/m2
+      real(r_8),dimension(npls),intent(in) :: cf1_in  ! initial carbon content fine roots compartment kgC/m2                 froot
+      real(r_8),dimension(npls),intent(in) :: ca1_in  ! initial carbon content ABGW compartment kgC/m2               cawood
       real(r_8),dimension(npls),intent(in) :: dleaf_in  ! CHANGE IN cVEG (DAILY BASIS) TO GROWTH RESP
       real(r_8),dimension(npls),intent(in) :: droot_in  ! k gm-2
       real(r_8),dimension(npls),intent(in) :: dwood_in  ! k gm-2
@@ -93,9 +93,9 @@ contains
       real(r_8),dimension(6),intent(out) :: lit_nut_content_1 ! g(Nutrient)m-2 ! Lit_nut_content variables         [(lln),(rln),(cwdn),(llp),(rl),(cwdp)]
 
       ! FULL OUTPUT
-      real(r_8),dimension(npls),intent(out) :: cleafavg_pft   !Carbon in plant tissues (kg m-2)
-      real(r_8),dimension(npls),intent(out) :: cawoodavg_pft  !
-      real(r_8),dimension(npls),intent(out) :: cfrootavg_pft  !
+      real(r_8),dimension(npls),intent(out) :: cleafavg_pft   !Final carbon in leaf compartment (kg m-2)
+      real(r_8),dimension(npls),intent(out) :: cawoodavg_pft  !Final carbon in leaf compartment (kg m-2)
+      real(r_8),dimension(npls),intent(out) :: cfrootavg_pft  !Final carbon in leaf compartment (kg m-2)
       real(r_8),dimension(npls),intent(out) :: ocpavg         ! [0-1] Gridcell occupation
       real(r_8),dimension(3,npls),intent(out) :: delta_cveg_1
       real(r_8),dimension(3,npls),intent(out) :: storage_out_bdgt_1
@@ -140,18 +140,18 @@ contains
       real(r_4),dimension(:),allocatable :: f1     !
       real(r_8),dimension(:),allocatable :: f5     !Photosynthesis (mol/m2/s)
       real(r_4),dimension(:),allocatable :: vpd    !Vapor Pressure deficit
-      real(r_4),dimension(:),allocatable :: rm     !maintenance & growth a.resp
-      real(r_4),dimension(:),allocatable :: rg
+      real(r_4),dimension(:),allocatable :: rm     !maintenance respiration (kgC/m2/yr)
+      real(r_4),dimension(:),allocatable :: rg     !growth respiration (kgC/m2/yr)
       real(r_4),dimension(:),allocatable :: wue
       real(r_4),dimension(:),allocatable :: cue
-      real(r_4),dimension(:),allocatable :: c_def
-      real(r_8),dimension(:),allocatable :: cl1_int
-      real(r_8),dimension(:),allocatable :: cf1_int
-      real(r_8),dimension(:),allocatable :: ca1_int
+      real(r_4),dimension(:),allocatable :: c_def !g/m2/day
+      real(r_8),dimension(:),allocatable :: cl1_int !kg/m2/yr
+      real(r_8),dimension(:),allocatable :: cf1_int !kg/m2/yr
+      real(r_8),dimension(:),allocatable :: ca1_int !kg/m2/yr
       real(r_8),dimension(:),allocatable :: tra
-      real(r_8),dimension(:),allocatable :: cl2
-      real(r_8),dimension(:),allocatable :: cf2
-      real(r_8),dimension(:),allocatable :: ca2    ! carbon pos-allocation
+      real(r_8),dimension(:),allocatable :: cl2 !kg/m2/yr
+      real(r_8),dimension(:),allocatable :: cf2 !kg/m2/yr
+      real(r_8),dimension(:),allocatable :: ca2 !kg/m2/yr   ! carbon pos-allocation
       real(r_8),dimension(:,:),allocatable :: day_storage      ! D0=3 g m-2
       real(r_8),dimension(:),allocatable   :: vcmax            ! µmol m-2 s-1
       real(r_8),dimension(:),allocatable   :: specific_la      ! m2 g(C)-1

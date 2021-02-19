@@ -97,11 +97,11 @@ module allometry_par
          k_allom1 = 100.0D0     ,&            !allometric constant (Table 3; Sitch et al., 2003)
          k_allom2 = 36.0D0      ,&
          k_allom3 = 0.22D0      ,&
-         dw = 1.4D0             ,&            !value for testing purpose (DW will be a variant trait) g/cm-3
+         dw = 200.0D0            ,&            !value for testing purpose (DW will be a variant trait) kg/m-3
          spec_leaf = 15.36D0    ,&            !value for testing purpose (SLA is already calculate in the model; SLA will be a variant trait)
          klatosa = 6000.0D0     ,&   
          ltor = 0.773025D0      ,&            !ratio between increment in leaf and root
-         tol = 0.0000001D0      ,&
+         tol = 0.000000001D0      ,&
          pi = 3.1415926536D0    ,&
          krp = 1.6D0            ,&            !allometric constant (Table 3; Sitch et al., 2003)
          turnover_rate_sapwood = 0.05D0  ,&   !fix value for allometry/allocation calculus (Table1, Sitch et al., 2003)

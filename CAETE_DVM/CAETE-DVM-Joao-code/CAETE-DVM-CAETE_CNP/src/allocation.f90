@@ -121,7 +121,7 @@ module alloc
 
       real(r_8) :: npp_pot ! potential npp g m-2 day-1
       real(r_8), dimension(3) :: daily_growth ! amount of carbon allocated to leaf/wood/root g m-2 day-1
-      real(r_8), dimension(3, 2) :: real_npp
+      real(r_8), dimension(3, 2) :: real_npp !g m-2 day-1
       logical(l_1), dimension(3, 2) :: is_limited
       logical(l_1) :: lim_aux, kappa, test34, test35
 
@@ -183,8 +183,9 @@ module alloc
       real(r_8) :: p_cost_resorpt, n_cost_resorpt
       real(r_8) :: negative_one
       real(r_8) :: aux_on, aux_sop, aux_op
-      real(r_8) :: funcs_calc_tau1,funcs_calc_tau2
-
+      real(r_8) :: funcs_calc_tau1,funcs_calc_tau2,funcs_calc_tau3
+      real(r_8) :: funcs_sapwood2,funcs_heartwood2,funcs_bisection
+      
 
       ! initialize ALL outputs
       storage_out_alloc            = (/0.0D0, 0.0D0, 0.0D0/)
@@ -327,9 +328,11 @@ module alloc
       ! You want: g m-2 day-1
       npp_pot = (real(npp,kind=r_8) * (1000.0D0 / 365.242D0)) ! Transform Kg m-2 Year-1 to g m-2 day
       daily_growth = 0.0D0
+  
+
       npp_to_fixer = npp_pot * pdia
       npp_pot = npp_pot - npp_to_fixer - npp_costs
-
+      
       ! START STORAGE_OUT_alloc
       storage_out_alloc(1) = 0.0D0
       ! If there is not enough npp to pay uptake the you have to pay tomorrow
@@ -907,11 +910,23 @@ module alloc
       ! END OF CALCULATIONS
 
    !testing allocation functions
-      funcs_calc_tau1=calc_tau1()
-      print*,'TAU1', funcs_calc_tau1
+      ! funcs_calc_tau1=calc_tau1()
+      ! print*,'TAU1', funcs_calc_tau1
 
-      funcs_calc_tau2=calc_tau2()
-      print*,'TAU2', funcs_calc_tau2
+      !  funcs_calc_tau2=calc_tau2()
+      !  print*,'TAU2', funcs_calc_tau2
+
+      ! funcs_calc_tau3=calc_tau3()
+      ! print*,'TAU3', funcs_calc_tau3
+
+      funcs_sapwood2 = sapwood2()
+      print*,'SAP', funcs_sapwood2, 'sca1', sca1, npp, scl1, scf1
+
+      !  funcs_heartwood2=heartwood2()
+      !  print*,'heartwood2',funcs_heartwood2
+
+      funcs_bisection = bisection_method(0.0, 3.0) 
+      print*, 'bisection', funcs_bisection
    !================================================================   
    !================================================================
    contains
@@ -927,6 +942,69 @@ module alloc
             new_amount = a1
          endif
       end function add_pool
+   
+   !====================================================================
+   !====================================================================
+      function bisection_method(a, b) result(midpoint)
+         use types, only: r_4,r_8
+         use allometry_par
+         !implicit none
+
+         real(r_4) :: a, b
+         real(r_8) :: aux_a, aux_b
+         real(r_8) :: midpoint
+
+         !     Bisection Method - auxiliary function for allocation calculus
+         !     Based in LPJ (Philip's script) 
+
+         
+         aux_a = a
+         aux_b = b
+ 
+         if((f(aux_a) * f(aux_b)) .gt. 0) then
+             midpoint = -2.0
+             return
+         endif
+         
+         do while((aux_b - aux_a) / 2.0 .gt. tol)
+             midpoint = (aux_a + aux_b) / 2
+             
+             if(f(midpoint) .eq. 0.0) then
+                 exit            
+             elseif(f(aux_a) * f(midpoint) .lt. 0) then
+                 aux_b = midpoint
+             else
+                 aux_a = midpoint
+             endif
+         end do
+
+      end function bisection_method
+   !====================================================================
+   !====================================================================
+      function f(x) result(searched_x)
+         use types, only: r_4,r_8
+         use allometry_par
+         !implicit none
+
+         real(r_8),intent(in) :: x
+         real(r_8) :: searched_x
+
+           !     Function f- auxiliary function for allocation calculus
+           !     Based in LPJ (Philip's script)
+         real(r_8) :: h_potential
+        ! h_potential = (sca1*0.95)*1D3 !value for testing purpose (*1D3 transform to g/m2)
+         
+         h_potential = (sca1*0.95)
+         
+         searched_x = & 
+             calc_tau1() * &
+             (sapwood2() - x - x / ltor + h_potential) - &
+             ( &
+                 (sapwood2() - x - x / ltor) / &
+                 ((scl1) + x) * calc_tau3() &
+             ) ** calc_tau2()
+
+      end function f
 
 
    !====================================================================
@@ -937,13 +1015,16 @@ module alloc
          !implicit none
    
          real(r_8) :: tau1
-         real(r_8) :: dw_aux = 200.0D0 !for testing if it is equal to Philip's value (kgC/m3)
+         !real(r_8) :: dw_aux = 200.0D0*1D3 !for testing if it is equal to Philip's value (kgC/m3) 
+                                           !--> (*1D3 ) transform to gC/m3
+
+         real(r_8) :: dw_aux = 200.0D0
    
          !     Function calc_tau1- auxiliary function for allocation calculus
          !     Based in LPJ (Philip's script)
    
-         ! tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dw) !verify dw unit
-          tau1 = (k_allom2 ** (2.0 / k_allom3)) * 4.0 / 3.14159 / dw_aux !verify dw unit
+         ! tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dw) 
+          tau1 = (k_allom2 ** (2.0 / k_allom3)) * 4.0 / 3.14159 / dw_aux 
 
       end function calc_tau1
     !====================================================================
@@ -952,14 +1033,88 @@ module alloc
             use types, only: r_4,r_8
             use allometry_par
       
-            real(r_8) :: tau2 
+            real(r_8) :: tau2
+             
             
             !     Function calc_tau2- auxiliary function for allocation calculus
             !     Based in LPJ (Philip's script)
       
             tau2 = 1.0 + 2.0 / k_allom3
       
-         end function calc_tau2
+      end function calc_tau2
+    !====================================================================
+    !====================================================================
+      function calc_tau3() result(tau3)
+               use types, only: r_4,r_8
+               use allometry_par
+         
+               real(r_8) :: tau3
+
+               !real(r_8) :: dw_aux = 200.0D0*1D3 !for testing if it is equal to Philip's value (kgC/m3)
+                                              !--> (*1D3 ) transform to gC/m3
+
+               real(r_8) :: dw_aux = 200.0D0
+               !     Function calc_tau2- auxiliary function for allocation calculus
+               !     Based in LPJ (Philip's script)
+               
+               ! tau3 = klatosa / dw / spec_leaf
+
+               
+               !tau3 = klatosa / dw_aux / (spec_leaf/1D4) !(/1D4 transforms from m2/kgC to m2/gC)
+
+               tau3 = klatosa / dw / spec_leaf
+      end function calc_tau3
+    !====================================================================
+    !====================================================================
+      function sapwood2() result (SS) !The variable sapwood already exist then sapwood2 will be changed in the future
+         use types, only: r_4,r_8
+         use allometry_par
+
+         real(r_8) :: SS
+        
+         real(r_8) :: sap_potential !value for sapwood when there is still not sap calculated
+
+               !     Function sapwood2- auxiliary function for allocation calculus
+               !     Based in LPJ (Philip's script)
+               !     Calculates the actual value of sapwood????
+
+         sap_potential = (sca1*0.05) !value for testing purpose 
+         
+         !*1D3 transforms kgC/m2 em gc/m2
+
+         ! SS = scs1 + npp_pot - scl1 / ltor + scf1 !!! NPP-POT???? OU REALIZED?
+         !the unit of npp is different from the carbon pools
+
+        ! SS = (sap_potential*1D3) + npp_pot - (scl1*1D3) / ltor + (scf1*1D3) this version uses g/m2
+
+         SS = sap_potential + npp - scl1 / ltor + scf1 !this version uses kgC/m2 (here I put npp instead of npp_pot)
+
+      end function sapwood2
+
+    !====================================================================
+    !====================================================================
+   !    function heartwood2() result (H)
+   !       use types, only: r_4,r_8
+   !       use allometry_par
+
+   !       real(r_8) :: H
+
+   !       real(r_8) :: hrt_potential !value for heartwood when there is still not hrt calculated
+   !       real(r_8) :: sp_potential !value for heartwood when there is still not hrt calculated
+   !       real(r_8) :: turnover_rate_sapwood_aux !value of turnover in gc/day
+
+   !             !     Function heartwood2- auxiliary function for allocation calculus
+   !             !     Based in LPJ (Philip's script)
+   !             !     Calculates the actual value of heartwood????
+
+   !       hrt_potential = (sca1*0.95)*1D3 !value for testing purpose (*1D3 transform to g/m2)
+   !       sp_potential =  (sca1*0.05)*1D3 !value for testing purpose (*1D3 transform to g/m2)
+   !       turnover_rate_sapwood_aux = turnover_rate_sapwood/365
+
+   !       ! H = sch1 + (turnover_rate_sapwood*scs1)
+   !       H = hrt_potential + (turnover_rate_sapwood_aux*sp_potential)
+
+   !   end function heartwood2
     !====================================================================
     !====================================================================
 

@@ -90,7 +90,7 @@ contains
 
       real(r_8) :: f4sun, f1in
       real(r_8) :: f4shade
-
+      print*,'SLA',sla
       f1in = f1
       f4sun = f_four(1,cleaf,sla)
       f4shade = f_four(2,cleaf,sla)
