@@ -46,7 +46,10 @@ module photo
         g_resp                 ,& ! (f), growth Respiration (kg m-2 yr-1)
         pft_area_frac          ,& ! (s), area fraction by biomass
         water_ue               ,&
-        leap
+        leap                   ,&
+        diameter               ,&
+        crownarea              ,&
+        tree_height
 
 contains
 
@@ -99,17 +102,33 @@ contains
       ! Returns Leaf Area Index m2 m-2
 
       use types, only: r_8
+      use allometry_par
       !implicit none
 
       real(r_8),intent(in) :: cleaf !kgC m-2
       real(r_8),intent(in) :: sla   !m2 gC-1
       real(r_8) :: lai
 
-
-      lai  = cleaf * 1.0D3 * sla  ! Converts cleaf from (KgC m-2) to (gCm-2)
+      lai  = cleaf * 1.0D3 * (132.0/1D5)  ! Converts cleaf from (KgC m-2) to (gCm-2)
       if(lai .lt. 0.0D0) lai = 0.0D0
 
    end function leaf_area_index
+
+   ! function leaf_area_index(cleaf, spec_leaf, crown_area) result(lai)
+   !    ! Returns Leaf Area Index m2 m-2
+
+   !    use types, only: r_8
+   !    !implicit none
+
+   !    real(r_8),intent(in) :: cleaf !kgC m-2
+   !    real(r_8),intent(in) :: spec_leaf   !m2 gC-1
+   !    real(r_8),intent(in) :: crown_area
+   !    real(r_8) :: lai
+
+   !    lai  = ((cleaf*1.0D3)*(spec_leaf/1D5))/crown_area  ! Converts cleaf from (KgC m-2) to (gCm-2)
+   !    if(lai .lt. 0.0D0) lai = 0.0D0
+
+   ! end function leaf_area_index
 
    !=================================================================
    !=================================================================
@@ -143,6 +162,7 @@ contains
       ! Function used to scale LAI from leaf to canopy level (2 layers)
       use types, only: i_4, r_4, r_8
       use photo_par, only: p26, p27
+      use allometry_par
       !implicit none
 
       integer(i_4),intent(in) :: fs !function mode:
@@ -159,8 +179,10 @@ contains
       real(r_8) :: lai
       real(r_8) :: sunlai
       real(r_8) :: shadelai
+      ! real(r_8) :: crown_area
+      ! real(r_8) :: spec_leaf
 
-      lai = leaf_area_index(cleaf,sla)
+      lai = leaf_area_index(cleaf, sla)
 
       sunlai = (1.0D0-(dexp(-p26*lai)))/p26
       shadelai = lai - sunlai
@@ -1152,6 +1174,39 @@ contains
 
    !====================================================================
    !====================================================================
+
+   function diameter(cawood) result (diam)
+      use types
+      use allometry_par
+
+      real(r_8), intent(in) :: cawood !in Kg/m-2 - the conversion to g/m-2 is made in productivity.f90
+      real(r_8) :: diam
+
+      diam = (4*(cawood*1.0D3)/(dw*1D7)*pi*k_allom2)**(1/(2+k_allom3)) 
+
+   end function diameter
+
+   function crownarea(diam) result (crown_area)
+      use types 
+      use allometry_par
+
+      real(r_8), intent(in) :: diam
+      real(r_8) :: crown_area
+
+      crown_area = k_allom1*(diam**krp)
+
+   end function crownarea
+
+   function tree_height(diam) result (height)
+      use types 
+      use allometry_par
+
+      real(r_8), intent(in) :: diam
+      real(r_8) :: height
+
+      height = k_allom2*(diam**k_allom3)
+
+   end function tree_height
 
 end module photo
 

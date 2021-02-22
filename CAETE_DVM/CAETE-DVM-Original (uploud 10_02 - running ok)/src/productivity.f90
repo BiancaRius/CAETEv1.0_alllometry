@@ -32,6 +32,7 @@ contains
 
     use types
     use global_par
+    use allometry_par
     use photo_par
     use photo
     use water
@@ -82,6 +83,10 @@ contains
 
     real(r_8) :: f1       !Leaf level gross photosynthesis (molCO2/m2/s)
     real(r_8) :: f1a      !auxiliar_f1
+    real(r_8) :: diam1    !test print to diameter function (in m)
+    real(r_8) :: area_crown !test print to crown area function (in m2)
+    real(r_8) :: height_tree !test print to height function (in m)
+    real(r_8) :: LAI_calc !test print to LAI function (in m2 m-2)
 
 !getting pls parameters
 
@@ -101,6 +106,19 @@ contains
     p2cl = p2cl * (cl1_prod * 1D3) ! P in leaf g m-2
 
     c4_int = idnint(c4)
+
+    diam1 = diameter(ca1_prod)
+    !print*, 'diameter =', diam1
+
+    area_crown = crownarea(diam1)
+    !print*, 'crown area =', area_crown
+
+    height_tree = tree_height(diam1)
+    !print*, 'height =', height_tree
+
+    LAI_calc = leaf_area_index(cl1_prod, sla)
+    print*, 'LAI=', LAI_calc
+
 
 
 !     ==============
