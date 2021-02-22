@@ -176,6 +176,7 @@ contains
       real(r_8), dimension(3,npls) :: sto_budg
       real(r_8) :: soil_sat
       real(r_8) :: max_height_tree
+      integer(i_4) :: num_layer
 
       !     START
       !     --------------
@@ -288,13 +289,20 @@ contains
          evap(p) = penman(p0,temp,rh,available_energy(temp),rc2(p)) !Actual evapotranspiration (evap, mm/day)
 
          diam_test(p) = diameter(ca1_pft(ri))
-         print*, 'DIAM [ARRAY] =', diam_test(p)
+         !print*, 'DIAM [ARRAY] =', diam_test(p)
 
          crown_test(p) = crownarea(diam_test(p))
-         print*, 'CROWN [ARRAY] =', crown_test(p)
+         !print*, 'CROWN [ARRAY] =', crown_test(p)
 
          height_test(p) = tree_height(diam_test(p))
-         print*, 'HEIGHT [ARRAY] =', height_test
+         !print*, 'HEIGHT [ARRAY] =', height_test(p)
+
+         max_height_tree = maxval(height_test(:))
+         !print*, 'max=', max_height_tree, p, lp(p)
+
+         num_layer = nint(max_height_tree/5)
+         print*, 'num layer=', num_layer
+
 
          ! Check if the carbon deficit can be compensated by stored carbon
          carbon_in_storage = sto_budg(1, ri)
