@@ -22,7 +22,8 @@ module allocation
     real(REAL64) :: H_updt = 0.0 !heartwood pool update (R year before + delta_heartwood)
     real(REAL64) :: turnover_sap = 0.0 !Sapwood turnover to heartwood (yr-1; Sitch et al 2003)
     real(REAL64) :: turnover_leaf = 0.0 !Leaf turnover (yr-1; Sitch et al 2003) 
-    real(REAL64) :: turnover_root = 0.0 !Root turnover (yr-1; Sitch et al 2003) 
+    real(REAL64) :: turnover_root = 0.0 !Root turnover (yr-1; Sitch et al 2003)
+    real(REAL64) :: funcs_calc_tau1 
     contains
 
     !==============================!
@@ -48,6 +49,9 @@ module allocation
     ! end subroutine show_consts
 
     ! Use the bisection method to solve the leaf mass increment
+
+
+
     subroutine leaf_increment(delta_leaf)
         real(REAL64) :: delta_leaf
 
@@ -194,6 +198,7 @@ module allocation
         real(REAL64) :: tau1
         
         tau1 = k_allom2 ** (2.0 / k_allom3) * 4.0 / 3.14159 / dw
+
     end function calc_tau1
 
     function calc_tau2() result(tau2)
@@ -201,6 +206,7 @@ module allocation
         real(REAL64) :: tau2 
         
         tau2 = 1.0 + 2.0 / k_allom3
+
     end function calc_tau2
 
     function calc_tau3() result(tau3)
@@ -208,6 +214,7 @@ module allocation
         real(REAL64) :: tau3
         
         tau3 = klatosa / dw / spec_leaf
+        print*,tau3
     end function calc_tau3
 
     function sapwood () result (SS)
