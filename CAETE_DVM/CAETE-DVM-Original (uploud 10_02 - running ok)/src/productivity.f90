@@ -87,6 +87,7 @@ contains
     real(r_8) :: area_crown !test print to crown area function (in m2)
     real(r_8) :: height_tree !test print to height function (in m)
     real(r_8) :: LAI_calc !test print to LAI function (in m2 m-2)
+    real(r_8) :: max_height_tree 
 
 !getting pls parameters
 
@@ -107,17 +108,20 @@ contains
 
     c4_int = idnint(c4)
 
-    diam1 = diameter(ca1_prod)
+    ! diam1 = diameter(ca1_prod)
     !print*, 'diameter =', diam1
 
-    area_crown = crownarea(diam1)
-    !print*, 'crown area =', area_crown
+    ! area_crown = crownarea(diam1)
+    ! !print*, 'crown area =', area_crown
 
-    height_tree = tree_height(diam1)
-    !print*, 'height =', height_tree
+    ! height_tree = tree_height(diam1)
+    ! print*, 'height =', height_tree
 
-    LAI_calc = leaf_area_index(cl1_prod, sla)
-    print*, 'LAI=', LAI_calc
+    ! LAI_calc = leaf_area_index(cl1_prod, sla)
+    !print*, 'LAI=', LAI_calc
+
+    ! max_height_tree = maxval(height_tree)
+    ! print*, 'max=', max_height_tree
 
 
 
