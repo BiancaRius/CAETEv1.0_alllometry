@@ -39,6 +39,7 @@ contains
 
 !Input
 !-----
+    integer(i_4), parameter :: npft = npls
     real(r_8),dimension(ntraits),intent(in) :: dt ! PLS data
     real(r_4), intent(in) :: temp, ts                 !Mean monthly temperature (oC)
     real(r_4), intent(in) :: p0                   !Mean surface pressure (hPa)
@@ -88,6 +89,7 @@ contains
     real(r_8) :: height_tree !test print to height function (in m)
     real(r_8) :: LAI_calc !test print to LAI function (in m2 m-2)
     real(r_8) :: max_height_tree 
+    integer(i_4) :: p
 
 !getting pls parameters
 
@@ -107,7 +109,7 @@ contains
     p2cl = p2cl * (cl1_prod * 1D3) ! P in leaf g m-2
 
     c4_int = idnint(c4)
-
+    
     ! diam1 = diameter(ca1_prod)
     !print*, 'diameter =', diam1
 

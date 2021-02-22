@@ -40,7 +40,7 @@ contains
       use productivity
       use omp_lib
 
-      use photo, only: pft_area_frac, sto_resp, diameter
+      use photo, only: pft_area_frac, sto_resp, diameter, crownarea, tree_height
       use water, only: evpot2, penman, available_energy, runoff
 
       !     ----------------------------INPUTS-------------------------------
@@ -132,6 +132,9 @@ contains
       ! real(r_4),dimension(:),allocatable :: roff   !Total runoff
       real(r_4),dimension(:),allocatable :: evap   !Actual evapotranspiration (mm/day)
       !c     Carbon Cycle
+      real(r_4),dimension(:),allocatable :: diam_test
+      real(r_4),dimension(:),allocatable :: crown_test
+      real(r_4),dimension(:),allocatable :: height_test
       real(r_4),dimension(:),allocatable :: ph     !Canopy gross photosynthesis (kgC/m2/yr)
       real(r_4),dimension(:),allocatable :: ar     !Autotrophic respiration (kgC/m2/yr)
       real(r_4),dimension(:),allocatable :: nppa   !Net primary productivity / auxiliar
@@ -172,7 +175,7 @@ contains
       real(r_8), dimension(npls) :: awood_aux, dleaf, dwood, droot, uptk_costs
       real(r_8), dimension(3,npls) :: sto_budg
       real(r_8) :: soil_sat
-      real(r_8) :: diam_test
+      real(r_8) :: max_height_tree
 
       !     START
       !     --------------
@@ -217,6 +220,9 @@ contains
       enddo
 
       allocate(evap(nlen))
+      allocate(diam_test(nlen))
+      allocate(crown_test(nlen))
+      allocate(height_test(nlen))
       allocate(nppa(nlen))
       allocate(ph(nlen))
       allocate(ar(nlen))
@@ -280,6 +286,15 @@ contains
                &, wue(p), c_def(p), vcmax(p), specific_la(p), tra(p))
 
          evap(p) = penman(p0,temp,rh,available_energy(temp),rc2(p)) !Actual evapotranspiration (evap, mm/day)
+
+         diam_test(p) = diameter(ca1_pft(ri))
+         print*, 'DIAM [ARRAY] =', diam_test(p)
+
+         crown_test(p) = crownarea(diam_test(p))
+         print*, 'CROWN [ARRAY] =', crown_test(p)
+
+         height_test(p) = tree_height(diam_test(p))
+         print*, 'HEIGHT [ARRAY] =', height_test
 
          ! Check if the carbon deficit can be compensated by stored carbon
          carbon_in_storage = sto_budg(1, ri)
@@ -567,6 +582,9 @@ contains
       ! deallocate(dw)
       ! deallocate(roff)
       deallocate(evap)
+      deallocate(diam_test)
+      deallocate(crown_test)
+      deallocate(height_test)
       deallocate(nppa)
       deallocate(ph)
       deallocate(ar)

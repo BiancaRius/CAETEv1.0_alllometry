@@ -1175,26 +1175,15 @@ contains
    !====================================================================
    !====================================================================
 
-   function diameter(cawood) result (diam)
+   function diameter (cawood) result (diam)
       use types 
       use allometry_par
-      use global_par, only: npls
+   
+      real(r_8), intent(in) :: cawood !in Kg/m-2 - the conversion to g/m-2 is made in equation below
+      real(r_4) :: diam
 
-      integer(i_4), parameter :: npft = npls
-      integer(i_4) :: p
-      real(r_8), dimension(npft), intent(in) :: cawood !in Kg/m-2 - the conversion to g/m-2 is made in productivity.f90
-      real(r_8), dimension(npft) :: cawood_aux
-      real(r_8), dimension(npft) :: diam
-
-      cawood_aux = cawood
-
-      do p = 1, npft
-         diam(p) = 0.0D0
-      end do
-
-      do p = 1, npft
-         diam(p) = (4*(cawood_aux(p)*1.0D3)/(dw*1D7)*pi*k_allom2)**(1/(2+k_allom3))
-      end do
+      
+      diam = (4*(cawood*1.0D3)/(dw*1D7)*pi*k_allom2)**(1/(2+k_allom3))
 
    end function diameter
 
@@ -1202,7 +1191,7 @@ contains
       use types 
       use allometry_par
 
-      real(r_8), intent(in) :: diam
+      real(r_4), intent(in) :: diam
       real(r_8) :: crown_area
 
       crown_area = k_allom1*(diam**krp)
@@ -1213,7 +1202,7 @@ contains
       use types 
       use allometry_par
 
-      real(r_8), intent(in) :: diam
+      real(r_4), intent(in) :: diam
       real(r_8) :: height
 
       height = k_allom2*(diam**k_allom3)
