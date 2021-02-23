@@ -25,7 +25,11 @@ module budget
 
 contains
 
+<<<<<<< HEAD
    subroutine daily_budget(lat, long, dt, w1, w2, ts, temp, p0, ipar, rh&
+=======
+   subroutine daily_budget(lat,long,dt, w1, w2, ts, temp, p0, ipar, rh&
+>>>>>>> 430f10938972aba576a35d957f59c08c65145438
         &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in, dleaf_in, dwood_in&
         &, droot_in, uptk_costs_in, wmax_in, evavg, epavg, phavg, aravg, nppavg&
         &, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
@@ -57,9 +61,13 @@ contains
       real(r_4),intent(in) :: labile_p             ! solution P O4P  gm-2
       real(r_8),intent(in) :: on, sop, op          ! Organic N, isoluble inorganic P, Organic P g m-2
       real(r_8),intent(in) :: catm, wmax_in                 ! ATM CO2 concentration ppm
+<<<<<<< HEAD
       real(r_8),intent(in) :: lat
       real(r_8),intent(in) :: long
 
+=======
+      real(r_8),intent(in) :: lat,long
+>>>>>>> 430f10938972aba576a35d957f59c08c65145438
 
       real(r_8),dimension(3,npls),intent(in)  :: sto_budg_in ! Rapid Storage Pool (C,N,P)  g m-2
       real(r_8),dimension(npls),intent(in) :: cl1_in  ! initial BIOMASS cleaf compartment kgm-2
@@ -182,7 +190,7 @@ contains
       !     --------------
       !     Grid cell area fraction 0-1
       !     ============================
-
+      print*, 'LAT',lat,'LONG', long
       ! create copies of some input variables (arrays) - ( they are passed by reference by standard)
       do i = 1,npls
          awood_aux(i) = dt(7,i)

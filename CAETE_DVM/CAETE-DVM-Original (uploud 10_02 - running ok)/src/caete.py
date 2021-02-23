@@ -555,6 +555,7 @@ class grd:
         self.wmax_mm = np.float64(
             self.wp_sat_water_upper_mm + self.wp_sat_water_lower_mm)
 
+       
         # start biomass
         self.vp_cleaf, self.vp_croot, self.vp_cwood = m.spinup2(
             1.0, self.pls_table)
@@ -814,7 +815,11 @@ class grd:
                     c += 1
                 ton = self.sp_organic_n + self.sp_sorganic_n
                 top = self.sp_organic_p + self.sp_sorganic_p
+<<<<<<< HEAD
                 out = model.daily_budget(self.x, self.y, self.pls_table, self.wp_water_upper_mm, self.wp_water_lower_mm,
+=======
+                out = model.daily_budget(self.x,self.y,self.pls_table, self.wp_water_upper_mm, self.wp_water_lower_mm,
+>>>>>>> 430f10938972aba576a35d957f59c08c65145438
                                          self.soil_temp, temp[step], p_atm[step],
                                          ipar[step], ru[step], self.sp_available_n, self.sp_available_p,
                                          ton, top, self.sp_organic_p, co2, sto, cleaf, cwood, croot,
@@ -1107,7 +1112,11 @@ class grd:
             co2 += next_year
             self.soil_temp = st.soil_temp(self.soil_temp, temp[step])
 
+<<<<<<< HEAD
             out = model.daily_budget(self.x, self.y, self.pls_table, self.wp_water_upper_mm, self.wp_water_lower_mm,
+=======
+            out = model.daily_budget(self.x,self.y,self.pls_table, self.wp_water_upper_mm, self.wp_water_lower_mm,
+>>>>>>> 430f10938972aba576a35d957f59c08c65145438
                                      self.soil_temp, temp[step], p_atm[step],
                                      ipar[step], ru[step], self.sp_available_n, self.sp_available_p,
                                      self.sp_snc[:4].sum(
