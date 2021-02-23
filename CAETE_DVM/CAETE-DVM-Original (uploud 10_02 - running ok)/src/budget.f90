@@ -25,7 +25,7 @@ module budget
 
 contains
 
-   subroutine daily_budget(dt, w1, w2, ts, temp, p0, ipar, rh&
+   subroutine daily_budget(lat, long, dt, w1, w2, ts, temp, p0, ipar, rh&
         &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in, dleaf_in, dwood_in&
         &, droot_in, uptk_costs_in, wmax_in, evavg, epavg, phavg, aravg, nppavg&
         &, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
@@ -57,6 +57,8 @@ contains
       real(r_4),intent(in) :: labile_p             ! solution P O4P  gm-2
       real(r_8),intent(in) :: on, sop, op          ! Organic N, isoluble inorganic P, Organic P g m-2
       real(r_8),intent(in) :: catm, wmax_in                 ! ATM CO2 concentration ppm
+      real(r_8),intent(in) :: lat
+      real(r_8),intent(in) :: long
 
 
       real(r_8),dimension(3,npls),intent(in)  :: sto_budg_in ! Rapid Storage Pool (C,N,P)  g m-2
@@ -175,8 +177,6 @@ contains
       real(r_8), dimension(npls) :: awood_aux, dleaf, dwood, droot, uptk_costs
       real(r_8), dimension(3,npls) :: sto_budg
       real(r_8) :: soil_sat
-      real(r_8) :: max_height_tree
-      integer(i_4) :: num_layer
 
       !     START
       !     --------------
@@ -279,8 +279,6 @@ contains
          sr = 0.0D0
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
-
-         call light_compet(ca1_pft(ri))
 
          ! GABI hydro
          call prod(dt1, ocp_wood(ri),catm, temp, soil_temp, p0, w, ipar, rh, emax&
@@ -454,6 +452,9 @@ contains
       enddo ! end pls_loop (p)
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
+
+      call light_compet(ca1_pft(ri),cl1_pft(ri))
+      !print*, 'LAT=', lat, 'LONG=', long
 
       ! FILL OUTPUT DATA
       evavg = 0.0D0

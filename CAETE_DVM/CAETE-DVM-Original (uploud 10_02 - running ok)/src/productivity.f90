@@ -84,12 +84,12 @@ contains
 
     real(r_8) :: f1       !Leaf level gross photosynthesis (molCO2/m2/s)
     real(r_8) :: f1a      !auxiliar_f1
-    real(r_8) :: diam1    !test print to diameter function (in m)
-    real(r_8) :: area_crown !test print to crown area function (in m2)
-    real(r_8) :: height_tree !test print to height function (in m)
-    real(r_8) :: LAI_calc !test print to LAI function (in m2 m-2)
-    real(r_8) :: max_height_tree 
-    integer(i_4) :: p
+    ! real(r_8) :: diam1    !test print to diameter function (in m)
+    ! real(r_8) :: area_crown !test print to crown area function (in m2)
+    ! real(r_8) :: height_tree !test print to height function (in m)
+    ! real(r_8) :: LAI_calc !test print to LAI function (in m2 m-2)
+    ! real(r_8) :: max_height_tree 
+    ! integer(i_4) :: p
 
 !getting pls parameters
 
@@ -118,14 +118,6 @@ contains
 
     ! height_tree = tree_height(diam1)
     ! print*, 'height =', height_tree
-
-    ! LAI_calc = leaf_area_index(cl1_prod, sla)
-    !print*, 'LAI=', LAI_calc
-
-    ! max_height_tree = maxval(height_tree)
-    ! print*, 'max=', max_height_tree
-
-
 
 !     ==============
 !     Photosynthesis
@@ -226,17 +218,36 @@ contains
 
   end subroutine prod
 
-  subroutine light_compet(cwood)
-    use types
-    use photo
-    use global_par, only: npls
+    subroutine light_compet(cwood, cleaf)
+        use types
+        use photo
+        use global_par, only: npls
 
-    integer(kind=i_4),parameter :: npft = npls
-    real(r_8),dimension(npft), intent(in) :: cwood
-    real(r_4),dimension(npft) :: diam_aux,crown_aux,height_aux
-    real(r_4) :: max_height
-    integer(kind=i_4) :: p
-  
+        type :: layer_array
+            real(r_8) :: sum_height
+            integer(r_8) :: num_height !!corresponds to the number of pls
+            real(r_8) :: mean_height
+            real(r_8) :: layer_height
+            real :: sum_LAI !LAI sum in a layer
+            real :: mean_LAI !mean LAI in a layer
+            real :: beers_law !layer's light extinction
+            real :: linc !layer's light incidence
+            real :: lused !layer's light used (relates to light extinction - Beers Law)
+            real :: lavai !light availability
+        end type layer_array
+
+        integer(kind=i_4),parameter :: npft = npls
+        real(r_8),dimension(npft), intent(in) :: cwood !C in wood tissues (Kg/m2)
+        real(r_8),dimension(npft), intent(in) :: cleaf !C in leaf (kg/m2)
+        real(r_8),dimension(npft) :: sla 
+        real(r_8),dimension(npft) :: diam_aux, crown_aux, height_aux, lai_aux
+        real(r_8) :: max_height !maximum height in m. in each grid-cell
+        integer(kind=i_4) :: num_layer !number of layers according to max height in each grid-cell
+        real(r_8) :: layer_size !size of each layer in m. in each grid-cell
+        integer(kind=i_4) :: p, i, j
+        integer(kind=i_4) :: last_with_pls
+        type(layer_array), allocatable :: layer(:)
+
 
         do p=1,npft
             diam_aux(p) = diameter(cwood(p))
@@ -245,21 +256,62 @@ contains
 
             height_aux(p) = tree_height(diam_aux(p))
 
-            
+            lai_aux(p) = leaf_area_index(cleaf(p), sla(p))
 
-            !print*,diam_aux(p),crown_aux(p),height_aux(p)
+            !print*,diam_aux(p),crown_aux(p),height_aux(p), lai_aux(p)
         enddo
 
-        do p=1,npft
-            max_height = maxval(height_aux(:))
+        max_height = maxval(height_aux(:))
+        !print*, 'max_height', max_height
+
+        num_layer = nint(max_height/5)
+        !print*, 'num_layer', num_layer
+
+        layer_size = max_height/num_layer
+        !print*, 'layer_size', layer_size
+
+        last_with_pls=num_layer
+
+        allocate(layer(1:num_layer))
+
+        layer(i)%layer_height=0.0D0
+
+        do i=1,num_layer
+            layer(i)%layer_height=layer_size*i
+            !print*, 'layer_height',layer(i)%layer_height, i
         enddo
 
-            print*, max_height
+        layer(i)%num_height=0.0D0
+        layer(i)%sum_height=0.0D0
+        layer(i)%mean_height=0.0D0
+        layer(i)%sum_LAI=0.0D0
     
+        do i=1, num_layer
+            do j=1,npft
+                
+                if ((layer(i)%layer_height .ge. height_aux(j)).and.&
+                    &(layer(i-1)%layer_height .lt. height_aux(j))) then
+    
+                    layer(i)%sum_height=&
+                    &layer(i)%sum_height + height_aux(j)
+                    !print*, 'sum_height =', layer(i)%sum_height
+    
+                    layer(i)%num_height=&
+                    &layer(i)%num_height+1
+                    !print*, 'num_height=', layer(i)%num_height
+    
+                    layer(i)%sum_LAI =&
+                    &layer(i)%sum_LAI + lai_aux(j)
+                    !print*, 'sum_LAI =', layer(i)%sum_LAI
+    
+                endif
+            enddo
+            
+        enddo
 
-    ! max_height = maxval(height_aux)
+     ! max_height = maxval(height_aux)
 
  
-  end subroutine light_compet
+    end subroutine light_compet
 
 end module productivity

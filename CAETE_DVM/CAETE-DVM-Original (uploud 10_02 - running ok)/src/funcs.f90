@@ -1180,29 +1180,35 @@ contains
       use allometry_par
    
       real(r_8), intent(in) :: cawood !in Kg/m-2 - the conversion to g/m-2 is made in equation below
-      real(r_4) :: diam
+      real(r_8) :: diam
 
       
       diam = (4*(cawood*1.0D3)/(dw*1D7)*pi*k_allom2)**(1/(2+k_allom3))
 
    end function diameter
 
+   !====================================================================
+   !====================================================================
+
    function crownarea(diam) result (crown_area)
       use types 
       use allometry_par
 
-      real(r_4), intent(in) :: diam
+      real(r_8), intent(in) :: diam
       real(r_8) :: crown_area
 
       crown_area = k_allom1*(diam**krp)
 
    end function crownarea
 
+   !====================================================================
+   !====================================================================
+
    function tree_height(diam) result (height)
       use types 
       use allometry_par
 
-      real(r_4), intent(in) :: diam
+      real(r_8), intent(in) :: diam
       real(r_8) :: height
 
       height = k_allom2*(diam**k_allom3)
