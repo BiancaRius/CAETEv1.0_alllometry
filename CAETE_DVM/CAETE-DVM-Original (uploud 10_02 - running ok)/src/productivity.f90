@@ -250,11 +250,13 @@ contains
             !print*,diam_aux(p),crown_aux(p),height_aux(p)
         enddo
 
-        do p=1,npft
+     
             max_height = maxval(height_aux(:))
-        enddo
-
             print*, max_height
+            
+       
+
+            
     
 
     ! max_height = maxval(height_aux)
