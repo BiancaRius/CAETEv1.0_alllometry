@@ -262,13 +262,13 @@ contains
         enddo
 
         max_height = maxval(height_aux(:))
-        !print*, 'max_height', max_height
+        print*, 'max_height', max_height
 
         num_layer = nint(max_height/5)
-        !print*, 'num_layer', num_layer
+        print*, 'num_layer', num_layer
 
         layer_size = max_height/num_layer
-        !print*, 'layer_size', layer_size
+        print*, 'layer_size', layer_size
 
         last_with_pls=num_layer
 
@@ -281,11 +281,13 @@ contains
             !print*, 'layer_height',layer(i)%layer_height, i
         enddo
 
-        layer(i)%num_height=0.0D0
-        layer(i)%sum_height=0.0D0
-        layer(i)%mean_height=0.0D0
-        layer(i)%sum_LAI=0.0D0
-    
+        do i=1,num_layer
+            layer(i)%num_height=0.0D0
+            layer(i)%sum_height=0.0D0
+            layer(i)%mean_height=0.0D0
+            layer(i)%sum_LAI=0.0D0
+        enddo
+        
         do i=1, num_layer
             do j=1,npft
                 
@@ -294,15 +296,15 @@ contains
     
                     layer(i)%sum_height=&
                     &layer(i)%sum_height + height_aux(j)
-                    !print*, 'sum_height =', layer(i)%sum_height
+                    print*, 'sum_height =', layer(i)%sum_height
     
                     layer(i)%num_height=&
                     &layer(i)%num_height+1
-                    !print*, 'num_height=', layer(i)%num_height
+                    print*, 'num_height=', layer(i)%num_height
     
                     layer(i)%sum_LAI =&
                     &layer(i)%sum_LAI + lai_aux(j)
-                    !print*, 'sum_LAI =', layer(i)%sum_LAI
+                    print*, 'sum_LAI =', layer(i)%sum_LAI
     
                 endif
             enddo
