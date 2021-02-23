@@ -261,7 +261,6 @@ contains
             !print*,diam_aux(p),crown_aux(p),height_aux(p), lai_aux(p)
         enddo
 
-<<<<<<< HEAD
         max_height = maxval(height_aux(:))
         !print*, 'max_height', max_height
 
@@ -292,15 +291,6 @@ contains
                 
                 if ((layer(i)%layer_height .ge. height_aux(j)).and.&
                     &(layer(i-1)%layer_height .lt. height_aux(j))) then
-=======
-     
-            max_height = maxval(height_aux(:))
-            print*, max_height
-            
-       
-
-            
->>>>>>> 430f10938972aba576a35d957f59c08c65145438
     
                     layer(i)%sum_height=&
                     &layer(i)%sum_height + height_aux(j)
@@ -319,9 +309,6 @@ contains
             
         enddo
 
-     ! max_height = maxval(height_aux)
-
- 
     end subroutine light_compet
 
 end module productivity
