@@ -224,10 +224,10 @@ contains
         use global_par, only: npls
 
         type :: layer_array
-            real(r_8) :: sum_height
-            integer(r_8) :: num_height !!corresponds to the number of pls
-            real(r_8) :: mean_height
-            real(r_8) :: layer_height
+            real :: sum_height
+            integer :: num_height !!corresponds to the number of pls
+            real :: mean_height
+            real :: layer_height
             real :: sum_LAI !LAI sum in a layer
             real :: mean_LAI !mean LAI in a layer
             real :: beers_law !layer's light extinction
@@ -262,13 +262,13 @@ contains
         enddo
 
         max_height = maxval(height_aux(:))
-        print*, 'max_height', max_height
+        !print*, 'max_height', max_height
 
         num_layer = nint(max_height/5)
-        print*, 'num_layer', num_layer
+        !print*, 'num_layer', num_layer
 
         layer_size = max_height/num_layer
-        print*, 'layer_size', layer_size
+        !print*, 'layer_size', layer_size
 
         last_with_pls=num_layer
 
@@ -289,6 +289,7 @@ contains
         enddo
         
         do i=1, num_layer
+
             do j=1,npft
                 
                 if ((layer(i)%layer_height .ge. height_aux(j)).and.&
@@ -296,18 +297,36 @@ contains
     
                     layer(i)%sum_height=&
                     &layer(i)%sum_height + height_aux(j)
-                    print*, 'sum_height =', layer(i)%sum_height
+                    !print*, 'sum_height =', layer(i)%sum_height
     
                     layer(i)%num_height=&
                     &layer(i)%num_height+1
-                    print*, 'num_height=', layer(i)%num_height
+                    !print*, 'num_height=', layer(i)%num_height
     
-                    layer(i)%sum_LAI =&
+                    layer(i)%sum_LAI=&
                     &layer(i)%sum_LAI + lai_aux(j)
-                    print*, 'sum_LAI =', layer(i)%sum_LAI
+                    !print*, 'sum_LAI =', layer(i)%sum_LAI
     
                 endif
             enddo
+
+            layer(i)%mean_height=layer(i)%sum_height/&
+            &layer(i)%num_height
+
+            if(layer(i)%sum_height.eq.0.0D0) then
+                layer(i)%mean_height=0.0D0
+            endif
+
+            layer(i)%mean_LAI=layer(i)%sum_LAI/&
+            &layer(i)%num_height
+
+            if(layer(i)%sum_LAI.eq.0.0D0) then
+                layer(i)%mean_LAI=0.0D0
+            end if
+
+            ! print*,'lyr',i,'mean_height',&
+            ! &layer(i)%mean_height,'lai',&
+            ! &layer(i)%mean_LAI
             
         enddo
 

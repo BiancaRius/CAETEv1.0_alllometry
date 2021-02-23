@@ -181,8 +181,9 @@ contains
       !     START
       !     --------------
       !     Grid cell area fraction 0-1
-      !     ============================
-      print*, 'LAT',lat,'LONG', long
+      !     ============================]
+
+      
       ! create copies of some input variables (arrays) - ( they are passed by reference by standard)
       do i = 1,npls
          awood_aux(i) = dt(7,i)
@@ -453,8 +454,8 @@ contains
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
 
-      call light_compet(ca1_pft(ri),cl1_pft(ri))
-      !print*, 'LAT=', lat, 'LONG=', long
+      call light_compet(ca1_pft(ri), cl1_pft(ri))
+      print*, 'LAT=', lat, 'LONG=', long
 
       ! FILL OUTPUT DATA
       evavg = 0.0D0
