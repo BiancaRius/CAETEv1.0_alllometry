@@ -280,6 +280,8 @@ contains
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
 
+         call light_compet(ca1_pft(ri))
+
          ! GABI hydro
          call prod(dt1, ocp_wood(ri),catm, temp, soil_temp, p0, w, ipar, rh, emax&
                &, cl1_pft(ri), ca1_pft(ri), cf1_pft(ri), dleaf(ri), dwood(ri), droot(ri)&
@@ -288,20 +290,20 @@ contains
 
          evap(p) = penman(p0,temp,rh,available_energy(temp),rc2(p)) !Actual evapotranspiration (evap, mm/day)
 
-         diam_test(p) = diameter(ca1_pft(ri))
-         !print*, 'DIAM [ARRAY] =', diam_test(p)
+         ! diam_test(p) = diameter(ca1_pft(ri))
+         ! !print*, 'DIAM [ARRAY] =', diam_test(p)
 
-         crown_test(p) = crownarea(diam_test(p))
-         !print*, 'CROWN [ARRAY] =', crown_test(p)
+         ! crown_test(p) = crownarea(diam_test(p))
+         ! !print*, 'CROWN [ARRAY] =', crown_test(p)
 
-         height_test(p) = tree_height(diam_test(p))
-         !print*, 'HEIGHT [ARRAY] =', height_test(p)
+         ! height_test(p) = tree_height(diam_test(p))
+         ! !print*, 'HEIGHT [ARRAY] =', height_test(p)
 
-         max_height_tree = maxval(height_test(:))
-         !print*, 'max=', max_height_tree, p, lp(p)
+         ! max_height_tree = maxval(height_test(:))
+         ! !print*, 'max=', max_height_tree, p, lp(p)
 
-         num_layer = nint(max_height_tree/5)
-         print*, 'num layer=', num_layer
+         ! num_layer = nint(max_height_tree/5)
+         ! print*, 'num layer=', num_layer
 
 
          ! Check if the carbon deficit can be compensated by stored carbon

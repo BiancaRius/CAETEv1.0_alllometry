@@ -21,7 +21,7 @@ module productivity
   implicit none
   private
 
-  public :: prod
+  public :: prod,light_compet
 
 
 contains
@@ -225,5 +225,41 @@ contains
     endif
 
   end subroutine prod
+
+  subroutine light_compet(cwood)
+    use types
+    use photo
+    use global_par, only: npls
+
+    integer(kind=i_4),parameter :: npft = npls
+    real(r_8),dimension(npft), intent(in) :: cwood
+    real(r_4),dimension(npft) :: diam_aux,crown_aux,height_aux
+    real(r_4) :: max_height
+    integer(kind=i_4) :: p
+  
+
+        do p=1,npft
+            diam_aux(p) = diameter(cwood(p))
+
+            crown_aux(p) = crownarea(diam_aux(p))
+
+            height_aux(p) = tree_height(diam_aux(p))
+
+            
+
+            !print*,diam_aux(p),crown_aux(p),height_aux(p)
+        enddo
+
+        do p=1,npft
+            max_height = maxval(height_aux(:))
+        enddo
+
+            print*, max_height
+    
+
+    ! max_height = maxval(height_aux)
+
+ 
+  end subroutine light_compet
 
 end module productivity
