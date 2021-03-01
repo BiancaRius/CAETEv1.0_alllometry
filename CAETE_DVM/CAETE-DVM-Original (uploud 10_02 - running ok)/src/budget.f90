@@ -198,6 +198,8 @@ contains
 
       type(layer_array), allocatable :: layer(:)
 
+      real(r_8) :: higher_layer
+
       !     START
       !     --------------
       !     Grid cell area fraction 0-1
@@ -475,7 +477,7 @@ contains
          crown_aux(p) = crownarea(diam_aux(p))
 
          !PLS HEIGHT (in m.) -----------------------------
-         height_aux(p) = (tree_height(diam_aux(p)))/2
+         height_aux(p) = (tree_height(diam_aux(p)))
 
          !LEAF AREA INDEX (in m2/m-2) --------------------
          lai_aux(p) = (leaf_area_index(cl2(p), specific_la(p)))/10
@@ -588,30 +590,53 @@ contains
          enddo
       enddo
 
+      higher_layer = 0.D0
+
       do n = num_layer, 1, -1
          do p = 1, nlen
-            ! if ((n .eq. num_layer .and. layer(n)%layer_height .ge. height_aux(p)).and.&
-            ! &(layer(n-1)%layer_height .lt. height_aux(p))) then
-            if (n .eq. num_layer) then
-               if (height_aux(p) .le. layer(n)%layer_height&
-               & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
+          if (n.eq.num_layer) then
+            layer(n)%layer_id = num_layer
+            if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
+               pls_id(p)=layer(n)%layer_id
+               !print*, pls_id(p),n
+            endif
+          else
+            layer(n)%layer_id = layer(n+1)%layer_id - 1
+            if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
+             pls_id(p) =  layer(n)%layer_id
+             print*, 'não é a primeira camada XXXXXXXXXX',pls_id(p)
+            endif 
+            print*,'lyr id', layer(n)%layer_id
+          endif
+          print*,'num_layer',num_layer, 'last with pls', last_with_pls
+         enddo   
+      enddo
 
-                  layer(n)%layer_id = num_layer
-                  pls_id(p) = layer(n)%layer_id
-               end if
-            else 
+
+      ! do n = num_layer, 1, -1
+      !    do p = 1, nlen
+      !       ! if ((n .eq. num_layer .and. layer(n)%layer_height .ge. height_aux(p)).and.&
+      !       ! &(layer(n-1)%layer_height .lt. height_aux(p))) then
+      !       if (n .eq. num_layer) then
+      !          if (height_aux(p) .le. layer(n)%layer_height&
+      !          & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
+
+      !             layer(n)%layer_id = num_layer
+      !             pls_id(p) = layer(n)%layer_id
+      !          end if
+      !       else 
                ! if (height_aux(p) .le. layer(n)%layer_height&
                ! & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
 
                   ! layer(n)%layer_id = (layer(n-1)%layer_id)-1
-               print*, 'height=', height_aux(p), 'layer=', layer(n)%layer_height,&
-               & 'n-1=', layer(n-1)%layer_height
-               !end if
-            end if
-         enddo
-         !print*, 'LAYER_ID=', layer(n)%layer_id, num_layer, n
-         !print*, 'num layer', n, n-1, n+1
-      enddo
+      !          print*, 'height=', height_aux(p), 'layer=', layer(n)%layer_height,&
+      !          & 'n-1=', layer(n-1)%layer_height
+      !          !end if
+      !       end if
+      !    enddo
+      !    !print*, 'LAYER_ID=', layer(n)%layer_id, num_layer, n
+      !    !print*, 'num layer', n, n-1, n+1
+      ! enddo
 
       ! do n = num_layer,1,-1
       !    do p = 1, nlen
