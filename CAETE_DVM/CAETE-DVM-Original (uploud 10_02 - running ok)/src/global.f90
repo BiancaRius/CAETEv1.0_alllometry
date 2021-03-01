@@ -45,7 +45,7 @@ module global_par
    real(r_8),parameter,public :: gm = 3.26D0 * 86400D0           ! (*86400 transform s/mm to dia/mm)
    real(r_8),parameter,public :: sapwood = 0.05D0                ! Fraction of wood tissues that are sapwood
    real(r_4),parameter,public :: ks = 0.25                       ! P Sorption
-   integer(i_4),parameter,public :: npls =   20                 ! Number of Plant Life Strategies-PLSs simulated (Defined at compile time)
+   integer(i_4),parameter,public :: npls =   20                  ! Number of Plant Life Strategies-PLSs simulated (Defined at compile time)
    integer(i_4),parameter,public :: ntraits = 17                 ! Number of traits for each PLS
 
 end module global_par
@@ -107,3 +107,4 @@ module allometry_par
          turnover_rate_sapwood = 0.05  ,&       !fix value for allometry/allocation calculus (Table1, Sitch et al., 2003)
          turnover_rate = 0.5                !fix value for leaf and root turnover (Table 1, Sitch et al., 2003)
 end module allometry_par
+

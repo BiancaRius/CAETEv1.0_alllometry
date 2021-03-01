@@ -25,7 +25,7 @@ module budget
 
 contains
 
-   subroutine daily_budget(lat, long, dt, w1, w2, ts, temp, p0, ipar, rh&
+   subroutine daily_budget(dt, w1, w2, ts, temp, p0, ipar, rh&
         &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in, dleaf_in, dwood_in&
         &, droot_in, uptk_costs_in, wmax_in, evavg, epavg, phavg, aravg, nppavg&
         &, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
@@ -40,7 +40,7 @@ contains
       use productivity
       use omp_lib
 
-      use photo, only: pft_area_frac, sto_resp, diameter, crownarea, tree_height
+      use photo, only: pft_area_frac, sto_resp, diameter, crownarea, tree_height, leaf_area_index
       use water, only: evpot2, penman, available_energy, runoff
 
       !     ----------------------------INPUTS-------------------------------
@@ -56,9 +56,7 @@ contains
       real(r_4),intent(in) :: mineral_n            ! Solution N NOx/NaOH gm-2
       real(r_4),intent(in) :: labile_p             ! solution P O4P  gm-2
       real(r_8),intent(in) :: on, sop, op          ! Organic N, isoluble inorganic P, Organic P g m-2
-      real(r_8),intent(in) :: catm, wmax_in                 ! ATM CO2 concentration ppm
-      real(r_8),intent(in) :: lat
-      real(r_8),intent(in) :: long
+      real(r_8),intent(in) :: catm, wmax_in        ! ATM CO2 concentration ppm
 
 
       real(r_8),dimension(3,npls),intent(in)  :: sto_budg_in ! Rapid Storage Pool (C,N,P)  g m-2
@@ -107,7 +105,7 @@ contains
       real(r_8),dimension(3),intent(out) :: cp
 
       !     -----------------------Internal Variables------------------------
-      integer(i_4) :: p, counter, nlen, ri, i, j
+      integer(i_4) :: p, counter, nlen, ri, i, j, n
       real(r_8),dimension(ntraits) :: dt1 ! Store one PLS attributes array (1D)
       real(r_8) :: carbon_in_storage
       real(r_8) :: testcdef
@@ -134,9 +132,6 @@ contains
       ! real(r_4),dimension(:),allocatable :: roff   !Total runoff
       real(r_4),dimension(:),allocatable :: evap   !Actual evapotranspiration (mm/day)
       !c     Carbon Cycle
-      real(r_4),dimension(:),allocatable :: diam_test
-      real(r_4),dimension(:),allocatable :: crown_test
-      real(r_4),dimension(:),allocatable :: height_test
       real(r_4),dimension(:),allocatable :: ph     !Canopy gross photosynthesis (kgC/m2/yr)
       real(r_4),dimension(:),allocatable :: ar     !Autotrophic respiration (kgC/m2/yr)
       real(r_4),dimension(:),allocatable :: nppa   !Net primary productivity / auxiliar
@@ -176,13 +171,37 @@ contains
 
       real(r_8), dimension(npls) :: awood_aux, dleaf, dwood, droot, uptk_costs
       real(r_8), dimension(3,npls) :: sto_budg
+      real(r_8),dimension(npls) :: diam_aux, crown_aux, height_aux, lai_aux
+      real(r_8) :: max_height !maximum height in m. in each grid-cell
+      integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
+      real(r_8) :: layer_size !size of each layer in m. in each grid-cell
+      integer(i_4) :: last_with_pls
+      real(r_8) :: APAR !absorved photosynthetic active radiation (j/m-2/s-1)
+      integer(i_4), dimension(npls) :: pls_id !identify layers and PLS to light competition dynamic.
       real(r_8) :: soil_sat
+
+      ! Layers dynamic to light competition ----------------------------------------------
+
+      type :: layer_array
+         real(r_8) :: sum_height
+         integer(i_4) :: num_height !!corresponds to the number of layers according max height of PLS.
+         real(r_8) :: mean_height !Mean of heights in a layer
+         real(r_8) :: layer_height !Height of respective layer of the floor (in m.)
+         real(r_8) :: sum_LAI !LAI sum in a layer
+         real(r_8) :: mean_LAI !mean LAI in a layer
+         real(r_8) :: beers_law !layer's light extinction
+         real(r_8) :: linc !layer's light incidence
+         real(r_8) :: lused !layer's light used (relates to light extinction - Beers Law)
+         real(r_8) :: lavai !light availability
+         integer(i_4) :: layer_id !identify layers
+      end type layer_array
+
+      type(layer_array), allocatable :: layer(:)
 
       !     START
       !     --------------
       !     Grid cell area fraction 0-1
-      !     ============================]
-
+      !     ============================
 
       ! create copies of some input variables (arrays) - ( they are passed by reference by standard)
       do i = 1,npls
@@ -197,12 +216,14 @@ contains
          do j = 1,3
             sto_budg(j,i) = sto_budg_in(j,i)
          enddo
-         !print*, 'cl1 todos=', cl1_pft(i), i
+	      !print*, 'cl1 todos=', cl1_pft(i), i
       enddo
 
       w = w1 + w2          ! soil water mm
       soil_temp = ts   ! soil temp °C
       soil_sat = wmax_in
+
+      !print*, 'IPAR=', ipar
 
       call pft_area_frac(cl1_pft, cf1_pft, ca1_pft, awood_aux,&
       &                  ocpavg, ocp_wood, run, ocp_mm)
@@ -222,9 +243,6 @@ contains
       enddo
 
       allocate(evap(nlen))
-      allocate(diam_test(nlen))
-      allocate(crown_test(nlen))
-      allocate(height_test(nlen))
       allocate(nppa(nlen))
       allocate(ph(nlen))
       allocate(ar(nlen))
@@ -266,8 +284,7 @@ contains
       soil_temp = ts
 
       !     Productivity & Growth (ph, ALLOCATION, aresp, vpd, rc2 & etc.) for each PLS
-      !     ====================
-
+      !     =====================
       call OMP_SET_NUM_THREADS(2)
 
       !$OMP PARALLEL DO &
@@ -281,8 +298,9 @@ contains
          sr = 0.0D0
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
-
-         !print*, 'cl1 vivos=', cl1_pft(ri)
+	
+	      !print*, 'cl1 vivos=', cl1_pft(ri), ri
+         !print*, 'nlen=', p
 
          ! GABI hydro
          call prod(dt1, ocp_wood(ri),catm, temp, soil_temp, p0, w, ipar, rh, emax&
@@ -291,22 +309,6 @@ contains
                &, wue(p), c_def(p), vcmax(p), specific_la(p), tra(p))
 
          evap(p) = penman(p0,temp,rh,available_energy(temp),rc2(p)) !Actual evapotranspiration (evap, mm/day)
-
-         ! diam_test(p) = diameter(ca1_pft(ri))
-         ! !print*, 'DIAM [ARRAY] =', diam_test(p)
-
-         ! crown_test(p) = crownarea(diam_test(p))
-         ! !print*, 'CROWN [ARRAY] =', crown_test(p)
-
-         ! height_test(p) = tree_height(diam_test(p))
-         ! !print*, 'HEIGHT [ARRAY] =', height_test(p)
-
-         ! max_height_tree = maxval(height_test(:))
-         ! !print*, 'max=', max_height_tree, p, lp(p)
-
-         ! num_layer = nint(max_height_tree/5)
-         ! print*, 'num layer=', num_layer
-
 
          ! Check if the carbon deficit can be compensated by stored carbon
          carbon_in_storage = sto_budg(1, ri)
@@ -457,8 +459,176 @@ contains
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
 
-      print*, 'LAT=', lat, 'LONG=', long
-      call light_compet(ca2(p), cl2(p))
+      ! ---------------------- START --------------------------!
+
+      do p = 1,nlen
+         ! =========================================
+         !       LIGHT COMPETITION DYNAMIC.
+         ! =========================================
+
+         ! - Allometric equations relates to PLS survives -
+            
+         !DIAMETER (in m.) -------------------------------
+         diam_aux(p) = diameter(ca2(p))
+
+         !CROWN AREA (in m2.) ----------------------------
+         crown_aux(p) = crownarea(diam_aux(p))
+
+         !PLS HEIGHT (in m.) -----------------------------
+         height_aux(p) = (tree_height(diam_aux(p)))/2
+
+         !LEAF AREA INDEX (in m2/m-2) --------------------
+         lai_aux(p) = (leaf_area_index(cl2(p), specific_la(p)))/10
+      end do
+
+      ! =================================================
+      !       LIGHT COMPETITION DYNAMIC. [LAYERS]
+      ! =================================================
+
+      max_height = maxval(height_aux(:))
+
+      num_layer = nint(max_height/5)
+
+      allocate(layer(1:num_layer))
+
+      layer_size = max_height/num_layer !length from one layer to another
+
+      last_with_pls=num_layer
+
+      do n = 1,num_layer
+         layer(n)%layer_height = 0.0D0
+
+         layer(n)%layer_height=layer_size*n
+      end do
+
+      do n = 1, num_layer
+
+         !Inicialize variables about layers dynamics
+
+         layer(n)%num_height = 0.0D0
+         layer(n)%sum_height = 0.0D0
+         layer(n)%mean_height = 0.0D0
+         layer(n)%sum_LAI = 0.0D0
+
+         do p = 1,nlen
+                
+            if ((layer(n)%layer_height .ge. height_aux(p)).and.&
+               &(layer(n-1)%layer_height .lt. height_aux(p))) then
+                  
+               layer(n)%sum_height=&
+               &layer(n)%sum_height + height_aux(p)
+
+               layer(n)%num_height=&
+               &layer(n)%num_height+1
+
+               layer(n)%sum_LAI=&    
+               &layer(n)%sum_LAI + lai_aux(p)
+            end if
+         end do
+
+         layer(n)%mean_height = layer(n)%sum_height/&
+         &layer(n)%num_height
+
+         if(layer(n)%sum_height .eq. 0.0D0) then
+            layer(n)%mean_height = 0.0D0
+         endif
+
+         layer(n)%mean_LAI=layer(n)%sum_LAI/&
+         &layer(n)%num_height
+
+         if(layer(n)%sum_LAI .eq. 0.0D0) then
+            layer(n)%mean_LAI = 0.0D0
+         end if
+      end do
+
+      ! ======================================================
+      !       LIGHT COMPETITION DYNAMIC. [EXTINCTION LIGHT]
+      ! ======================================================
+
+      do n = 1, num_layer
+         layer(n)%linc = 0.0D0
+         layer(n)%lavai = 0.0D0
+         layer(n)%lused = 0.0D0
+      enddo
+
+      APAR = ipar 
+
+      !=================== Beer's Law ========================
+      do n = num_layer,1,-1
+         layer(n)%beers_law = APAR*&
+         &(1-exp(-0.5*layer(n)%mean_LAI))
+      enddo
+      !=======================================================
+
+      ! ======================================================
+      !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
+      ! ======================================================
+
+      do n = num_layer,1,-1   !VIRARIA UMA FUNÇÃO
+         if(n.eq.num_layer) then
+            layer(n)%linc = APAR
+         else
+            if(layer(n)%mean_height.gt.0.0D0) then
+               layer(n)%linc = layer(last_with_pls)%lavai
+               last_with_pls=n
+            else
+               continue
+            endif
+         endif
+         layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
+         layer(n)%lavai = layer(n)%linc - layer(n)%lused
+      enddo
+
+      ! Identifying the layers and allocate each PLS.
+
+      do n = 1, num_layer
+         do p = 1, nlen
+            layer(n)%layer_id = 0.0D0
+            pls_id(p) = 0.0D0
+         enddo
+      enddo
+
+      do n = num_layer, 1, -1
+         do p = 1, nlen
+            ! if ((n .eq. num_layer .and. layer(n)%layer_height .ge. height_aux(p)).and.&
+            ! &(layer(n-1)%layer_height .lt. height_aux(p))) then
+            if (n .eq. num_layer) then
+               if (height_aux(p) .le. layer(n)%layer_height&
+               & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
+
+                  layer(n)%layer_id = num_layer
+                  pls_id(p) = layer(n)%layer_id
+               end if
+            else 
+               ! if (height_aux(p) .le. layer(n)%layer_height&
+               ! & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
+
+                  ! layer(n)%layer_id = (layer(n-1)%layer_id)-1
+               print*, 'height=', height_aux(p), 'layer=', layer(n)%layer_height,&
+               & 'n-1=', layer(n-1)%layer_height
+               !end if
+            end if
+         enddo
+         !print*, 'LAYER_ID=', layer(n)%layer_id, num_layer, n
+         !print*, 'num layer', n, n-1, n+1
+      enddo
+
+      ! do n = num_layer,1,-1
+      !    do p = 1, nlen
+            ! if (n .eq. num_layer .and. height_aux(p) .le. layer(n)%layer_height&
+            ! & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
+      !          layer(n)%layer_id = num_layer
+      !          pls_id(p) = layer(n)%layer_id
+      !       else
+      !          layer(n)%layer_id = layer(n-1)%layer_id-1
+
+      !          print*, 'LAYER_ID=', layer(n)%layer_id,&
+      !          &'PLS_ID=', pls_id(p)
+      !       endif
+      !    enddo
+      ! enddo
+
+      ! ---------------------- END --------------------------!
 
       ! FILL OUTPUT DATA
       evavg = 0.0D0
@@ -597,9 +767,6 @@ contains
       ! deallocate(dw)
       ! deallocate(roff)
       deallocate(evap)
-      deallocate(diam_test)
-      deallocate(crown_test)
-      deallocate(height_test)
       deallocate(nppa)
       deallocate(ph)
       deallocate(ar)

@@ -49,7 +49,7 @@ module photo
         leap                   ,&
         diameter               ,&
         crownarea              ,&
-        tree_height
+        tree_height            
 
 contains
 
@@ -102,33 +102,19 @@ contains
       ! Returns Leaf Area Index m2 m-2
 
       use types, only: r_8
-      use allometry_par
       !implicit none
 
       real(r_8),intent(in) :: cleaf !kgC m-2
       real(r_8),intent(in) :: sla   !m2 gC-1
       real(r_8) :: lai
 
-      lai  = cleaf * 1.0D3 * (132.0/1D5)  ! Converts cleaf from (KgC m-2) to (gCm-2)
+
+      lai  = (cleaf * 1.0D3) * sla  ! Converts cleaf from (KgC m-2) to (gCm-2)
       if(lai .lt. 0.0D0) lai = 0.0D0
 
+      !print*, 'LAI_Funcs=', lai, 'cleaf=', cleaf, 'sla_funcs=', sla
+
    end function leaf_area_index
-
-   ! function leaf_area_index(cleaf, spec_leaf, crown_area) result(lai)
-   !    ! Returns Leaf Area Index m2 m-2
-
-   !    use types, only: r_8
-   !    !implicit none
-
-   !    real(r_8),intent(in) :: cleaf !kgC m-2
-   !    real(r_8),intent(in) :: spec_leaf   !m2 gC-1
-   !    real(r_8),intent(in) :: crown_area
-   !    real(r_8) :: lai
-
-   !    lai  = ((cleaf*1.0D3)*(spec_leaf/1D5))/crown_area  ! Converts cleaf from (KgC m-2) to (gCm-2)
-   !    if(lai .lt. 0.0D0) lai = 0.0D0
-
-   ! end function leaf_area_index
 
    !=================================================================
    !=================================================================
@@ -153,6 +139,8 @@ contains
 
       ! sla = (3e-2 * (365.0/leaf_turnover)**(-1.02))
       sla = (3D-2 * (365.2420D0/leaf_turnover)**(-0.460D0))
+
+      !print*, 'sla-function=', sla
    end function spec_leaf_area
 
    !=================================================================
@@ -162,7 +150,6 @@ contains
       ! Function used to scale LAI from leaf to canopy level (2 layers)
       use types, only: i_4, r_4, r_8
       use photo_par, only: p26, p27
-      use allometry_par
       !implicit none
 
       integer(i_4),intent(in) :: fs !function mode:
@@ -179,10 +166,8 @@ contains
       real(r_8) :: lai
       real(r_8) :: sunlai
       real(r_8) :: shadelai
-      ! real(r_8) :: crown_area
-      ! real(r_8) :: spec_leaf
 
-      lai = leaf_area_index(cleaf, sla)
+      lai = leaf_area_index(cleaf,sla)
 
       sunlai = (1.0D0-(dexp(-p26*lai)))/p26
       shadelai = lai - sunlai
@@ -1214,6 +1199,9 @@ contains
       height = k_allom2*(diam**k_allom3)
 
    end function tree_height
+
+   !====================================================================
+   !====================================================================
 
 end module photo
 
