@@ -178,7 +178,7 @@ contains
       integer(i_4) :: last_with_pls
       real(r_8) :: APAR !absorved photosynthetic active radiation (j/m-2/s-1)
       integer(i_4), dimension(npls) :: pls_id !identify layers and PLS to light competition dynamic.
-      real(r_8), dimension(npls) :: ll 
+      real(r_4), dimension(npls) :: ll 
       real(r_8) :: soil_sat
 
       ! Layers dynamic to light competition ----------------------------------------------
@@ -558,7 +558,7 @@ contains
 
       !=================== Beer's Law ========================
       do n = num_layer,1,-1
-         layer(n)%beers_law = APAR*&
+         layer(n)%beers_law = ipar*&
          &(1-exp(-0.5*layer(n)%mean_LAI))
       enddo
       !=======================================================
@@ -569,7 +569,7 @@ contains
 
       do n = num_layer,1,-1   !VIRARIA UMA FUNÇÃO
          if(n.eq.num_layer) then
-            layer(n)%linc = APAR
+            layer(n)%linc = ipar
          else
             if(layer(n)%mean_height.gt.0.0D0) then
                layer(n)%linc = layer(last_with_pls)%lavai
@@ -583,7 +583,11 @@ contains
          !print*, 'light avaialable', layer(n)%lavai
       enddo
 
-      ! Identifying the layers and allocate each PLS.
+      ! ======================================================
+      !    LIGHT COMPET. PHOTOSYNTHESIS PUNISHMENT & ID 
+      ! ======================================================
+
+      ! Identifying the layers and allocate each PLS to punishment photosyntesis.
 
       do n = 1, num_layer
          do p = 1, nlen
@@ -598,45 +602,45 @@ contains
                layer(n)%layer_id = num_layer
                if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
                   pls_id(p)=layer(n)%layer_id
+                  ll(p) = ipar
+                  print*, 'no limitation', ll(p), 'ipar', ipar
                endif
             else
-               layer(n)%layer_id = layer(n+1)%layer_id - 1
-                             
+               layer(n)%layer_id = layer(n+1)%layer_id - 1        
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
-                  !print*, 'n é primeira camada',pls_id(p)
+                  ll(p) = layer(n)%lavai
+                  print*, 'there is limitation', ll(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
                endif
-
-            endif
-            if (pls_id(p).eq.0) then
-               print*, 'pls_id', pls_id(p), layer(n)%layer_id, n, p, height_aux(p), ca2(p)
             endif
          enddo   
       enddo
 
-      ! do n = num_layer, 1, -1
-      !    print*, 'n', n, n+1, n-1 
-      ! enddo
-
-      ! do p = 1, nlen
-      !    print*, 'pls_id', pls_id(p)
-      ! enddo
-
-      ! ! LIGHT LIMITATION - PHOTOSYNTHESIS.
+      !TEST TO PLS ID - ARE THE VALUES BEING STORED? ----------
+      do n = num_layer, 1, -1
+         do p = 1, nlen
+            if (pls_id(p).eq.0.0D0) then
+               !print*, 'não tem pls'
+            else
+               !print*, 'diferente de 0, tem pls', pls_id(p)
+            endif
+         enddo
+      enddo
+      !-------------------------------------------------------
 
       ! do n = num_layer, 1, -1
       !    do p = 1, nlen
       !       if (n.eq.num_layer .and. pls_id(p).eq.num_layer) then
       !          !ll(p) = ipar !no have limitation, 'cause is the top layer.
       !          !print*, 'LL TOP=', ll(p), 'IPAR=', ipar, n
-      !          print*,'no limitation','num_layer',num_layer,'pls_id', pls_id(p),n
+      !          print*,'no limitation', 'num_layer', num_layer, 'pls_id', pls_id(p), n
       !       else 
       !          !if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
       !           !  ll(p) = layer(n)%lavai
                
       !          !endif
       !          !print*, 'LL OTHER=', ll(p), 'IPAR=', ipar, 'LIGHT_AVAI', layer(n)%lavai, n
-      !          print*,'there is limitation', 'num_layer',num_layer,'pls_id', pls_id(p),n
+      !          print*,'there is limitation', 'num_layer', num_layer, 'pls_id', pls_id(p), n
       !       endif 
       !    enddo
       ! enddo
