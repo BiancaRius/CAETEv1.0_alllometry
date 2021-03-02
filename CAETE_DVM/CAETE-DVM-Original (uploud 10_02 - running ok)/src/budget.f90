@@ -613,13 +613,16 @@ contains
       do n = num_layer, 1, -1
          do p = 1, nlen
             if (n.eq.num_layer .and. pls_id(p).eq.num_layer) then
-               ll(p) = ipar !no have limitation, 'cause is the top layer.
+               !ll(p) = ipar !no have limitation, 'cause is the top layer.
                !print*, 'LL TOP=', ll(p), 'IPAR=', ipar, n
+               print*,'no limitation',num_layer, pls_id(p)
             else 
-               if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
-                  ll(p) = layer(n)%lavai
-               endif
+               !if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
+                !  ll(p) = layer(n)%lavai
+               
+               !endif
                !print*, 'LL OTHER=', ll(p), 'IPAR=', ipar, 'LIGHT_AVAI', layer(n)%lavai, n
+               print*,'there is limitation', num_layer, pls_id(p)
             endif 
          enddo
       enddo
