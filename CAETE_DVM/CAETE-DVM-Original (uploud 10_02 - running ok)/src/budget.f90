@@ -178,6 +178,7 @@ contains
       integer(i_4) :: last_with_pls
       real(r_8) :: APAR !absorved photosynthetic active radiation (j/m-2/s-1)
       integer(i_4), dimension(npls) :: pls_id !identify layers and PLS to light competition dynamic.
+      real(r_8), dimension(npls) :: ll 
       real(r_8) :: soil_sat
 
       ! Layers dynamic to light competition ----------------------------------------------
@@ -197,8 +198,6 @@ contains
       end type layer_array
 
       type(layer_array), allocatable :: layer(:)
-
-      real(r_8) :: higher_layer
 
       !     START
       !     --------------
@@ -463,10 +462,11 @@ contains
 
       ! ---------------------- START --------------------------!
 
+      ! =================================================
+      !              LIGHT COMPETITION DYNAMIC.
+      ! =================================================
+
       do p = 1,nlen
-         ! =========================================
-         !       LIGHT COMPETITION DYNAMIC.
-         ! =========================================
 
          ! - Allometric equations relates to PLS survives -
             
@@ -490,6 +490,7 @@ contains
       max_height = maxval(height_aux(:))
 
       num_layer = nint(max_height/5)
+      print*, 'num layer is', num_layer
 
       allocate(layer(1:num_layer))
 
@@ -552,7 +553,7 @@ contains
          layer(n)%lavai = 0.0D0
          layer(n)%lused = 0.0D0
       enddo
-
+      
       APAR = ipar 
 
       !=================== Beer's Law ========================
@@ -579,6 +580,7 @@ contains
          endif
          layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
          layer(n)%lavai = layer(n)%linc - layer(n)%lused
+         print*, 'light avaialable', layer(n)%lavai
       enddo
 
       ! Identifying the layers and allocate each PLS.
@@ -590,68 +592,37 @@ contains
          enddo
       enddo
 
-      higher_layer = 0.D0
-
       do n = num_layer, 1, -1
          do p = 1, nlen
-          if (n.eq.num_layer) then
-            layer(n)%layer_id = num_layer
-            if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
-               pls_id(p)=layer(n)%layer_id
-               !print*, pls_id(p),n
+            if (n.eq.num_layer) then
+               layer(n)%layer_id = num_layer
+               if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
+                  pls_id(p)=layer(n)%layer_id
+               endif
+            else
+               layer(n)%layer_id = layer(n+1)%layer_id - 1
+               if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
+                  pls_id(p) = layer(n)%layer_id
+               endif 
             endif
-          else
-            layer(n)%layer_id = layer(n+1)%layer_id - 1
-            if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
-             pls_id(p) =  layer(n)%layer_id
-             print*, 'não é a primeira camada XXXXXXXXXX',pls_id(p)
-            endif 
-            print*,'lyr id', layer(n)%layer_id
-          endif
-          print*,'num_layer',num_layer, 'last with pls', last_with_pls
          enddo   
       enddo
 
+      ! LIGHT LIMITATION - PHOTOSYNTHESIS.
 
-      ! do n = num_layer, 1, -1
-      !    do p = 1, nlen
-      !       ! if ((n .eq. num_layer .and. layer(n)%layer_height .ge. height_aux(p)).and.&
-      !       ! &(layer(n-1)%layer_height .lt. height_aux(p))) then
-      !       if (n .eq. num_layer) then
-      !          if (height_aux(p) .le. layer(n)%layer_height&
-      !          & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
-
-      !             layer(n)%layer_id = num_layer
-      !             pls_id(p) = layer(n)%layer_id
-      !          end if
-      !       else 
-               ! if (height_aux(p) .le. layer(n)%layer_height&
-               ! & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
-
-                  ! layer(n)%layer_id = (layer(n-1)%layer_id)-1
-      !          print*, 'height=', height_aux(p), 'layer=', layer(n)%layer_height,&
-      !          & 'n-1=', layer(n-1)%layer_height
-      !          !end if
-      !       end if
-      !    enddo
-      !    !print*, 'LAYER_ID=', layer(n)%layer_id, num_layer, n
-      !    !print*, 'num layer', n, n-1, n+1
-      ! enddo
-
-      ! do n = num_layer,1,-1
-      !    do p = 1, nlen
-            ! if (n .eq. num_layer .and. height_aux(p) .le. layer(n)%layer_height&
-            ! & .and. height_aux(p) .gt. layer(n-1)%layer_height) then
-      !          layer(n)%layer_id = num_layer
-      !          pls_id(p) = layer(n)%layer_id
-      !       else
-      !          layer(n)%layer_id = layer(n-1)%layer_id-1
-
-      !          print*, 'LAYER_ID=', layer(n)%layer_id,&
-      !          &'PLS_ID=', pls_id(p)
-      !       endif
-      !    enddo
-      ! enddo
+      do n = num_layer, 1, -1
+         do p = 1, nlen
+            if (n.eq.num_layer .and. pls_id(p).eq.num_layer) then
+               ll(p) = ipar !no have limitation, 'cause is the top layer.
+               !print*, 'LL TOP=', ll(p), 'IPAR=', ipar, n
+            else 
+               if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
+                  ll(p) = layer(n)%lavai
+               endif
+               !print*, 'LL OTHER=', ll(p), 'IPAR=', ipar, 'LIGHT_AVAI', layer(n)%lavai, n
+            endif 
+         enddo
+      enddo
 
       ! ---------------------- END --------------------------!
 
