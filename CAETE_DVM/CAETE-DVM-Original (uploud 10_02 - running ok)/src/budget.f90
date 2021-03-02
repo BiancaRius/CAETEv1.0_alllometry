@@ -490,7 +490,7 @@ contains
       max_height = maxval(height_aux(:))
 
       num_layer = nint(max_height/5)
-      print*, 'num layer is', num_layer
+      !print*, 'num layer is', num_layer
 
       allocate(layer(1:num_layer))
 
@@ -580,7 +580,7 @@ contains
          endif
          layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
          layer(n)%lavai = layer(n)%linc - layer(n)%lused
-         print*, 'light avaialable', layer(n)%lavai
+         !print*, 'light avaialable', layer(n)%lavai
       enddo
 
       ! Identifying the layers and allocate each PLS.
@@ -601,31 +601,45 @@ contains
                endif
             else
                layer(n)%layer_id = layer(n+1)%layer_id - 1
+                             
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
-               endif 
+                  !print*, 'n é primeira camada',pls_id(p)
+               endif
+
+            endif
+            if (pls_id(p).eq.0) then
+               print*, 'pls_id', pls_id(p), layer(n)%layer_id, n, p, height_aux(p), ca2(p)
             endif
          enddo   
       enddo
 
-      ! LIGHT LIMITATION - PHOTOSYNTHESIS.
+      ! do n = num_layer, 1, -1
+      !    print*, 'n', n, n+1, n-1 
+      ! enddo
 
-      do n = num_layer, 1, -1
-         do p = 1, nlen
-            if (n.eq.num_layer .and. pls_id(p).eq.num_layer) then
-               !ll(p) = ipar !no have limitation, 'cause is the top layer.
-               !print*, 'LL TOP=', ll(p), 'IPAR=', ipar, n
-               print*,'no limitation',num_layer, pls_id(p)
-            else 
-               !if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
-                !  ll(p) = layer(n)%lavai
+      ! do p = 1, nlen
+      !    print*, 'pls_id', pls_id(p)
+      ! enddo
+
+      ! ! LIGHT LIMITATION - PHOTOSYNTHESIS.
+
+      ! do n = num_layer, 1, -1
+      !    do p = 1, nlen
+      !       if (n.eq.num_layer .and. pls_id(p).eq.num_layer) then
+      !          !ll(p) = ipar !no have limitation, 'cause is the top layer.
+      !          !print*, 'LL TOP=', ll(p), 'IPAR=', ipar, n
+      !          print*,'no limitation','num_layer',num_layer,'pls_id', pls_id(p),n
+      !       else 
+      !          !if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
+      !           !  ll(p) = layer(n)%lavai
                
-               !endif
-               !print*, 'LL OTHER=', ll(p), 'IPAR=', ipar, 'LIGHT_AVAI', layer(n)%lavai, n
-               print*,'there is limitation', num_layer, pls_id(p)
-            endif 
-         enddo
-      enddo
+      !          !endif
+      !          !print*, 'LL OTHER=', ll(p), 'IPAR=', ipar, 'LIGHT_AVAI', layer(n)%lavai, n
+      !          print*,'there is limitation', 'num_layer',num_layer,'pls_id', pls_id(p),n
+      !       endif 
+      !    enddo
+      ! enddo
 
       ! ---------------------- END --------------------------!
 
