@@ -40,7 +40,7 @@ contains
       use productivity
       use omp_lib
 
-      use photo, only: pft_area_frac, sto_resp, diameter, crownarea, tree_height, leaf_area_index
+      use photo, only: pft_area_frac, sto_resp, diameter, crownarea, tree_height, leaf_area_index, light_limitation
       use water, only: evpot2, penman, available_energy, runoff
 
       !     ----------------------------INPUTS-------------------------------
@@ -171,14 +171,14 @@ contains
 
       real(r_8), dimension(npls) :: awood_aux, dleaf, dwood, droot, uptk_costs
       real(r_8), dimension(3,npls) :: sto_budg
-      real(r_8),dimension(npls) :: diam_aux, crown_aux, height_aux, lai_aux
+      real(r_8),dimension(npls) :: diam_aux, crown_aux, height_aux, lai_aux, ll_aux
       real(r_8) :: max_height !maximum height in m. in each grid-cell
       integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
       real(r_8) :: layer_size !size of each layer in m. in each grid-cell
       integer(i_4) :: last_with_pls
       real(r_8) :: APAR !absorved photosynthetic active radiation (j/m-2/s-1)
       integer(i_4), dimension(npls) :: pls_id !identify layers and PLS to light competition dynamic.
-      real(r_4), dimension(npls) :: ll 
+      real(r_8), dimension(npls) :: ll 
       real(r_8) :: soil_sat
 
       ! Layers dynamic to light competition ----------------------------------------------
@@ -302,6 +302,7 @@ contains
 	
 	      !print*, 'cl1 vivos=', cl1_pft(ri), ri
          !print*, 'nlen=', p
+
 
          ! GABI hydro
          call prod(dt1, ocp_wood(ri),catm, temp, soil_temp, p0, w, ipar, rh, emax&
@@ -548,6 +549,7 @@ contains
       !       LIGHT COMPETITION DYNAMIC. [EXTINCTION LIGHT]
       ! ======================================================
 
+      !! INICIALIZE VARIABLES !!
       do n = 1, num_layer
          layer(n)%linc = 0.0D0
          layer(n)%lavai = 0.0D0
@@ -580,7 +582,7 @@ contains
          endif
          layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
          layer(n)%lavai = layer(n)%linc - layer(n)%lused
-         !print*, 'light avaialable', layer(n)%lavai
+         !print*, 'light avaialable', layer(n)%lavai, 'num_layer', n 
       enddo
 
       ! ======================================================
@@ -589,10 +591,12 @@ contains
 
       ! Identifying the layers and allocate each PLS to punishment photosyntesis.
 
+      !! INICIALIZE VARIABLES !!
       do n = 1, num_layer
          do p = 1, nlen
             layer(n)%layer_id = 0.0D0
             pls_id(p) = 0.0D0
+            ll(p) = 0.0D0
          enddo
       enddo
 
@@ -603,47 +607,46 @@ contains
                if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
                   pls_id(p)=layer(n)%layer_id
                   ll(p) = ipar
-                  print*, 'no limitation', ll(p), 'ipar', ipar
+                  !print*, 'LL TOP=', ll(p), pls_id(p), 'ipar', ipar
                endif
             else
                layer(n)%layer_id = layer(n+1)%layer_id - 1        
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
-                  ll(p) = layer(n)%lavai
-                  print*, 'there is limitation', ll(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
+                  ll(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
+                  !print*, 'LL ABOVE % =', ll(p), pls_id(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
                endif
             endif
          enddo   
       enddo
 
-      !TEST TO PLS ID - ARE THE VALUES BEING STORED? ----------
-      do n = num_layer, 1, -1
-         do p = 1, nlen
-            if (pls_id(p).eq.0.0D0) then
-               !print*, 'não tem pls'
-            else
-               !print*, 'diferente de 0, tem pls', pls_id(p)
-            endif
-         enddo
+      !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
+      do p = 1, nlen
+         if (ca2(p).eq.0.0D0) then !for grasses (in m-2 s-1)
+            ll(p) = ipar
+            !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
+         else
+            ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
+            !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+         endif
       enddo
-      !-------------------------------------------------------
+      !-------------------------------------------------------------
 
+      ! do p = 1, nlen !ARE THE VALUES BEING STORED?
+      !    print*, 'stored ll=', ll(p), pls_id(p)
+      ! enddo
+
+      !TEST TO PLS ID - ARE THE VALUES BEING STORED? ----------
       ! do n = num_layer, 1, -1
       !    do p = 1, nlen
-      !       if (n.eq.num_layer .and. pls_id(p).eq.num_layer) then
-      !          !ll(p) = ipar !no have limitation, 'cause is the top layer.
-      !          !print*, 'LL TOP=', ll(p), 'IPAR=', ipar, n
-      !          print*,'no limitation', 'num_layer', num_layer, 'pls_id', pls_id(p), n
-      !       else 
-      !          !if (n.ne.num_layer .and. pls_id(p).ne.num_layer) then
-      !           !  ll(p) = layer(n)%lavai
-               
-      !          !endif
-      !          !print*, 'LL OTHER=', ll(p), 'IPAR=', ipar, 'LIGHT_AVAI', layer(n)%lavai, n
-      !          print*,'there is limitation', 'num_layer', num_layer, 'pls_id', pls_id(p), n
-      !       endif 
+      !       if (ca2(p).ne.0.0D0) then
+      !          ! print*,'ca2 ne 0', 'pls_id',pls_id(p), p, height_aux(p),n
+      !       else
+      !          ! print*, 'ca2 eq 0', 'pls_id', pls_id(p), p, height_aux(p),n 
+      !       endif
       !    enddo
       ! enddo
+      !-------------------------------------------------------
 
       ! ---------------------- END --------------------------!
 

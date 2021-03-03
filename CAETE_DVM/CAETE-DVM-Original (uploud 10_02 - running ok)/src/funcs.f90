@@ -49,7 +49,8 @@ module photo
         leap                   ,&
         diameter               ,&
         crownarea              ,&
-        tree_height            
+        tree_height            ,&
+        light_limitation           
 
 contains
 
@@ -1202,6 +1203,17 @@ contains
 
    !====================================================================
    !====================================================================
+
+   function light_limitation (llight) result (light_limit)
+      use types
+
+      real(r_8), intent(in) :: llight
+      real(r_8) :: light_limit
+
+      light_limit = llight*100 
+      !The % of light limitation to each PLS according your position on layer
+
+   end function light_limitation
 
 end module photo
 
