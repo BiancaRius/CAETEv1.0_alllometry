@@ -603,29 +603,37 @@ contains
                if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
                   pls_id(p)=layer(n)%layer_id
                   ll(p) = ipar
-                  print*, 'no limitation', ll(p), 'ipar', ipar
+                  !print*, 'no limitation', ll(p), 'ipar', ipar
                endif
             else
                layer(n)%layer_id = layer(n+1)%layer_id - 1        
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
                   ll(p) = layer(n)%lavai
-                  print*, 'there is limitation', ll(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
+                 ! print*, 'there is limitation', ll(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
                endif
             endif
          enddo   
       enddo
 
-      !TEST TO PLS ID - ARE THE VALUES BEING STORED? ----------
+      !-------------------------------------------------------
+
+      
+
+        !TESTING LAYERS ----------
       do n = num_layer, 1, -1
          do p = 1, nlen
-            if (pls_id(p).eq.0.0D0) then
-               !print*, 'não tem pls'
+            if (ca2(p).ne.0.0D0) then
+               ! print*,'ca2 ne 0', 'pls_id',pls_id(p), p, height_aux(p),n
             else
-               !print*, 'diferente de 0, tem pls', pls_id(p)
+               ! print*, 'ca2 eq 0', 'pls_id', pls_id(p), p, height_aux(p),n 
             endif
          enddo
+         ! print*, 'testing layers', 'n',n , 'layer_height', layer(n)%layer_height
       enddo
+
+    
+
       !-------------------------------------------------------
 
       ! do n = num_layer, 1, -1
