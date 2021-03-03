@@ -607,29 +607,17 @@ contains
                if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
                   pls_id(p)=layer(n)%layer_id
                   ll(p) = ipar
-<<<<<<< HEAD
-                  !print*, 'LL TOP=', ll(p), pls_id(p), 'ipar', ipar
-=======
-                  !print*, 'no limitation', ll(p), 'ipar', ipar
->>>>>>> fe4320e06b5a8564abf6d257733f10a2a290c310
                endif
             else
                layer(n)%layer_id = layer(n+1)%layer_id - 1        
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
-<<<<<<< HEAD
-                  ll(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
-                  !print*, 'LL ABOVE % =', ll(p), pls_id(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
-=======
-                  ll(p) = layer(n)%lavai
-                 ! print*, 'there is limitation', ll(p), 'ipar', ipar, 'l_avai', layer(n)%lavai
->>>>>>> fe4320e06b5a8564abf6d257733f10a2a290c310
+                  ll(p) = layer(n)%lavai/ipar !limitation in m-2 s-1 of IPAR total.
                endif
             endif
          enddo   
       enddo
 
-<<<<<<< HEAD
       !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
       do p = 1, nlen
          if (ca2(p).eq.0.0D0) then !for grasses (in m-2 s-1)
@@ -641,27 +629,6 @@ contains
          endif
       enddo
       !-------------------------------------------------------------
-=======
-      !-------------------------------------------------------
-
-      
-
-        !TESTING LAYERS ----------
-      do n = num_layer, 1, -1
-         do p = 1, nlen
-            if (ca2(p).ne.0.0D0) then
-               ! print*,'ca2 ne 0', 'pls_id',pls_id(p), p, height_aux(p),n
-            else
-               ! print*, 'ca2 eq 0', 'pls_id', pls_id(p), p, height_aux(p),n 
-            endif
-         enddo
-         ! print*, 'testing layers', 'n',n , 'layer_height', layer(n)%layer_height
-      enddo
-
-    
-
-      !-------------------------------------------------------
->>>>>>> fe4320e06b5a8564abf6d257733f10a2a290c310
 
       ! do p = 1, nlen !ARE THE VALUES BEING STORED?
       !    print*, 'stored ll=', ll(p), pls_id(p)
