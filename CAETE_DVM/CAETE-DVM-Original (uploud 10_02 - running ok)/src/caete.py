@@ -523,6 +523,7 @@ class grd:
         self.end_date = cftime.num2date(
             self.time_index[-1], self.time_unit, calendar=self.calendar)
 
+
         # OTHER INPUTS
         self.pls_table = pls_table.copy()
         self.neighbours = neighbours_index(self.pos, mask)
@@ -718,6 +719,7 @@ class grd:
             start_date[4:6]), int(start_date[6:]))
         end = cftime.real_datetime(int(end_date[:4]), int(
             end_date[4:6]), int(end_date[6:]))
+        # print(start, '/', end)
         # Check dates sanity
         assert start < end, "start > end"
         assert start >= self.start_date
@@ -726,9 +728,12 @@ class grd:
         # Define time index
         start_index = int(cftime.date2num(
             start, self.time_unit, self.calendar))
+     
         end_index = int(cftime.date2num(end, self.time_unit, self.calendar))
+        print(start_index,end_index)
 
         lb, hb = find_index(start_index, end_index)
+        print('LB superior', lb,hb)
         steps = np.arange(lb, hb + 1)
         day_indexes = np.arange(start_index, end_index + 1)
         spin = 1 if spinup == 0 else spinup
@@ -783,7 +788,7 @@ class grd:
                             (days - count_days)
 
                     co2 += next_year
-
+                # print('LBBBB', lb, 'STEP', step)
                 # Update soil temperature
                 self.soil_temp = st.soil_temp(self.soil_temp, temp[step])
 
