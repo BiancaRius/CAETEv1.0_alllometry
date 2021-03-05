@@ -49,7 +49,7 @@ contains
     real(r_8), intent(in) :: beta_awood
     real(r_8), intent(in) :: beta_froot, wmax
     real(r_8), intent(in) :: light_limit
-    !logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
+    ! logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
 
 !     Output
 !     ------

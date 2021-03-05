@@ -476,8 +476,7 @@ contains
       real(r_4),intent(in) :: ipar  ! mol Photons m-2 s-1
       real(r_8),intent(in) :: nbio, c_atm  ! gm-2, ppm
       real(r_8),intent(in) :: pbio  ! gm-2
-      real(r_8),intent(in) :: lli
-      ! logical(l_1),intent(in) :: ll ! is light limited?
+      real(r_8), intent(in) :: lli
       integer(i_4),intent(in) :: c4 ! is C4 Photosynthesis pathway?
       real(r_8),intent(in) :: leaf_turnover   ! y
       ! O
@@ -496,8 +495,9 @@ contains
       real(r_8) :: jl
       real(r_8) :: je,jcl
       real(r_8) :: b,c,c2,b2,es,j1,j2
-      real(r_8) :: delta, delta2,aux_ipar,light_aux
+      real(r_8) :: delta, delta2,aux_ipar
       real(r_8) :: f1a
+      logical(l_1) :: ll ! is light limited?
 
       ! new vars C4 PHOTOSYNTHESIS
       real(r_8) :: ipar1
@@ -549,16 +549,24 @@ contains
          jc = vm_in*((ci-mgama)/(ci+(f2*(1.+(p3/f3)))))
          !Light limited photosynthesis rate (molCO2/m2/s)
 
-         light_aux = light_limitation(lli)
+         ! light_aux = light_limitation(lli, ipar)
          ! print*, 'LIGHTAUX_funcs=', light_aux
 
-         ! if (ll .gt. 0.0D0) then
+         ! if (ll) then
          !    aux_ipar = ipar
          ! else
-         !    aux_ipar = ipar - (ipar * 0.20)
+         !    aux_ipar = light_limitation(lli)
+         !    !print*,'aux_ipar if ll=', aux_ipar
          ! endif
 
-         jl = p4*(1.0-p5)*light_aux*((ci-mgama)/(ci+(p6*mgama)))
+         if (ll) then
+            aux_ipar = ipar
+         else
+            aux_ipar = ipar - (ipar*light_limitation(lli))
+         endif
+         !print*, 'AUX_IPAR_C3=', aux_ipar, ipar
+
+         jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
 
          ! Transport limited photosynthesis rate (molCO2/m2/s) (RuBP) (re)generation
@@ -606,16 +614,23 @@ contains
          t25 = 273.15 + 25.0          ! K
          kp = kp25 * (2.1**(0.1*(tk-t25))) ! ppm
 
-         light_aux = light_limitation(lli)
-         ! print*, 'LL_FUNCS', light_aux
+         ! light_aux = light_limitation(lli, ipar)
+         ! ! print*, 'LL_FUNCS', light_aux
 
          ! if (ll) then
          !    aux_ipar = ipar
          ! else
-         !    aux_ipar = ipar - (ipar * 0.20)
+         !    aux_ipar = light_limitation(lli)
          ! endif
 
-         ipar1 = light_aux * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
+         if (ll) then
+            aux_ipar = ipar
+         else
+            aux_ipar = ipar - (ipar*light_limitation(lli))
+         endif
+         !print*,'AUX_IPAR_LL_C4=', aux_ipar, ipar
+
+         ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
 
          !maximum PEPcarboxylase rate Arrhenius eq. (Dependence on temperature)
          dummy1 = 1.0 + exp((s_vpm * t25 - h_vpm)/(r_vpm * t25))
@@ -1219,7 +1234,7 @@ contains
       real(r_8), intent(in) :: llight
       real(r_8) :: light_limit
 
-      light_limit = llight*100 
+      light_limit = llight 
       !The % of light limitation to each PLS according your position on layer
 
    end function light_limitation

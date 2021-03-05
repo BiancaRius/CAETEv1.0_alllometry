@@ -176,7 +176,6 @@ contains
       integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
       real(r_8) :: layer_size !size of each layer in m. in each grid-cell
       integer(i_4) :: last_with_pls
-      real(r_8) :: APAR !absorved photosynthetic active radiation (j/m-2/s-1)
       integer(i_4), dimension(npls) :: pls_id !identify layers and PLS to light competition dynamic.
       real(r_8), dimension(npls) :: ll 
       real(r_8) :: soil_sat
@@ -612,12 +611,11 @@ contains
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
                   ll(p) = layer(n)%lavai/ipar !limitation in m-2 s-1 of IPAR total.
+                  print*,'LL_LOGICA=', ll(p), pls_id(p), ipar
                endif
             endif
          enddo   
       enddo
-
-
 
       !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
       do p = 1, nlen
@@ -627,10 +625,11 @@ contains
             !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
          else
             ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
-            !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+            print*, 'light limitation in %', ll_aux(p), pls_id(p)
          endif
 
-         ! print*, 'LL_BUD=', ll_aux(p)
+         !print*,'BUD_LL=', ll_aux(p)
+
       enddo
       !-------------------------------------------------------------
 
