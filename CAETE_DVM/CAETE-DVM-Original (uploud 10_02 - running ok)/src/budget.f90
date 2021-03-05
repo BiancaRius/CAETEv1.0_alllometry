@@ -304,8 +304,8 @@ contains
          !print*, 'nlen=', p
 
 
-         ! GABI hydro
-         call prod(dt1, ocp_wood(ri),catm, temp, soil_temp, p0, w, ipar, rh, emax&
+         ! GABI hydro ocp_wood(ri)
+         call prod(dt1, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
                &, cl1_pft(ri), ca1_pft(ri), cf1_pft(ri), dleaf(ri), dwood(ri), droot(ri)&
                &, soil_sat, ph(p), ar(p), nppa(p), laia(p), f5(p), vpd(p), rm(p), rg(p), rc2(p)&
                &, wue(p), c_def(p), vcmax(p), specific_la(p), tra(p))
@@ -455,8 +455,7 @@ contains
          !    if (w(p).lt.0.) w(p) = 0.
          !    roff(p) = roff(p) + rimelt(p) !Total runoff
          ! endif
-
-
+         
       enddo ! end pls_loop (p)
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
@@ -479,6 +478,7 @@ contains
 
          !PLS HEIGHT (in m.) -----------------------------
          height_aux(p) = (tree_height(diam_aux(p)))
+         ! print*, 'HEIGHT=', height_aux(p)
 
          !LEAF AREA INDEX (in m2/m-2) --------------------
          lai_aux(p) = (leaf_area_index(cl2(p), specific_la(p)))/10
@@ -489,6 +489,7 @@ contains
       ! =================================================
 
       max_height = maxval(height_aux(:))
+      !print*, 'MAX_HEIGHT', max_height
 
       num_layer = nint(max_height/5)
       !print*, 'num layer is', num_layer
@@ -555,8 +556,6 @@ contains
          layer(n)%lavai = 0.0D0
          layer(n)%lused = 0.0D0
       enddo
-      
-      APAR = ipar 
 
       !=================== Beer's Law ========================
       do n = num_layer,1,-1
@@ -569,7 +568,7 @@ contains
       !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
       ! ======================================================
 
-      do n = num_layer,1,-1   !VIRARIA UMA FUNÇÃO
+      do n = num_layer,1,-1 
          if(n.eq.num_layer) then
             layer(n)%linc = ipar
          else
@@ -582,7 +581,7 @@ contains
          endif
          layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
          layer(n)%lavai = layer(n)%linc - layer(n)%lused
-         !print*, 'light avaialable', layer(n)%lavai, 'num_layer', n 
+         !print*, 'light avaialable', layer(n)%lavai
       enddo
 
       ! ======================================================
@@ -618,15 +617,20 @@ contains
          enddo   
       enddo
 
+
+
       !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
       do p = 1, nlen
+
          if (ca2(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-            ll(p) = ipar
+            ll_aux(p) = ipar
             !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
          else
             ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
             !print*, 'light limitation in %', ll_aux(p), pls_id(p)
          endif
+
+         ! print*, 'LL_BUD=', ll_aux(p)
       enddo
       !-------------------------------------------------------------
 

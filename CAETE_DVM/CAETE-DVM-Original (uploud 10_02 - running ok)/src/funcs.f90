@@ -461,7 +461,7 @@ contains
    !=================================================================
    !=================================================================
 
-   subroutine photosynthesis_rate(c_atm, temp,p0,ipar,ll,c4,nbio,pbio,&
+   subroutine photosynthesis_rate(c_atm, temp,p0,ipar,lli,c4,nbio,pbio,&
         & leaf_turnover,f1ab,vm, amax)
 
       ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
@@ -476,7 +476,8 @@ contains
       real(r_4),intent(in) :: ipar  ! mol Photons m-2 s-1
       real(r_8),intent(in) :: nbio, c_atm  ! gm-2, ppm
       real(r_8),intent(in) :: pbio  ! gm-2
-      logical(l_1),intent(in) :: ll ! is light limited?
+      real(r_8),intent(in) :: lli
+      ! logical(l_1),intent(in) :: ll ! is light limited?
       integer(i_4),intent(in) :: c4 ! is C4 Photosynthesis pathway?
       real(r_8),intent(in) :: leaf_turnover   ! y
       ! O
@@ -495,7 +496,7 @@ contains
       real(r_8) :: jl
       real(r_8) :: je,jcl
       real(r_8) :: b,c,c2,b2,es,j1,j2
-      real(r_8) :: delta, delta2,aux_ipar
+      real(r_8) :: delta, delta2,aux_ipar,light_aux
       real(r_8) :: f1a
 
       ! new vars C4 PHOTOSYNTHESIS
@@ -547,12 +548,17 @@ contains
          !Rubisco carboxilation limited photosynthesis rate (molCO2/m2/s)
          jc = vm_in*((ci-mgama)/(ci+(f2*(1.+(p3/f3)))))
          !Light limited photosynthesis rate (molCO2/m2/s)
-         if (ll) then
-            aux_ipar = ipar
-         else
-            aux_ipar = ipar - (ipar * 0.20)
-         endif
-         jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
+
+         light_aux = light_limitation(lli)
+         ! print*, 'LIGHTAUX_funcs=', light_aux
+
+         ! if (ll .gt. 0.0D0) then
+         !    aux_ipar = ipar
+         ! else
+         !    aux_ipar = ipar - (ipar * 0.20)
+         ! endif
+
+         jl = p4*(1.0-p5)*light_aux*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
 
          ! Transport limited photosynthesis rate (molCO2/m2/s) (RuBP) (re)generation
@@ -600,13 +606,16 @@ contains
          t25 = 273.15 + 25.0          ! K
          kp = kp25 * (2.1**(0.1*(tk-t25))) ! ppm
 
-         if (ll) then
-            aux_ipar = ipar
-         else
-            aux_ipar = ipar - (ipar * 0.20)
-         endif
+         light_aux = light_limitation(lli)
+         ! print*, 'LL_FUNCS', light_aux
 
-         ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
+         ! if (ll) then
+         !    aux_ipar = ipar
+         ! else
+         !    aux_ipar = ipar - (ipar * 0.20)
+         ! endif
+
+         ipar1 = light_aux * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
 
          !maximum PEPcarboxylase rate Arrhenius eq. (Dependence on temperature)
          dummy1 = 1.0 + exp((s_vpm * t25 - h_vpm)/(r_vpm * t25))

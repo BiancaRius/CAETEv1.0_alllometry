@@ -783,8 +783,8 @@ class grd:
                             (days - count_days)
 
                     co2 += next_year
-                if step == 0:
-                    print('1st day')
+                # if step == 0:
+                #     #print('1st day')
                 # Update soil temperature
                 self.soil_temp = st.soil_temp(self.soil_temp, temp[step])
 

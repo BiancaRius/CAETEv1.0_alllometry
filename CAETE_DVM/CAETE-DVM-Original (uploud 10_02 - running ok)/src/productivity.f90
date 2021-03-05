@@ -48,7 +48,8 @@ contains
     real(r_8), intent(in) :: beta_leaf            !npp allocation to carbon pools (kg/m2/day)
     real(r_8), intent(in) :: beta_awood
     real(r_8), intent(in) :: beta_froot, wmax
-    logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
+    real(r_8), intent(in) :: light_limit
+    !logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
 
 !     Output
 !     ------
@@ -84,6 +85,9 @@ contains
     real(r_8) :: f1a      !auxiliar_f1
     real(r_4) :: rc_pot, rc_aux
 
+    
+   
+
 !getting pls parameters
 
 
@@ -103,6 +107,7 @@ contains
 
     c4_int = idnint(c4)
 
+    !print*, 'lightlimit_prod=', light_limit
 
 !     ==============
 !     Photosynthesis
