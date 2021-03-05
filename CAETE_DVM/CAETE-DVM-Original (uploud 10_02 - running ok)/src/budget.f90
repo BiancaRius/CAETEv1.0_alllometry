@@ -611,7 +611,7 @@ contains
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
                   ll(p) = layer(n)%lavai/ipar !limitation in m-2 s-1 of IPAR total.
-                  print*,'LL_LOGICA=', ll(p), pls_id(p), ipar
+                  !print*,'LL_LOGICA=', ll(p), pls_id(p), ipar
                endif
             endif
          enddo   
@@ -625,7 +625,7 @@ contains
             !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
          else
             ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
-            print*, 'light limitation in %', ll_aux(p), pls_id(p)
+            !print*, 'light limitation in %', ll_aux(p), pls_id(p)
          endif
 
          !print*,'BUD_LL=', ll_aux(p)

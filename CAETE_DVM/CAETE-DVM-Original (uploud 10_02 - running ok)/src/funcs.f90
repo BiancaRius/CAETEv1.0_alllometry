@@ -461,7 +461,7 @@ contains
    !=================================================================
    !=================================================================
 
-   subroutine photosynthesis_rate(c_atm, temp,p0,ipar,lli,c4,nbio,pbio,&
+   subroutine photosynthesis_rate(c_atm, temp,p0,ipar,llight,c4,nbio,pbio,&
         & leaf_turnover,f1ab,vm, amax)
 
       ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
@@ -476,7 +476,7 @@ contains
       real(r_4),intent(in) :: ipar  ! mol Photons m-2 s-1
       real(r_8),intent(in) :: nbio, c_atm  ! gm-2, ppm
       real(r_8),intent(in) :: pbio  ! gm-2
-      real(r_8), intent(in) :: lli
+      real(r_8), intent(in) :: llight
       integer(i_4),intent(in) :: c4 ! is C4 Photosynthesis pathway?
       real(r_8),intent(in) :: leaf_turnover   ! y
       ! O
@@ -559,10 +559,13 @@ contains
          !    !print*,'aux_ipar if ll=', aux_ipar
          ! endif
 
+         ll = .false.
+
          if (ll) then
             aux_ipar = ipar
          else
-            aux_ipar = ipar - (ipar*light_limitation(lli))
+            aux_ipar = ipar - (ipar*light_limitation(llight))
+            !print*,'dentro do if=', aux_ipar, ipar
          endif
          !print*, 'AUX_IPAR_C3=', aux_ipar, ipar
 
@@ -623,10 +626,12 @@ contains
          !    aux_ipar = light_limitation(lli)
          ! endif
 
+         ll = .false.
+         
          if (ll) then
             aux_ipar = ipar
          else
-            aux_ipar = ipar - (ipar*light_limitation(lli))
+            aux_ipar = ipar - (ipar*light_limitation(llight))
          endif
          !print*,'AUX_IPAR_LL_C4=', aux_ipar, ipar
 
