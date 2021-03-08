@@ -40,7 +40,7 @@ contains
       use productivity
       use omp_lib
 
-      use photo, only: pft_area_frac, sto_resp, diameter, crownarea, tree_height, leaf_area_index, light_limitation
+      use photo
       use water, only: evpot2, penman, available_energy, runoff
 
       !     ----------------------------INPUTS-------------------------------
@@ -181,7 +181,7 @@ contains
       real(r_8) :: soil_sat
 
       ! Layers dynamic to light competition ----------------------------------------------
-
+         real(r_8),dimension(npls) :: teste_ll_2, teste_ll_3
       type :: layer_array
          real(r_8) :: sum_height
          integer(i_4) :: num_height !!corresponds to the number of layers according max height of PLS.
@@ -300,29 +300,43 @@ contains
          sr = 0.0D0
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
-	
-	      !print*, 'cl1 vivos=', cl1_pft(ri), ri
-         !print*, 'nlen=', p
-
-         if (step.eq.0) then
-            if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-               ll_aux(p) = ipar
-               !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
-            else
-               ll_aux(p) = ipar !for woodys (in %)
-               !print*, 'light limitation in %', ll_aux(p), pls_id(p)
-            endif
-            print*, 'step', step, ll_aux(p), ipar
-         else 
-            if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-               ll_aux(p) = ipar
-               !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
-            else
-               ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
-               !print*, 'light limitation in %', ll_aux(p), pls_id(p)
-            endif  
-            print*, 'll(p)', ll(p)
+         
+         if(step.eq.0)then
+            ll(p)=ipar
+            print*,'teste ll2', ll(p)
+         else
+            ll(p)=ll(p)
+            print*,'teste ll2 step df 0', ll(p)
          endif
+
+         ! if (step.eq.0) then
+         !    teste_ll_3(p) = ipar
+         !    print*,'step 0', teste_ll_3(p), ipar
+         ! else
+         !    if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
+         !       teste_ll_3(p) = ipar
+         !       print*,'step 1, graminea', teste_ll_3(p), ipar
+         !    else
+         !       teste_ll_3(p) = teste_ll_2(p)
+         !       print*,'step 1, lenhosa', teste_ll_3(p), ipar
+         !    endif
+         ! endif
+            !       !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
+         !    else
+         !       ll_aux(p) = ipar !for woodys (in %)
+         !       !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+         !    endif
+         !    print*, 'step', step, ll_aux(p), ipar
+         ! else 
+         !    if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
+         !       ll_aux(p) = ipar
+         !       !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
+         !    else
+         !       ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
+         !       !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+         !    endif  
+         !    print*, 'll(p)', ll(p)
+         ! endif
 
 
          ! GABI hydro ocp_wood(ri)
@@ -627,18 +641,25 @@ contains
                if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
                   pls_id(p)=layer(n)%layer_id
                   ll(p) = ipar
-                  print*, ll(p), ipar
+                  teste_ll_2(p) = teste_ll(ll(p))
+                  ! print*,'1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
                endif
             else
                layer(n)%layer_id = layer(n+1)%layer_id - 1        
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
-                  ll(p) = layer(n)%lavai/ipar !limitation in m-2 s-1 of IPAR total.
-                  print*,'LL_LOGICA=', ll(p), pls_id(p), ipar
+                  ll(p) = ipar - (ipar *(layer(n)%lavai/ipar)) !limitation in m-2 s-1 of IPAR total.
+                  teste_ll_2(p) = teste_ll(ll(p))
+                  ! print*,'not 1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
                endif
             endif
          enddo   
       enddo
+
+      ! do p = 1, nlen
+      !    teste_ll_2(p) = teste_ll(ll(p))
+      !    print*,'ll2', teste_ll_2(p),ipar
+      ! enddo
 
       ! !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
       ! do p = 1, nlen

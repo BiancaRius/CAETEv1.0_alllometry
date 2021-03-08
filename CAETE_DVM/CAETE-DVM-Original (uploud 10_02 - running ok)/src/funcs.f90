@@ -50,9 +50,20 @@ module photo
         diameter               ,&
         crownarea              ,&
         tree_height            ,&
-        light_limitation           
+        light_limitation       ,&
+        teste_ll   
 
 contains
+
+
+   function teste_ll(t1) result(t2)
+      use types
+      real(r_8), intent(in):: t1
+      real(r_8):: t2
+
+      t2 = t1 +1
+
+   end function teste_ll
 
    function leap(year) result(is_leap)
       ! Why this is here?
