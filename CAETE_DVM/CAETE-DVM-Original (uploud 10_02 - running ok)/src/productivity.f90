@@ -114,7 +114,7 @@ contains
 !     ==============
 ! rate (molCO2/m2/s)
 
-    call photosynthesis_rate(catm,temp,p0,ipar,light_limit,c4_int,n2cl,&
+    call photosynthesis_rate(catm,ca1_prod,cf1_prod,temp,p0,ipar,light_limit,c4_int,n2cl,&
          & p2cl,tleaf,f1a,vm_out,jl_out)
 
 
@@ -152,6 +152,7 @@ contains
     ! recalcula rc e escalona para dossel
     ! laia = 0.2D0 * dexp((2.5D0 * f1)/p25)
     sla = spec_leaf_area(tleaf)  ! m2 g-1  ! Convertions made in leaf_area_index &  gross_ph + calls therein
+    ! print*, 'sla out funcs', sla
 
     laia = leaf_area_index(cl1_prod, sla)
 

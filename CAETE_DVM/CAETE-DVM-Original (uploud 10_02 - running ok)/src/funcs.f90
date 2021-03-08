@@ -50,20 +50,9 @@ module photo
         diameter               ,&
         crownarea              ,&
         tree_height            ,&
-        light_limitation       ,&
-        teste_ll   
+        light_limitation       
 
 contains
-
-
-   function teste_ll(t1) result(t2)
-      use types
-      real(r_8), intent(in):: t1
-      real(r_8):: t2
-
-      t2 = t1 +1
-
-   end function teste_ll
 
    function leap(year) result(is_leap)
       ! Why this is here?
@@ -472,7 +461,7 @@ contains
    !=================================================================
    !=================================================================
 
-   subroutine photosynthesis_rate(c_atm, temp,p0,ipar,llight,c4,nbio,pbio,&
+   subroutine photosynthesis_rate(c_atm,cawood,cleaf,temp,p0,ipar,llight,c4,nbio,pbio,&
       & leaf_turnover,f1ab,vm, amax)
 
     ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
@@ -492,6 +481,7 @@ contains
       real(r_8), intent(in) :: llight
       integer(i_4),intent(in) :: c4 ! is C4 Photosynthesis pathway?
       real(r_8),intent(in) :: leaf_turnover   ! y
+      real(r_8),intent(in) :: cawood, cleaf 
       ! O
       real(r_8),intent(out) :: f1ab ! Gross CO2 Assimilation Rate mol m-2 s-1
       real(r_8),intent(out) :: vm   ! PLS Vcmax mol m-2 s-1
@@ -513,14 +503,13 @@ contains
       logical(l_1) :: ll ! is light limited?
 
       !VARIABLES INTERNAL [LIGHT COMPETITION]
-      real(r_8), dimension(npft) :: sla
       real(r_8), dimension(npft) :: height_aux1, diam_aux1, crown_aux1, index_leaf
+      real(r_8) :: sla_aux
       real(r_8) :: max_height !maximum height in m. in each grid-cell
       integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
       integer(i_4) :: p, n
       real(r_8) :: layer_size !size of each layer in m. in each grid-cell
       integer(i_4) :: last_with_pls
-      real(r_8),dimension(npft) :: cleaf, cawood
       real(r_8),dimension(npft) :: light1
       integer(i_4), dimension(npft) :: pls_id !identify layers and PLS to light competition dynamic.
 
@@ -571,15 +560,20 @@ contains
       vm_in = (vm*2.0D0**(0.1D0*(temp-25.0D0)))/(1.0D0+dexp(0.3D0*(temp-36.0)))
 
       !=================== LIGHT COMPETITION ================================!
-      
+      sla_aux = spec_leaf_area(leaf_turnover)
+      ! print*, 'sla_aux',sla_aux
+
       do p = 1, npft
          ! - Allometric equations relates to PLS survives -
          !DIAMETER (in m.) -------------------------------
-         diam_aux1(p) = diameter(cawood(p))
+         diam_aux1(p) = diameter(cawood)
+         ! print*, 'diam_aux', diam_aux1(p),'cawood', cawood
          !PLS HEIGHT (in m.) -----------------------------
-         height_aux1(p) = tree_height(diam_aux1(p))    
+         height_aux1(p) = tree_height(diam_aux1(p))
+         ! print*, 'height_aux', height_aux1(p),'cawood', cawood    
          !LEAF AREA INDEX (in m2/m-2) --------------------
-         index_leaf(p) = (leaf_area_index(cleaf(p), sla(p)))/10
+         index_leaf(p) = (leaf_area_index(cleaf, sla_aux)/10)
+         ! print*,'lai', index_leaf(p)
       enddo
 
       ! =================================================
@@ -587,18 +581,22 @@ contains
       ! =================================================
 
       max_height = 0.0D0
-      num_layer = 0.0D0
+      num_layer = 0
       layer_size = 0.0D0
 
       max_height = maxval(height_aux1(:))
 
+      if (cawood.le.0.0D0) goto 253
 
       num_layer = nint(max_height/5)
-      !print*, 'num layer is', num_layer
+      
+      ! print*, 'num layer is', num_layer
 
       allocate(layer(1:num_layer))
 
       layer_size = max_height/num_layer !length from one layer to another
+      ! print*, 'layer_size', layer_size
+     
 
       last_with_pls=num_layer
 
@@ -692,25 +690,26 @@ contains
          enddo
       enddo
 
-      do n = num_layer, 1, -1
-         do p = 1, npft
-            if (n.eq.num_layer) then
-               layer(n)%layer_id = num_layer
-               if (height_aux1(p).le.max_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then 
-                  pls_id(p)=layer(n)%layer_id
-                  light1(p) = ipar
-                  !print*, 'LL TOP=', light1(p), pls_id(p), 'ipar', ipar
-               endif
-            else
-               layer(n)%layer_id = layer(n+1)%layer_id - 1        
-               if (height_aux1(p).le.layer(n)%layer_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then
-                  pls_id(p) = layer(n)%layer_id
-                  light1(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
-                  !print*, 'LL ABOVE % =', light1(p), pls_id(p), 'ipar', ipar
-               endif
-            endif
-         enddo   
-      enddo
+      ! do n = num_layer, 1, -1
+      !    do p = 1, npft
+      !       if (n.eq.num_layer) then
+      !          layer(n)%layer_id = num_layer
+      !          if (height_aux1(p).le.max_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then 
+      !             pls_id(p)=layer(n)%layer_id
+      !             light1(p) = ipar
+      !             !print*, 'LL TOP=', light1(p), pls_id(p), 'ipar', ipar
+      !          endif
+      !       else
+      !          layer(n)%layer_id = layer(n+1)%layer_id - 1        
+      !          if (height_aux1(p).le.layer(n)%layer_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then
+      !             pls_id(p) = layer(n)%layer_id
+      !             light1(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
+      !             !print*, 'LL ABOVE % =', light1(p), pls_id(p), 'ipar', ipar
+      !          endif
+      !       endif
+      !    enddo   
+      ! enddo
+253   print*, 'grasses'     
 
       if(c4 .eq. 0) then
          !====================-C3 PHOTOSYNTHESIS-===============================
