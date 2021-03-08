@@ -107,14 +107,12 @@ contains
 
     c4_int = idnint(c4)
 
-    !print*, 'lightlimit_prod=', light_limit
-
 !     ==============
 !     Photosynthesis
 !     ==============
 ! rate (molCO2/m2/s)
 
-    call photosynthesis_rate(catm,ca1_prod,cf1_prod,temp,p0,ipar,light_limit,c4_int,n2cl,&
+    call photosynthesis_rate(catm,ca1_prod,cl1_prod,temp,p0,ipar,light_limit,c4_int,n2cl,&
          & p2cl,tleaf,f1a,vm_out,jl_out)
 
 

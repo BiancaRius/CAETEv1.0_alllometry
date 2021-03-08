@@ -40,7 +40,7 @@ contains
       use productivity
       use omp_lib
 
-      use photo
+      use photo, only: pft_area_frac, sto_resp, photosynthesis_rate
       use water, only: evpot2, penman, available_energy, runoff
 
       !     ----------------------------INPUTS-------------------------------
@@ -230,6 +230,7 @@ contains
       call pft_area_frac(cl1_pft, cf1_pft, ca1_pft, awood_aux,&
       &                  ocpavg, ocp_wood, run, ocp_mm)
 
+
       nlen = sum(run)    ! New length for the arrays in the main loop
       allocate(lp(nlen))
       allocate(ocp_coeffs(nlen))
@@ -340,6 +341,7 @@ contains
 
 
          ! GABI hydro ocp_wood(ri)
+
          call prod(dt1, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
                &, cl1_pft(ri), ca1_pft(ri), cf1_pft(ri), dleaf(ri), dwood(ri), droot(ri)&
                &, soil_sat, ph(p), ar(p), nppa(p), laia(p), f5(p), vpd(p), rm(p), rg(p), rc2(p)&

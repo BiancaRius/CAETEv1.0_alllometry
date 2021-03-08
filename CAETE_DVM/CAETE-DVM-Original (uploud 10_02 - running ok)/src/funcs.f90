@@ -589,7 +589,6 @@ contains
       if (cawood.le.0.0D0) goto 253
 
       num_layer = nint(max_height/5)
-      
       ! print*, 'num layer is', num_layer
 
       allocate(layer(1:num_layer))
@@ -690,26 +689,27 @@ contains
          enddo
       enddo
 
-      ! do n = num_layer, 1, -1
-      !    do p = 1, npft
-      !       if (n.eq.num_layer) then
-      !          layer(n)%layer_id = num_layer
-      !          if (height_aux1(p).le.max_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then 
-      !             pls_id(p)=layer(n)%layer_id
-      !             light1(p) = ipar
-      !             !print*, 'LL TOP=', light1(p), pls_id(p), 'ipar', ipar
-      !          endif
-      !       else
-      !          layer(n)%layer_id = layer(n+1)%layer_id - 1        
-      !          if (height_aux1(p).le.layer(n)%layer_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then
-      !             pls_id(p) = layer(n)%layer_id
-      !             light1(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
-      !             !print*, 'LL ABOVE % =', light1(p), pls_id(p), 'ipar', ipar
-      !          endif
-      !       endif
-      !    enddo   
-      ! enddo
-253   print*, 'grasses'     
+253   continue
+
+      do n = num_layer, 1, -1
+         do p = 1, npft
+            if (n.eq.num_layer) then
+               layer(n)%layer_id = num_layer
+               if (height_aux1(p).le.max_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then 
+                  pls_id(p)=layer(n)%layer_id
+                  light1(p) = ipar
+                  !print*, 'LL TOP=', light1(p), pls_id(p), 'ipar', ipar
+               endif
+            else
+               layer(n)%layer_id = layer(n+1)%layer_id - 1        
+               if (height_aux1(p).le.layer(n)%layer_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then
+                  pls_id(p) = layer(n)%layer_id
+                  light1(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
+                  !print*, 'LL ABOVE % =', light1(p), pls_id(p), 'ipar', ipar
+               endif
+            endif
+         enddo   
+      enddo    
 
       if(c4 .eq. 0) then
          !====================-C3 PHOTOSYNTHESIS-===============================
@@ -732,13 +732,12 @@ contains
 
          !Light limited photosynthesis rate (molCO2/m2/s)
          do p = 1, npft
-            ll = .false.
             if (ll) then
                aux_ipar = ipar
             else
                aux_ipar = ipar - (ipar*light_limitation(light1(p)))
+               !print*, 'LL-C4=', aux_ipar, ipar
             endif
-            !print*, 'LL-C4=', aux_ipar, ipar
          enddo
 
 
@@ -791,18 +790,16 @@ contains
          kp = kp25 * (2.1**(0.1*(tk-t25))) ! ppm
 
          do p = 1, npft
-            ll = .false.
             if (ll) then
                aux_ipar = ipar
             else
-               aux_ipar = ipar - (ipar*light_limitation(light1(p)))
+               aux_ipar = ipar-(ipar*light_limitation(light1(p)))
             endif
             !print*, 'LL-C3=', aux_ipar, ipar
          enddo
 
-         !print*, 'LL-C4=', aux_ipar, ipar
-
          ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
+         !print*, 'IPAR1', ipar1, 'AUX_IPAR', aux_ipar, 'IPAR ONLY', ipar
 
          !maximum PEPcarboxylase rate Arrhenius eq. (Dependence on temperature)
          dummy1 = 1.0 + exp((s_vpm * t25 - h_vpm)/(r_vpm * t25))
