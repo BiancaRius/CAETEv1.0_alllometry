@@ -473,15 +473,17 @@ contains
    !=================================================================
 
    subroutine photosynthesis_rate(c_atm, temp,p0,ipar,llight,c4,nbio,pbio,&
-        & leaf_turnover,f1ab,vm, amax)
+      & leaf_turnover,f1ab,vm, amax)
 
-      ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
-      ! vm SCALAR Returns maximum carboxilation Rate (Vcmax) (molCO2/m2/s)
+    ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
+    ! vm SCALAR Returns maximum carboxilation Rate (Vcmax) (molCO2/m2/s)
       use types
       use global_par
       use photo_par
+      use allometry_par
       ! implicit none
       ! I
+      integer(i_4),parameter :: npft = npls
       real(r_4),intent(in) :: temp  ! temp °C
       real(r_4),intent(in) :: p0    ! atm Pressure hPa
       real(r_4),intent(in) :: ipar  ! mol Photons m-2 s-1
@@ -509,6 +511,34 @@ contains
       real(r_8) :: delta, delta2,aux_ipar
       real(r_8) :: f1a
       logical(l_1) :: ll ! is light limited?
+
+      !VARIABLES INTERNAL [LIGHT COMPETITION]
+      real(r_8), dimension(npft) :: sla
+      real(r_8), dimension(npft) :: height_aux1, diam_aux1, crown_aux1, index_leaf
+      real(r_8) :: max_height !maximum height in m. in each grid-cell
+      integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
+      integer(i_4) :: p, n
+      real(r_8) :: layer_size !size of each layer in m. in each grid-cell
+      integer(i_4) :: last_with_pls
+      real(r_8),dimension(npft) :: cleaf, cawood
+      real(r_8),dimension(npft) :: light1
+      integer(i_4), dimension(npft) :: pls_id !identify layers and PLS to light competition dynamic.
+
+      type :: layer_array
+         real(r_8) :: sum_height
+         integer(i_4) :: num_height !!corresponds to the number of layers according max height of PLS.
+         real(r_8) :: mean_height !Mean of heights in a layer
+         real(r_8) :: layer_height !Height of respective layer of the floor (in m.)
+         real(r_8) :: sum_LAI !LAI sum in a layer
+         real(r_8) :: mean_LAI !mean LAI in a layer
+         real(r_8) :: beers_law !layer's light extinction
+         real(r_8) :: linc !layer's light incidence
+         real(r_8) :: lused !layer's light used (relates to light extinction - Beers Law)
+         real(r_8) :: lavai !light availability
+         integer(i_4) :: layer_id !identify layers
+      end type layer_array
+
+      type(layer_array), allocatable :: layer(:)
 
       ! new vars C4 PHOTOSYNTHESIS
       real(r_8) :: ipar1
@@ -540,6 +570,148 @@ contains
       ! Rubisco Carboxilation Rate - temperature dependence
       vm_in = (vm*2.0D0**(0.1D0*(temp-25.0D0)))/(1.0D0+dexp(0.3D0*(temp-36.0)))
 
+      !=================== LIGHT COMPETITION ================================!
+      
+      do p = 1, npft
+         ! - Allometric equations relates to PLS survives -
+         !DIAMETER (in m.) -------------------------------
+         diam_aux1(p) = diameter(cawood(p))
+         !PLS HEIGHT (in m.) -----------------------------
+         height_aux1(p) = tree_height(diam_aux1(p))    
+         !LEAF AREA INDEX (in m2/m-2) --------------------
+         index_leaf(p) = (leaf_area_index(cleaf(p), sla(p)))/10
+      enddo
+
+      ! =================================================
+      !       LIGHT COMPETITION DYNAMIC. [LAYERS]
+      ! =================================================
+
+      max_height = 0.0D0
+      num_layer = 0.0D0
+      layer_size = 0.0D0
+
+      max_height = maxval(height_aux1(:))
+
+
+      num_layer = nint(max_height/5)
+      !print*, 'num layer is', num_layer
+
+      allocate(layer(1:num_layer))
+
+      layer_size = max_height/num_layer !length from one layer to another
+
+      last_with_pls=num_layer
+
+      do n = 1,num_layer
+         layer(n)%layer_height = 0.0D0
+         layer(n)%layer_height=layer_size*n
+      end do
+
+      light1 = llight
+
+      do n = 1, num_layer
+         !Inicialize variables about layers dynamics
+         layer(n)%num_height = 0.0D0
+         layer(n)%sum_height = 0.0D0
+         layer(n)%mean_height = 0.0D0
+         layer(n)%sum_LAI = 0.0D0
+         do p = 1,npft      
+            if ((layer(n)%layer_height .ge. height_aux1(p)).and.&
+            &(layer(n-1)%layer_height .lt. height_aux1(p))) then     
+               layer(n)%sum_height=&
+               &layer(n)%sum_height + height_aux1(p)
+               layer(n)%num_height=&
+               &layer(n)%num_height+1
+               layer(n)%sum_LAI=&    
+               &layer(n)%sum_LAI + index_leaf(p)
+            end if
+         end do
+
+         layer(n)%mean_height = layer(n)%sum_height/&
+         &layer(n)%num_height
+         if(layer(n)%sum_height .eq. 0.0D0) then
+            layer(n)%mean_height = 0.0D0
+         endif
+         layer(n)%mean_LAI=layer(n)%sum_LAI/&
+         &layer(n)%num_height
+         if(layer(n)%sum_LAI .eq. 0.0D0) then
+            layer(n)%mean_LAI = 0.0D0
+         end if
+      end do
+
+      ! ======================================================
+      !       LIGHT COMPETITION DYNAMIC. [EXTINCTION LIGHT]
+      ! ======================================================
+
+      !! INICIALIZE VARIABLES !!
+      do n = 1, num_layer
+            layer(n)%linc = 0.0D0
+            layer(n)%lavai = 0.0D0
+            layer(n)%lused = 0.0D0
+      enddo
+         
+      !=================== Beer's Law ========================
+      do n = num_layer,1,-1
+            layer(n)%beers_law = ipar*&
+            &(1-exp(-0.5*layer(n)%mean_LAI))
+      enddo
+      !=======================================================
+
+      ! ======================================================
+      !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
+      ! ======================================================
+
+      do n = num_layer,1,-1   !VIRARIA UMA FUNÇÃO
+         if(n.eq.num_layer) then
+            layer(n)%linc = ipar
+         else
+            if(layer(n)%mean_height.gt.0.0D0) then
+               layer(n)%linc = layer(last_with_pls)%lavai
+               last_with_pls=n
+            else
+               continue
+            endif
+         endif
+         layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
+         layer(n)%lavai = layer(n)%linc - layer(n)%lused
+         !print*, 'light avaialable', layer(n)%lavai, 'num_layer', n 
+      enddo
+
+      ! ======================================================
+      !    LIGHT COMPET. PHOTOSYNTHESIS PUNISHMENT & ID 
+      ! ======================================================
+
+      ! Identifying the layers and allocate each PLS to punishment photosyntesis.
+
+      !! INICIALIZE VARIABLES !!
+      do n = 1, num_layer
+         do p = 1, npft
+            layer(n)%layer_id = 0.0D0
+            pls_id(p) = 0.0D0
+            light1(p) = 0.0D0
+         enddo
+      enddo
+
+      do n = num_layer, 1, -1
+         do p = 1, npft
+            if (n.eq.num_layer) then
+               layer(n)%layer_id = num_layer
+               if (height_aux1(p).le.max_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then 
+                  pls_id(p)=layer(n)%layer_id
+                  light1(p) = ipar
+                  !print*, 'LL TOP=', light1(p), pls_id(p), 'ipar', ipar
+               endif
+            else
+               layer(n)%layer_id = layer(n+1)%layer_id - 1        
+               if (height_aux1(p).le.layer(n)%layer_height.and.height_aux1(p).gt.layer(n-1)%layer_height) then
+                  pls_id(p) = layer(n)%layer_id
+                  light1(p) = layer(n)%lavai/ipar !limitation in % of IPAR total.
+                  !print*, 'LL ABOVE % =', light1(p), pls_id(p), 'ipar', ipar
+               endif
+            endif
+         enddo   
+      enddo
+
       if(c4 .eq. 0) then
          !====================-C3 PHOTOSYNTHESIS-===============================
          !Photo-respiration compensation point (Pa)
@@ -558,27 +730,18 @@ contains
          ci = p19* (1.-(r/p20)) * ((c_atm/9.901)-mgama) + mgama
          !Rubisco carboxilation limited photosynthesis rate (molCO2/m2/s)
          jc = vm_in*((ci-mgama)/(ci+(f2*(1.+(p3/f3)))))
+
          !Light limited photosynthesis rate (molCO2/m2/s)
+         do p = 1, npft
+            ll = .false.
+            if (ll) then
+               aux_ipar = ipar
+            else
+               aux_ipar = ipar - (ipar*light_limitation(light1(p)))
+            endif
+            !print*, 'LL-C4=', aux_ipar, ipar
+         enddo
 
-         ! light_aux = light_limitation(lli, ipar)
-         ! print*, 'LIGHTAUX_funcs=', light_aux
-
-         ! if (ll) then
-         !    aux_ipar = ipar
-         ! else
-         !    aux_ipar = light_limitation(lli)
-         !    !print*,'aux_ipar if ll=', aux_ipar
-         ! endif
-
-         ll = .false.
-
-         if (ll) then
-            aux_ipar = ipar
-         else
-            aux_ipar = ipar - (ipar*light_limitation(llight))
-            !print*,'dentro do if=', aux_ipar, ipar
-         endif
-         !print*, 'AUX_IPAR_C3=', aux_ipar, ipar
 
          jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
@@ -628,23 +791,17 @@ contains
          t25 = 273.15 + 25.0          ! K
          kp = kp25 * (2.1**(0.1*(tk-t25))) ! ppm
 
-         ! light_aux = light_limitation(lli, ipar)
-         ! ! print*, 'LL_FUNCS', light_aux
+         do p = 1, npft
+            ll = .false.
+            if (ll) then
+               aux_ipar = ipar
+            else
+               aux_ipar = ipar - (ipar*light_limitation(light1(p)))
+            endif
+            !print*, 'LL-C3=', aux_ipar, ipar
+         enddo
 
-         ! if (ll) then
-         !    aux_ipar = ipar
-         ! else
-         !    aux_ipar = light_limitation(lli)
-         ! endif
-
-         ll = .false.
-         
-         if (ll) then
-            aux_ipar = ipar
-         else
-            aux_ipar = ipar - (ipar*light_limitation(llight))
-         endif
-         !print*,'AUX_IPAR_LL_C4=', aux_ipar, ipar
+         !print*, 'LL-C4=', aux_ipar, ipar
 
          ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
 
@@ -690,7 +847,7 @@ contains
          if(f1ab .lt. 0.0D0) f1ab = 0.0D0
          return
       endif
-   end subroutine photosynthesis_rate
+ end subroutine photosynthesis_rate
 
    !=================================================================
    !=================================================================

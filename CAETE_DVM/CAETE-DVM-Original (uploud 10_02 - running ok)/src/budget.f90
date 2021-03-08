@@ -301,13 +301,13 @@ contains
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
          
-         if(step.eq.0)then
-            ll(p)=ipar
-            print*,'teste ll2', ll(p)
-         else
-            ll(p)=ll(p)
-            print*,'teste ll2 step df 0', ll(p)
-         endif
+         ! if(step.eq.0)then
+         !    ll(p)=ipar
+         !    print*,'teste ll2', ll(p)
+         ! else
+         !    ll(p)=ll(p)
+         !    print*,'teste ll2 step df 0', ll(p)
+         ! endif
 
          ! if (step.eq.0) then
          !    teste_ll_3(p) = ipar
@@ -495,166 +495,166 @@ contains
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
 
-      ! ---------------------- START --------------------------!
+      ! ! ---------------------- START --------------------------!
 
-      ! =================================================
-      !              LIGHT COMPETITION DYNAMIC.
-      ! =================================================
+      ! ! =================================================
+      ! !              LIGHT COMPETITION DYNAMIC.
+      ! ! =================================================
 
-      do p = 1,nlen
+      ! do p = 1,nlen
 
-         ! - Allometric equations relates to PLS survives -
+      !    ! - Allometric equations relates to PLS survives -
             
-         !DIAMETER (in m.) -------------------------------
-         diam_aux(p) = diameter(ca2(p))
+      !    !DIAMETER (in m.) -------------------------------
+      !    diam_aux(p) = diameter(ca2(p))
 
-         !CROWN AREA (in m2.) ----------------------------
-         crown_aux(p) = crownarea(diam_aux(p))
+      !    !CROWN AREA (in m2.) ----------------------------
+      !    crown_aux(p) = crownarea(diam_aux(p))
 
-         !PLS HEIGHT (in m.) -----------------------------
-         height_aux(p) = (tree_height(diam_aux(p)))
-         ! print*, 'HEIGHT=', height_aux(p)
+      !    !PLS HEIGHT (in m.) -----------------------------
+      !    height_aux(p) = (tree_height(diam_aux(p)))
+      !    ! print*, 'HEIGHT=', height_aux(p)
 
-         !LEAF AREA INDEX (in m2/m-2) --------------------
-         lai_aux(p) = (leaf_area_index(cl2(p), specific_la(p)))/10
-      end do
+      !    !LEAF AREA INDEX (in m2/m-2) --------------------
+      !    lai_aux(p) = (leaf_area_index(cl2(p), specific_la(p)))/10
+      ! end do
 
-      ! =================================================
-      !       LIGHT COMPETITION DYNAMIC. [LAYERS]
-      ! =================================================
+      ! ! =================================================
+      ! !       LIGHT COMPETITION DYNAMIC. [LAYERS]
+      ! ! =================================================
 
-      max_height = maxval(height_aux(:))
-      !print*, 'MAX_HEIGHT', max_height
+      ! max_height = maxval(height_aux(:))
+      ! !print*, 'MAX_HEIGHT', max_height
 
-      num_layer = nint(max_height/5)
-      !print*, 'num layer is', num_layer
+      ! num_layer = nint(max_height/5)
+      ! !print*, 'num layer is', num_layer
 
-      allocate(layer(1:num_layer))
+      ! allocate(layer(1:num_layer))
 
-      layer_size = max_height/num_layer !length from one layer to another
+      ! layer_size = max_height/num_layer !length from one layer to another
 
-      last_with_pls=num_layer
+      ! last_with_pls=num_layer
 
-      do n = 1,num_layer
-         layer(n)%layer_height = 0.0D0
+      ! do n = 1,num_layer
+      !    layer(n)%layer_height = 0.0D0
 
-         layer(n)%layer_height=layer_size*n
-      end do
+      !    layer(n)%layer_height=layer_size*n
+      ! end do
 
-      do n = 1, num_layer
+      ! do n = 1, num_layer
 
-         !Inicialize variables about layers dynamics
+      !    !Inicialize variables about layers dynamics
 
-         layer(n)%num_height = 0.0D0
-         layer(n)%sum_height = 0.0D0
-         layer(n)%mean_height = 0.0D0
-         layer(n)%sum_LAI = 0.0D0
+      !    layer(n)%num_height = 0.0D0
+      !    layer(n)%sum_height = 0.0D0
+      !    layer(n)%mean_height = 0.0D0
+      !    layer(n)%sum_LAI = 0.0D0
 
-         do p = 1,nlen
+      !    do p = 1,nlen
                 
-            if ((layer(n)%layer_height .ge. height_aux(p)).and.&
-               &(layer(n-1)%layer_height .lt. height_aux(p))) then
+      !       if ((layer(n)%layer_height .ge. height_aux(p)).and.&
+      !          &(layer(n-1)%layer_height .lt. height_aux(p))) then
                   
-               layer(n)%sum_height=&
-               &layer(n)%sum_height + height_aux(p)
+      !          layer(n)%sum_height=&
+      !          &layer(n)%sum_height + height_aux(p)
 
-               layer(n)%num_height=&
-               &layer(n)%num_height+1
+      !          layer(n)%num_height=&
+      !          &layer(n)%num_height+1
 
-               layer(n)%sum_LAI=&    
-               &layer(n)%sum_LAI + lai_aux(p)
-            end if
-         end do
+      !          layer(n)%sum_LAI=&    
+      !          &layer(n)%sum_LAI + lai_aux(p)
+      !       end if
+      !    end do
 
-         layer(n)%mean_height = layer(n)%sum_height/&
-         &layer(n)%num_height
+      !    layer(n)%mean_height = layer(n)%sum_height/&
+      !    &layer(n)%num_height
 
-         if(layer(n)%sum_height .eq. 0.0D0) then
-            layer(n)%mean_height = 0.0D0
-         endif
+      !    if(layer(n)%sum_height .eq. 0.0D0) then
+      !       layer(n)%mean_height = 0.0D0
+      !    endif
 
-         layer(n)%mean_LAI=layer(n)%sum_LAI/&
-         &layer(n)%num_height
+      !    layer(n)%mean_LAI=layer(n)%sum_LAI/&
+      !    &layer(n)%num_height
 
-         if(layer(n)%sum_LAI .eq. 0.0D0) then
-            layer(n)%mean_LAI = 0.0D0
-         end if
-      end do
+      !    if(layer(n)%sum_LAI .eq. 0.0D0) then
+      !       layer(n)%mean_LAI = 0.0D0
+      !    end if
+      ! end do
 
-      ! ======================================================
-      !       LIGHT COMPETITION DYNAMIC. [EXTINCTION LIGHT]
-      ! ======================================================
+      ! ! ======================================================
+      ! !       LIGHT COMPETITION DYNAMIC. [EXTINCTION LIGHT]
+      ! ! ======================================================
 
-      !! INICIALIZE VARIABLES !!
-      do n = 1, num_layer
-         layer(n)%linc = 0.0D0
-         layer(n)%lavai = 0.0D0
-         layer(n)%lused = 0.0D0
-      enddo
+      ! !! INICIALIZE VARIABLES !!
+      ! do n = 1, num_layer
+      !    layer(n)%linc = 0.0D0
+      !    layer(n)%lavai = 0.0D0
+      !    layer(n)%lused = 0.0D0
+      ! enddo
 
-      !=================== Beer's Law ========================
-      do n = num_layer,1,-1
-         layer(n)%beers_law = ipar*&
-         &(1-exp(-0.5*layer(n)%mean_LAI))
-      enddo
-      !=======================================================
+      ! !=================== Beer's Law ========================
+      ! do n = num_layer,1,-1
+      !    layer(n)%beers_law = ipar*&
+      !    &(1-exp(-0.5*layer(n)%mean_LAI))
+      ! enddo
+      ! !=======================================================
 
-      ! ======================================================
-      !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
-      ! ======================================================
+      ! ! ======================================================
+      ! !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
+      ! ! ======================================================
 
-      do n = num_layer,1,-1 
-         if(n.eq.num_layer) then
-            layer(n)%linc = ipar
-         else
-            if(layer(n)%mean_height.gt.0.0D0) then
-               layer(n)%linc = layer(last_with_pls)%lavai
-               last_with_pls=n
-            else
-               continue
-            endif
-         endif
-         layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
-         layer(n)%lavai = layer(n)%linc - layer(n)%lused
-         !print*, 'light avaialable', layer(n)%lavai
-      enddo
+      ! do n = num_layer,1,-1 
+      !    if(n.eq.num_layer) then
+      !       layer(n)%linc = ipar
+      !    else
+      !       if(layer(n)%mean_height.gt.0.0D0) then
+      !          layer(n)%linc = layer(last_with_pls)%lavai
+      !          last_with_pls=n
+      !       else
+      !          continue
+      !       endif
+      !    endif
+      !    layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
+      !    layer(n)%lavai = layer(n)%linc - layer(n)%lused
+      !    !print*, 'light avaialable', layer(n)%lavai
+      ! enddo
 
-      ! ======================================================
-      !    LIGHT COMPET. PHOTOSYNTHESIS PUNISHMENT & ID 
-      ! ======================================================
+      ! ! ======================================================
+      ! !    LIGHT COMPET. PHOTOSYNTHESIS PUNISHMENT & ID 
+      ! ! ======================================================
 
-      ! Identifying the layers and allocate each PLS to punishment photosyntesis.
+      ! ! Identifying the layers and allocate each PLS to punishment photosyntesis.
 
-      !! INICIALIZE VARIABLES !!
-      do n = 1, num_layer
-         do p = 1, nlen
-            layer(n)%layer_id = 0.0D0
-            pls_id(p) = 0.0D0
-            ll(p) = 0.0D0
-         enddo
-      enddo
+      ! !! INICIALIZE VARIABLES !!
+      ! do n = 1, num_layer
+      !    do p = 1, nlen
+      !       layer(n)%layer_id = 0.0D0
+      !       pls_id(p) = 0.0D0
+      !       ll(p) = 0.0D0
+      !    enddo
+      ! enddo
 
-      do n = num_layer, 1, -1
-         do p = 1, nlen
-            if (n.eq.num_layer) then
-               layer(n)%layer_id = num_layer
-               if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
-                  pls_id(p)=layer(n)%layer_id
-                  ll(p) = ipar
-                  teste_ll_2(p) = teste_ll(ll(p))
-                  ! print*,'1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
-               endif
-            else
-               layer(n)%layer_id = layer(n+1)%layer_id - 1        
-               if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
-                  pls_id(p) = layer(n)%layer_id
-                  ll(p) = ipar - (ipar *(layer(n)%lavai/ipar)) !limitation in m-2 s-1 of IPAR total.
-                  teste_ll_2(p) = teste_ll(ll(p))
-                  ! print*,'not 1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
-               endif
-            endif
-         enddo   
-      enddo
+      ! do n = num_layer, 1, -1
+      !    do p = 1, nlen
+      !       if (n.eq.num_layer) then
+      !          layer(n)%layer_id = num_layer
+      !          if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
+      !             pls_id(p)=layer(n)%layer_id
+      !             ll(p) = ipar
+      !             teste_ll_2(p) = teste_ll(ll(p))
+      !             ! print*,'1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
+      !          endif
+      !       else
+      !          layer(n)%layer_id = layer(n+1)%layer_id - 1        
+      !          if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
+      !             pls_id(p) = layer(n)%layer_id
+      !             ll(p) = ipar - (ipar *(layer(n)%lavai/ipar)) !limitation in m-2 s-1 of IPAR total.
+      !             teste_ll_2(p) = teste_ll(ll(p))
+      !             ! print*,'not 1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
+      !          endif
+      !       endif
+      !    enddo   
+      ! enddo
 
       ! do p = 1, nlen
       !    teste_ll_2(p) = teste_ll(ll(p))
