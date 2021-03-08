@@ -31,7 +31,7 @@ contains
         &, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
         &, cfrootavg_pft, storage_out_bdgt_1, ocpavg, wueavg, cueavg, c_defavg&
         &, vcmax_1, specific_la_1, nupt_1, pupt_1, litter_l_1, cwd_1, litter_fr_1, npp2pay_1, lit_nut_content_1&
-        &, delta_cveg_1, limitation_status_1, uptk_strat_1, cp)
+        &, delta_cveg_1, limitation_status_1, uptk_strat_1, cp,step)
 
 
       use types
@@ -57,7 +57,7 @@ contains
       real(r_4),intent(in) :: labile_p             ! solution P O4P  gm-2
       real(r_8),intent(in) :: on, sop, op          ! Organic N, isoluble inorganic P, Organic P g m-2
       real(r_8),intent(in) :: catm, wmax_in        ! ATM CO2 concentration ppm
-
+      integer(r_8),intent(in) :: step
 
       real(r_8),dimension(3,npls),intent(in)  :: sto_budg_in ! Rapid Storage Pool (C,N,P)  g m-2
       real(r_8),dimension(npls),intent(in) :: cl1_in  ! initial BIOMASS cleaf compartment kgm-2
@@ -203,6 +203,8 @@ contains
       !     Grid cell area fraction 0-1
       !     ============================
 
+     
+
       ! create copies of some input variables (arrays) - ( they are passed by reference by standard)
       do i = 1,npls
          awood_aux(i) = dt(7,i)
@@ -301,6 +303,26 @@ contains
 	
 	      !print*, 'cl1 vivos=', cl1_pft(ri), ri
          !print*, 'nlen=', p
+
+         if (step.eq.0) then
+            if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
+               ll_aux(p) = ipar
+               !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
+            else
+               ll_aux(p) = ipar !for woodys (in %)
+               !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+            endif
+            print*, 'step', step, ll_aux(p), ipar
+         else 
+            if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
+               ll_aux(p) = ipar
+               !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
+            else
+               ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
+               !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+            endif  
+            print*, 'll(p)', ll(p)
+         endif
 
 
          ! GABI hydro ocp_wood(ri)
@@ -605,32 +627,33 @@ contains
                if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
                   pls_id(p)=layer(n)%layer_id
                   ll(p) = ipar
+                  print*, ll(p), ipar
                endif
             else
                layer(n)%layer_id = layer(n+1)%layer_id - 1        
                if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
                   pls_id(p) = layer(n)%layer_id
                   ll(p) = layer(n)%lavai/ipar !limitation in m-2 s-1 of IPAR total.
-                  !print*,'LL_LOGICA=', ll(p), pls_id(p), ipar
+                  print*,'LL_LOGICA=', ll(p), pls_id(p), ipar
                endif
             endif
          enddo   
       enddo
 
-      !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
-      do p = 1, nlen
+      ! !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
+      ! do p = 1, nlen
 
-         if (ca2(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-            ll_aux(p) = ipar
-            !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
-         else
-            ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
-            !print*, 'light limitation in %', ll_aux(p), pls_id(p)
-         endif
+      !    if (ca2(p).eq.0.0D0) then !for grasses (in m-2 s-1)
+      !       ll_aux(p) = ipar
+      !       !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
+      !    else
+      !       ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
+      !       !print*, 'light limitation in %', ll_aux(p), pls_id(p)
+      !    endif
 
-         !print*,'BUD_LL=', ll_aux(p)
+      !    !print*,'BUD_LL=', ll_aux(p)
 
-      enddo
+      ! enddo
       !-------------------------------------------------------------
 
       ! do p = 1, nlen !ARE THE VALUES BEING STORED?
