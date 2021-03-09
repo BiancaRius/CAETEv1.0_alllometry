@@ -105,7 +105,7 @@ contains
       real(r_8),dimension(3),intent(out) :: cp
 
       !     -----------------------Internal Variables------------------------
-      integer(i_4) :: p, counter, nlen, ri, i, j, n
+      integer(i_4) :: p, counter, nlen, ri, i, j
       real(r_8),dimension(ntraits) :: dt1 ! Store one PLS attributes array (1D)
       real(r_8) :: carbon_in_storage
       real(r_8) :: testcdef
@@ -171,39 +171,13 @@ contains
 
       real(r_8), dimension(npls) :: awood_aux, dleaf, dwood, droot, uptk_costs
       real(r_8), dimension(3,npls) :: sto_budg
-      real(r_8),dimension(npls) :: diam_aux, crown_aux, height_aux, lai_aux, ll_aux
-      real(r_8) :: max_height !maximum height in m. in each grid-cell
-      integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
-      real(r_8) :: layer_size !size of each layer in m. in each grid-cell
-      integer(i_4) :: last_with_pls
-      integer(i_4), dimension(npls) :: pls_id !identify layers and PLS to light competition dynamic.
-      real(r_8), dimension(npls) :: ll 
+      real(r_8), dimension(npls) :: ll_aux 
       real(r_8) :: soil_sat
-
-      ! Layers dynamic to light competition ----------------------------------------------
-         real(r_8),dimension(npls) :: teste_ll_2, teste_ll_3
-      type :: layer_array
-         real(r_8) :: sum_height
-         integer(i_4) :: num_height !!corresponds to the number of layers according max height of PLS.
-         real(r_8) :: mean_height !Mean of heights in a layer
-         real(r_8) :: layer_height !Height of respective layer of the floor (in m.)
-         real(r_8) :: sum_LAI !LAI sum in a layer
-         real(r_8) :: mean_LAI !mean LAI in a layer
-         real(r_8) :: beers_law !layer's light extinction
-         real(r_8) :: linc !layer's light incidence
-         real(r_8) :: lused !layer's light used (relates to light extinction - Beers Law)
-         real(r_8) :: lavai !light availability
-         integer(i_4) :: layer_id !identify layers
-      end type layer_array
-
-      type(layer_array), allocatable :: layer(:)
 
       !     START
       !     --------------
       !     Grid cell area fraction 0-1
       !     ============================
-
-     
 
       ! create copies of some input variables (arrays) - ( they are passed by reference by standard)
       do i = 1,npls
@@ -302,44 +276,6 @@ contains
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
          
-         ! if(step.eq.0)then
-         !    ll(p)=ipar
-         !    print*,'teste ll2', ll(p)
-         ! else
-         !    ll(p)=ll(p)
-         !    print*,'teste ll2 step df 0', ll(p)
-         ! endif
-
-         ! if (step.eq.0) then
-         !    teste_ll_3(p) = ipar
-         !    print*,'step 0', teste_ll_3(p), ipar
-         ! else
-         !    if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-         !       teste_ll_3(p) = ipar
-         !       print*,'step 1, graminea', teste_ll_3(p), ipar
-         !    else
-         !       teste_ll_3(p) = teste_ll_2(p)
-         !       print*,'step 1, lenhosa', teste_ll_3(p), ipar
-         !    endif
-         ! endif
-            !       !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
-         !    else
-         !       ll_aux(p) = ipar !for woodys (in %)
-         !       !print*, 'light limitation in %', ll_aux(p), pls_id(p)
-         !    endif
-         !    print*, 'step', step, ll_aux(p), ipar
-         ! else 
-         !    if (ca1_pft(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-         !       ll_aux(p) = ipar
-         !       !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
-         !    else
-         !       ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
-         !       !print*, 'light limitation in %', ll_aux(p), pls_id(p)
-         !    endif  
-         !    print*, 'll(p)', ll(p)
-         ! endif
-
-
          ! GABI hydro ocp_wood(ri)
 
          call prod(dt1, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
@@ -496,206 +432,6 @@ contains
       enddo ! end pls_loop (p)
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
-
-      ! ! ---------------------- START --------------------------!
-
-      ! ! =================================================
-      ! !              LIGHT COMPETITION DYNAMIC.
-      ! ! =================================================
-
-      ! do p = 1,nlen
-
-      !    ! - Allometric equations relates to PLS survives -
-            
-      !    !DIAMETER (in m.) -------------------------------
-      !    diam_aux(p) = diameter(ca2(p))
-
-      !    !CROWN AREA (in m2.) ----------------------------
-      !    crown_aux(p) = crownarea(diam_aux(p))
-
-      !    !PLS HEIGHT (in m.) -----------------------------
-      !    height_aux(p) = (tree_height(diam_aux(p)))
-      !    ! print*, 'HEIGHT=', height_aux(p)
-
-      !    !LEAF AREA INDEX (in m2/m-2) --------------------
-      !    lai_aux(p) = (leaf_area_index(cl2(p), specific_la(p)))/10
-      ! end do
-
-      ! ! =================================================
-      ! !       LIGHT COMPETITION DYNAMIC. [LAYERS]
-      ! ! =================================================
-
-      ! max_height = maxval(height_aux(:))
-      ! !print*, 'MAX_HEIGHT', max_height
-
-      ! num_layer = nint(max_height/5)
-      ! !print*, 'num layer is', num_layer
-
-      ! allocate(layer(1:num_layer))
-
-      ! layer_size = max_height/num_layer !length from one layer to another
-
-      ! last_with_pls=num_layer
-
-      ! do n = 1,num_layer
-      !    layer(n)%layer_height = 0.0D0
-
-      !    layer(n)%layer_height=layer_size*n
-      ! end do
-
-      ! do n = 1, num_layer
-
-      !    !Inicialize variables about layers dynamics
-
-      !    layer(n)%num_height = 0.0D0
-      !    layer(n)%sum_height = 0.0D0
-      !    layer(n)%mean_height = 0.0D0
-      !    layer(n)%sum_LAI = 0.0D0
-
-      !    do p = 1,nlen
-                
-      !       if ((layer(n)%layer_height .ge. height_aux(p)).and.&
-      !          &(layer(n-1)%layer_height .lt. height_aux(p))) then
-                  
-      !          layer(n)%sum_height=&
-      !          &layer(n)%sum_height + height_aux(p)
-
-      !          layer(n)%num_height=&
-      !          &layer(n)%num_height+1
-
-      !          layer(n)%sum_LAI=&    
-      !          &layer(n)%sum_LAI + lai_aux(p)
-      !       end if
-      !    end do
-
-      !    layer(n)%mean_height = layer(n)%sum_height/&
-      !    &layer(n)%num_height
-
-      !    if(layer(n)%sum_height .eq. 0.0D0) then
-      !       layer(n)%mean_height = 0.0D0
-      !    endif
-
-      !    layer(n)%mean_LAI=layer(n)%sum_LAI/&
-      !    &layer(n)%num_height
-
-      !    if(layer(n)%sum_LAI .eq. 0.0D0) then
-      !       layer(n)%mean_LAI = 0.0D0
-      !    end if
-      ! end do
-
-      ! ! ======================================================
-      ! !       LIGHT COMPETITION DYNAMIC. [EXTINCTION LIGHT]
-      ! ! ======================================================
-
-      ! !! INICIALIZE VARIABLES !!
-      ! do n = 1, num_layer
-      !    layer(n)%linc = 0.0D0
-      !    layer(n)%lavai = 0.0D0
-      !    layer(n)%lused = 0.0D0
-      ! enddo
-
-      ! !=================== Beer's Law ========================
-      ! do n = num_layer,1,-1
-      !    layer(n)%beers_law = ipar*&
-      !    &(1-exp(-0.5*layer(n)%mean_LAI))
-      ! enddo
-      ! !=======================================================
-
-      ! ! ======================================================
-      ! !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
-      ! ! ======================================================
-
-      ! do n = num_layer,1,-1 
-      !    if(n.eq.num_layer) then
-      !       layer(n)%linc = ipar
-      !    else
-      !       if(layer(n)%mean_height.gt.0.0D0) then
-      !          layer(n)%linc = layer(last_with_pls)%lavai
-      !          last_with_pls=n
-      !       else
-      !          continue
-      !       endif
-      !    endif
-      !    layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
-      !    layer(n)%lavai = layer(n)%linc - layer(n)%lused
-      !    !print*, 'light avaialable', layer(n)%lavai
-      ! enddo
-
-      ! ! ======================================================
-      ! !    LIGHT COMPET. PHOTOSYNTHESIS PUNISHMENT & ID 
-      ! ! ======================================================
-
-      ! ! Identifying the layers and allocate each PLS to punishment photosyntesis.
-
-      ! !! INICIALIZE VARIABLES !!
-      ! do n = 1, num_layer
-      !    do p = 1, nlen
-      !       layer(n)%layer_id = 0.0D0
-      !       pls_id(p) = 0.0D0
-      !       ll(p) = 0.0D0
-      !    enddo
-      ! enddo
-
-      ! do n = num_layer, 1, -1
-      !    do p = 1, nlen
-      !       if (n.eq.num_layer) then
-      !          layer(n)%layer_id = num_layer
-      !          if (height_aux(p).le.max_height.and.height_aux(p).gt.layer(n-1)%layer_height) then 
-      !             pls_id(p)=layer(n)%layer_id
-      !             ll(p) = ipar
-      !             teste_ll_2(p) = teste_ll(ll(p))
-      !             ! print*,'1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
-      !          endif
-      !       else
-      !          layer(n)%layer_id = layer(n+1)%layer_id - 1        
-      !          if (height_aux(p).le.layer(n)%layer_height.and.height_aux(p).gt.layer(n-1)%layer_height) then
-      !             pls_id(p) = layer(n)%layer_id
-      !             ll(p) = ipar - (ipar *(layer(n)%lavai/ipar)) !limitation in m-2 s-1 of IPAR total.
-      !             teste_ll_2(p) = teste_ll(ll(p))
-      !             ! print*,'not 1st layer', 'll',ll(p),'ipar', ipar,'função',teste_ll_2(p)
-      !          endif
-      !       endif
-      !    enddo   
-      ! enddo
-
-      ! do p = 1, nlen
-      !    teste_ll_2(p) = teste_ll(ll(p))
-      !    print*,'ll2', teste_ll_2(p),ipar
-      ! enddo
-
-      ! !PUNISHMENT FOR GRASSES & WOODY STRATEGIES -------------------
-      ! do p = 1, nlen
-
-      !    if (ca2(p).eq.0.0D0) then !for grasses (in m-2 s-1)
-      !       ll_aux(p) = ipar
-      !       !print*, 'grass =', ll(p), pls_id(p), 'ipar', ipar
-      !    else
-      !       ll_aux(p) = light_limitation(ll(p)) !for woodys (in %)
-      !       !print*, 'light limitation in %', ll_aux(p), pls_id(p)
-      !    endif
-
-      !    !print*,'BUD_LL=', ll_aux(p)
-
-      ! enddo
-      !-------------------------------------------------------------
-
-      ! do p = 1, nlen !ARE THE VALUES BEING STORED?
-      !    print*, 'stored ll=', ll(p), pls_id(p)
-      ! enddo
-
-      !TEST TO PLS ID - ARE THE VALUES BEING STORED? ----------
-      ! do n = num_layer, 1, -1
-      !    do p = 1, nlen
-      !       if (ca2(p).ne.0.0D0) then
-      !          ! print*,'ca2 ne 0', 'pls_id',pls_id(p), p, height_aux(p),n
-      !       else
-      !          ! print*, 'ca2 eq 0', 'pls_id', pls_id(p), p, height_aux(p),n 
-      !       endif
-      !    enddo
-      ! enddo
-      !-------------------------------------------------------
-
-      ! ---------------------- END --------------------------!
 
       ! FILL OUTPUT DATA
       evavg = 0.0D0

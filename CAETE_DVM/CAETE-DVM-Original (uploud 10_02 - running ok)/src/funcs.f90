@@ -502,8 +502,8 @@ contains
       real(r_8) :: f1a
       logical(l_1) :: ll ! is light limited?
 
-      !VARIABLES INTERNAL [LIGHT COMPETITION]
-      real(r_8), dimension(npft) :: height_aux1, diam_aux1, crown_aux1, index_leaf
+      !Internal Variables [LIGHT COMPETITION] ---------------------------------------
+      real(r_8), dimension(npft) :: height_aux1, diam_aux1, index_leaf
       real(r_8) :: sla_aux
       real(r_8) :: max_height !maximum height in m. in each grid-cell
       integer(i_4) :: num_layer !number of layers according to max height in each grid-cell
@@ -512,6 +512,7 @@ contains
       integer(i_4) :: last_with_pls
       real(r_8),dimension(npft) :: light1
       integer(i_4), dimension(npft) :: pls_id !identify layers and PLS to light competition dynamic.
+      real(r_8) :: blabla
 
       type :: layer_array
          real(r_8) :: sum_height
@@ -559,7 +560,9 @@ contains
       ! Rubisco Carboxilation Rate - temperature dependence
       vm_in = (vm*2.0D0**(0.1D0*(temp-25.0D0)))/(1.0D0+dexp(0.3D0*(temp-36.0)))
 
-      !=================== LIGHT COMPETITION ================================!
+      !========================= LIGHT COMPETITION =============================!
+      !                               START                                     !
+
       sla_aux = spec_leaf_area(leaf_turnover)
       ! print*, 'sla_aux',sla_aux
 
@@ -567,10 +570,10 @@ contains
          ! - Allometric equations relates to PLS survives -
          !DIAMETER (in m.) -------------------------------
          diam_aux1(p) = diameter(cawood)
-         ! print*, 'diam_aux', diam_aux1(p),'cawood', cawood
+         !print*, 'diam_aux', diam_aux1(p),'cawood', cawood
          !PLS HEIGHT (in m.) -----------------------------
          height_aux1(p) = tree_height(diam_aux1(p))
-         ! print*, 'height_aux', height_aux1(p),'cawood', cawood    
+         !print*, 'height_aux', height_aux1(p),'cawood', cawood    
          !LEAF AREA INDEX (in m2/m-2) --------------------
          index_leaf(p) = (leaf_area_index(cleaf, sla_aux)/10)
          ! print*,'lai', index_leaf(p)
@@ -589,7 +592,7 @@ contains
       if (cawood.le.0.0D0) goto 253
 
       num_layer = nint(max_height/5)
-      ! print*, 'num layer is', num_layer
+      !print*, 'num layer is', num_layer
 
       allocate(layer(1:num_layer))
 
@@ -598,6 +601,7 @@ contains
      
 
       last_with_pls=num_layer
+      !print*, 'LAST', last_with_pls
 
       do n = 1,num_layer
          layer(n)%layer_height = 0.0D0
@@ -711,6 +715,8 @@ contains
          enddo   
       enddo    
 
+      !                                   END                                         !
+
       if(c4 .eq. 0) then
          !====================-C3 PHOTOSYNTHESIS-===============================
          !Photo-respiration compensation point (Pa)
@@ -731,15 +737,15 @@ contains
          jc = vm_in*((ci-mgama)/(ci+(f2*(1.+(p3/f3)))))
 
          !Light limited photosynthesis rate (molCO2/m2/s)
+         
+         ll = .false.
          do p = 1, npft
             if (ll) then
                aux_ipar = ipar
             else
-               aux_ipar = ipar - (ipar*light_limitation(light1(p)))
-               !print*, 'LL-C4=', aux_ipar, ipar
+               aux_ipar = ipar-(ipar*light_limitation(light1(p)))
             endif
          enddo
-
 
          jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
@@ -789,13 +795,15 @@ contains
          t25 = 273.15 + 25.0          ! K
          kp = kp25 * (2.1**(0.1*(tk-t25))) ! ppm
 
+         !Light limited photosynthesis rate (molCO2/m2/s)
+         
+         ll = .false.
          do p = 1, npft
             if (ll) then
                aux_ipar = ipar
             else
                aux_ipar = ipar-(ipar*light_limitation(light1(p)))
             endif
-            !print*, 'LL-C3=', aux_ipar, ipar
          enddo
 
          ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
