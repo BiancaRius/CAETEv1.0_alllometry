@@ -278,7 +278,7 @@ contains
          
          ! GABI hydro ocp_wood(ri)
 
-         call prod(dt1, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
+         call prod(dt1, (p), nlen, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
                &, cl1_pft(ri), ca1_pft(ri), cf1_pft(ri), dleaf(ri), dwood(ri), droot(ri)&
                &, soil_sat, ph(p), ar(p), nppa(p), laia(p), f5(p), vpd(p), rm(p), rg(p), rc2(p)&
                &, wue(p), c_def(p), vcmax(p), specific_la(p), tra(p))

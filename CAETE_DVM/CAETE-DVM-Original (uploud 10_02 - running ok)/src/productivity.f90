@@ -26,7 +26,7 @@ module productivity
 
 contains
 
-  subroutine prod(dt,light_limit,catm,temp,ts,p0,w,ipar,rh,emax,cl1_prod,&
+  subroutine prod(dt, p, nlen, light_limit,catm,temp,ts,p0,w,ipar,rh,emax,cl1_prod,&
        & ca1_prod,cf1_prod,beta_leaf,beta_awood,beta_froot,wmax,ph,ar,&
        & nppa,laia,f5,vpd,rm,rg,rc,wue,c_defcit,vm_out,sla, e)
 
@@ -49,6 +49,7 @@ contains
     real(r_8), intent(in) :: beta_awood
     real(r_8), intent(in) :: beta_froot, wmax
     real(r_8), intent(in) :: light_limit
+    integer(i_4), intent(in) :: p, nlen
     ! logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
 
 !     Output
@@ -80,6 +81,7 @@ contains
     real(r_8) :: p2cl
     integer(i_4) :: c4_int
     real(r_8) :: jl_out
+    real(r_8) :: amax
 
     real(r_8) :: f1       !Leaf level gross photosynthesis (molCO2/m2/s)
     real(r_8) :: f1a      !auxiliar_f1
@@ -112,9 +114,9 @@ contains
 !     ==============
 ! rate (molCO2/m2/s)
 
-    call photosynthesis_rate(catm,ca1_prod,cl1_prod,temp,p0,ipar,light_limit,c4_int,n2cl,&
-         & p2cl,tleaf,f1a,vm_out,jl_out)
-
+    
+    call photosynthesis_rate(p, nlen, catm,ca1_prod,cl1_prod,temp,p0,ipar,light_limit,c4_int,n2cl,&
+    & p2cl,tleaf,f1a,vm_out,jl_out)
 
     ! VPD
     !========
