@@ -40,7 +40,7 @@ contains
       use productivity
       use omp_lib
 
-      use photo, only: pft_area_frac, sto_resp, photosynthesis_rate
+      use photo
       use water, only: evpot2, penman, available_energy, runoff
 
       !     ----------------------------INPUTS-------------------------------
@@ -173,6 +173,8 @@ contains
       real(r_8), dimension(3,npls) :: sto_budg
       real(r_8), dimension(npls) :: ll_aux 
       real(r_8) :: soil_sat
+      real(r_8), dimension(npls) :: height_aux, diameter_aux, crown_aux, lai_aux
+      real(r_8) :: max_height
 
       !     START
       !     --------------
@@ -204,6 +206,11 @@ contains
       call pft_area_frac(cl1_pft, cf1_pft, ca1_pft, awood_aux,&
       &                  ocpavg, ocp_wood, run, ocp_mm)
 
+      call pls_allometry(cl1_pft, cf1_pft, ca1_pft, awood_aux, height_aux, diameter_aux,&
+      &                   crown_aux)
+
+      max_height = maxval(height_aux(:))
+      ! print*, 'MAX_HEIGHT=', max_height
 
       nlen = sum(run)    ! New length for the arrays in the main loop
       allocate(lp(nlen))
@@ -278,9 +285,10 @@ contains
          
          ! GABI hydro ocp_wood(ri)
 
-         call prod(dt1, (p), nlen, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
+         call prod(dt1, ll_aux(p),catm, temp, soil_temp, p0, w, ipar, rh, emax&
                &, cl1_pft(ri), ca1_pft(ri), cf1_pft(ri), dleaf(ri), dwood(ri), droot(ri)&
-               &, soil_sat, ph(p), ar(p), nppa(p), laia(p), f5(p), vpd(p), rm(p), rg(p), rc2(p)&
+               &, height_aux(ri), max_height,soil_sat, ph(p), ar(p), nppa(p), laia(p)&
+               &, f5(p), vpd(p), rm(p), rg(p), rc2(p)&
                &, wue(p), c_def(p), vcmax(p), specific_la(p), tra(p))
 
          evap(p) = penman(p0,temp,rh,available_energy(temp),rc2(p)) !Actual evapotranspiration (evap, mm/day)
@@ -432,6 +440,9 @@ contains
       enddo ! end pls_loop (p)
       !$OMP END PARALLEL DO
       epavg = emax !mm/day
+
+      ! max_height = maxval(height_aux1(:))
+      ! print*, 'MAX_HEIGHT_BUD=', max_height
 
       ! FILL OUTPUT DATA
       evavg = 0.0D0

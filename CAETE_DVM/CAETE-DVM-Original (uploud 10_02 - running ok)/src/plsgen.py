@@ -111,6 +111,7 @@ def turnover_combinations(verbose=False):
         aleafw = np.arange(10., 80.1, 0.0125e1, dtype=np.float64)
         arootw = np.arange(10., 80.1, 0.0125e1, dtype=np.float64)
         awood = np.arange(10., 80.1, 0.0125e1, dtype=np.float64)
+        
 
         plsa_wood = [[a, b, c] for a in aleafw for b in awood
                      for c in arootw if (a + b + c) == 100]
@@ -235,9 +236,12 @@ def table_gen(NPLS):
     froot_n2c = root[:, 0]
     froot_p2c = root[:, 1]
 
+    # # Light Competition traits
+
     # new traits
     pdia = np.random.uniform(0.001, 0.15, NPLS)
     amp = np.random.uniform(0.01, 0.999, NPLS)
+    dwood = np.random.uniform(1., 3., NPLS)
 
     stack = (g1, resorption, alloc[:, 0], alloc[:, 1], alloc[:, 2],
              alloc[:, 3], alloc[:, 4], alloc[:, 5], c4, leaf_n2c,

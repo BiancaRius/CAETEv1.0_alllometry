@@ -26,8 +26,8 @@ module productivity
 
 contains
 
-  subroutine prod(dt, p, nlen, light_limit,catm,temp,ts,p0,w,ipar,rh,emax,cl1_prod,&
-       & ca1_prod,cf1_prod,beta_leaf,beta_awood,beta_froot,wmax,ph,ar,&
+  subroutine prod(dt,light_limit,catm,temp,ts,p0,w,ipar,rh,emax,cl1_prod,&
+       & ca1_prod,cf1_prod,beta_leaf,beta_awood,beta_froot,height1,max_height,wmax,ph,ar,&
        & nppa,laia,f5,vpd,rm,rg,rc,wue,c_defcit,vm_out,sla, e)
 
     use types
@@ -49,7 +49,8 @@ contains
     real(r_8), intent(in) :: beta_awood
     real(r_8), intent(in) :: beta_froot, wmax
     real(r_8), intent(in) :: light_limit
-    integer(i_4), intent(in) :: p, nlen
+    real(r_8), intent(in) :: height1
+    real(r_8), intent(in) :: max_height
     ! logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
 
 !     Output
@@ -115,8 +116,8 @@ contains
 ! rate (molCO2/m2/s)
 
     
-    call photosynthesis_rate(p, nlen, catm,ca1_prod,cl1_prod,temp,p0,ipar,light_limit,c4_int,n2cl,&
-    & p2cl,tleaf,f1a,vm_out,jl_out)
+    call photosynthesis_rate(catm,temp,p0,ipar,light_limit,c4_int,n2cl,&
+    & p2cl,height1,max_height,tleaf,f1a,vm_out,jl_out)
 
     ! VPD
     !========
@@ -197,6 +198,7 @@ contains
     else
        c_defcit = 0.0
     endif
+
 
   end subroutine prod
 
