@@ -459,7 +459,7 @@ contains
    !=================================================================
    !=================================================================
 
-   subroutine photosynthesis_rate(c_atm,temp,p0,ipar,llight,c4,nbio,pbio,&
+   subroutine photosynthesis_rate(p,cawood1,cleaf1,c_atm,temp,p0,ipar,llight,c4,nbio,pbio,&
       & height1,max_height,leaf_turnover,f1ab,vm, amax)
 
     ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
@@ -481,6 +481,8 @@ contains
       real(r_8),intent(in) :: leaf_turnover   ! y
       real(r_8),intent(in) :: height1
       real(r_8),intent(in) :: max_height 
+      integer(i_4),intent(in) :: p
+      real(r_8),intent(in) :: cawood1, cleaf1
       ! O
       real(r_8),intent(out) :: f1ab ! Gross CO2 Assimilation Rate mol m-2 s-1
       real(r_8),intent(out) :: vm   ! PLS Vcmax mol m-2 s-1
@@ -505,12 +507,13 @@ contains
       integer(i_4) :: n
       real(r_8) :: sla_aux
       real(r_8) :: index_leaf
-      real(r_8) :: cleaf1, cawood1
+      ! real(r_8) :: cleaf1, cawood1
       integer(i_4) :: num_layer !number of layers according to max height in each grid-cel
       real(r_8) :: layer_size !size of each layer in m. in each grid-cell
       integer(i_4) :: last_with_pls
-      real(r_8),dimension(npft) :: light1
-      integer(i_4), dimension(npft) :: pls_id !identify layers and PLS to light competition dynamic.
+      real(r_8) :: light1
+      real(r_8) :: height2
+      ! integer(i_4), dimension(npft) :: pls_id !identify layers and PLS to light competition dynamic.
 
       type :: layer_array
          real(r_8) :: sum_height
@@ -539,6 +542,8 @@ contains
 
       real(r_8) :: vm_nutri
       real(r_8) :: nbio2, pbio2, xbio
+
+      ! print*, 'p_ls=', p
 
       ! Calculating Fraction of leaf Nitrogen that is lignin
       xbio = nrubisco(leaf_turnover,nbio)
@@ -588,7 +593,7 @@ contains
          layer(n)%layer_height=layer_size*n
       end do
 
-      light1 = llight
+      ! light1 = llight
 
       do n = 1, num_layer
          !Inicialize variables about layers dynamics
@@ -641,7 +646,7 @@ contains
       !       LIGHT COMPETITION DYNAMIC. [LIGHTS DYNAMIC]
       ! ======================================================
 
-      do n = num_layer,1,-1   !VIRARIA UMA FUNÇÃO
+      do n = num_layer,1,-1
          if(n.eq.num_layer) then
             layer(n)%linc = ipar
          else
@@ -670,20 +675,30 @@ contains
       enddo
 
       do n = num_layer, 1, -1
-         if (n.eq.num_layer .and. cawood1.eq.0.0D0) then
-            layer(n)%layer_id = num_layer
-            if (height1.le.max_height.and.height1.gt.layer(n-1)%layer_height) then 
-               light1 = ipar
-               !print*, 'LL TOP=', light1, 'ipar', ipar
-            endif
+         if (cawood1.eq.0.0D0) then
+            aux_ipar = ipar
+            light1 = ipar
+            !print*, 'GRASS_LIGHT=', aux_ipar, p
          else
-            layer(n)%layer_id = layer(n+1)%layer_id-1        
-            if (height1.le.layer(n)%layer_height.and.height1.gt.layer(n-1)%layer_height) then
-               light1 = (layer(n)%lavai/ipar) !limitation in % of IPAR total.
-               ! print*, 'LL ABOVE % =', light1, 'LAVAI=', layer(n)%lavai, 'ipar', ipar
-            endif
-         endif   
+            if (n.eq.num_layer) then 
+               layer(n)%layer_id = num_layer
+               if (height1.le.max_height.and.height1.gt.layer(n-1)%layer_height) then 
+                  light1 = ipar
+                  aux_ipar = ipar
+               endif
+            else
+               layer(n)%layer_id = layer(n+1)%layer_id-1  
+               if (height1.le.layer(n)%layer_height.and.height1.gt.layer(n-1)%layer_height) then
+                  light1 = (layer(n)%lavai/ipar)
+                  aux_ipar = ipar - (ipar*light1) !limitation in % of IPAR total. 
+               endif
+            endif 
+         endif  
       enddo
+
+      ! print*, 'LL TOP=', light1, 'aux_ipar', aux_ipar,'ipar', ipar, p
+      ! print*, 'LL ABOVE % =', light1, 'aux_ipar', aux_ipar, 'ipar', ipar
+
       !                                   END                                         !
 
       if(c4 .eq. 0) then
@@ -706,7 +721,6 @@ contains
          jc = vm_in*((ci-mgama)/(ci+(f2*(1.+(p3/f3)))))
 
          !Light limited photosynthesis rate (molCO2/m2/s)
-         !REVER ESTA PARTE
 
          ! print*, 'LIGHT AFTER DO=', light1
          
@@ -718,8 +732,6 @@ contains
          !       aux_ipar = ipar-(ipar*light_limitation(light1(p)))
          !    endif
          ! enddo
-
-         aux_ipar = ipar !teste para retirar o loop de PLS (sera modificado)
 
          jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
@@ -779,8 +791,6 @@ contains
          !       aux_ipar = ipar-(ipar*light_limitation(light1(p)))
          !    endif
          ! enddo
-
-         aux_ipar = ipar 
 
          ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
          !print*, 'IPAR1', ipar1, 'AUX_IPAR', aux_ipar, 'IPAR ONLY', ipar
