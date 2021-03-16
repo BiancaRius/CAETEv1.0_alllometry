@@ -1359,22 +1359,30 @@ contains
 
    end function light_limitation
 
-   subroutine pls_allometry (cleaf1, cfroot1, cawood1, awood, height, diameter,&
+   subroutine pls_allometry (dt, cleaf1, cfroot1, cawood1, awood, height, diameter,&
       &crown_area)
 
       use types 
       use global_par
       use allometry_par
 
+      real(r_8),dimension(ntraits),intent(in) :: dt
       integer(i_4),parameter :: npft = npls ! plss futuramente serao
       real(r_8),dimension(npft),intent(in) :: cleaf1, cfroot1, cawood1, awood
       real(r_8),dimension(npft),intent(out) :: height, diameter, crown_area
       real(r_8),dimension(npft) :: cleaf, cawood, cfroot
+      real(r_8) :: dwood
       integer(i_4) :: p
 
+      dwood = 0.0D0
+      ! ============================
+      dwood = dt(18)
       cleaf = cleaf1
       cfroot = cfroot1
       cawood = cawood1
+      ! ============================
+
+      ! print*, 'dwood=', dwood
 
       do p = 1, npft !to grasses
          if(awood(p) .le. 0.0D0) then
@@ -1390,9 +1398,9 @@ contains
 
       !PLS DIAMETER (in m.)
       do p = 1, npft
-         diameter(p) = (4*(cawood(p)*1.0D3)/(dw*1D7)*pi*k_allom2)&
+         diameter(p) = (4*(cawood(p)*1.0D3)/(dwood*1D7)*pi*k_allom2)&
          &**(1/(2+k_allom3))
-         !print*, 'diameter', diameter(p), p
+         ! print*, 'diameter', diameter(p), p
       enddo
 
       !PLS HEIGHT (in m.)

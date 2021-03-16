@@ -153,6 +153,7 @@ module alloc
       real(r_8) :: root_p2c
       real(r_8) :: pdia
       real(r_8) :: amp
+      real(r_8) :: dwood
 
       real(r_8) :: avail_n
       real(r_8) :: avail_p
@@ -271,6 +272,7 @@ module alloc
       root_p2c = dt(15)
       pdia = dt(16)
       amp = dt(17)
+      dwood = dt(18)
 
 
       ! If there is not nutrients or NPP then no allocation process

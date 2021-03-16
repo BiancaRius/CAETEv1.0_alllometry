@@ -167,7 +167,7 @@ def table_gen(NPLS):
     print("CREATE GRASS STRATEGIES")
     while index0 < diffg:
         restime = np.zeros(shape=(3,), dtype=np.float64)
-
+        dwood = 0.0
         allocatio = plsa_grass[np.random.randint(0, plsa_grass.shape[0])]
         restime[0] = rtime[np.random.randint(0, r_ceil)]
         restime[1] = 0.0
@@ -187,6 +187,7 @@ def table_gen(NPLS):
         1.0, 10.0, r_ceil), 0.083333333333, 100.0)
     while index1 < diffw:
         restime = np.zeros(shape=(3,), dtype=np.float64)
+        dwood = np.random.uniform(1., 3., NPLS)
         allocatio = plsa_wood[np.random.randint(0, plsa_wood.shape[0])]
         restime[0] = rtime[np.random.randint(0, r_ceil)]
         restime[1] = rtime_wood[np.random.randint(0, r_ceil)]
@@ -241,16 +242,15 @@ def table_gen(NPLS):
     # new traits
     pdia = np.random.uniform(0.001, 0.15, NPLS)
     amp = np.random.uniform(0.01, 0.999, NPLS)
-    dwood = np.random.uniform(1., 3., NPLS)
 
     stack = (g1, resorption, alloc[:, 0], alloc[:, 1], alloc[:, 2],
              alloc[:, 3], alloc[:, 4], alloc[:, 5], c4, leaf_n2c,
              awood_n2c, froot_n2c, leaf_p2c, awood_p2c, froot_p2c,
-             amp, pdia)
+             amp, pdia, dwood)
 
     head = ['g1', 'resopfrac', 'tleaf', 'twood', 'troot', 'aleaf', 'awood', 'aroot', 'c4',
             'leaf_n2c', 'awood_n2c', 'froot_n2c', 'leaf_p2c', 'awood_p2c', 'froot_p2c',
-            'amp', 'pdia']
+            'amp', 'pdia', 'dwood']
 
     pls_table = np.vstack(stack)
 
