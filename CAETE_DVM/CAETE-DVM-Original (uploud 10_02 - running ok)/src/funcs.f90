@@ -1359,63 +1359,53 @@ contains
 
    end function light_limitation
 
-   subroutine pls_allometry (dt, cleaf1, cfroot1, cawood1, awood, height, diameter,&
+   subroutine pls_allometry (dwood1, cleaf1, cfroot1, cawood1, awood, height, diameter,&
       &crown_area)
 
       use types 
       use global_par
       use allometry_par
 
-      real(r_8),dimension(ntraits),intent(in) :: dt
+      
       integer(i_4),parameter :: npft = npls ! plss futuramente serao
-      real(r_8),dimension(npft),intent(in) :: cleaf1, cfroot1, cawood1, awood
+      real(r_8),dimension(npft),intent(in) :: cleaf1, cfroot1, cawood1, awood, dwood1
       real(r_8),dimension(npft),intent(out) :: height, diameter, crown_area
-      real(r_8),dimension(npft) :: cleaf, cawood, cfroot
-      real(r_8) :: dwood
+      real(r_8),dimension(npft) :: cleaf, cawood, cfroot, dwood
       integer(i_4) :: p
 
-      dwood = 0.0D0
+      
       ! ============================
-      dwood = dt(18)
+      dwood = dwood1
       cleaf = cleaf1
       cfroot = cfroot1
       cawood = cawood1
       ! ============================
-
-      ! print*, 'dwood=', dwood
-
-      do p = 1, npft !to grasses
-         if(awood(p) .le. 0.0D0) then
-            cawood(p) = 0.0D0
-         endif
-      enddo
-
+    
       do p = 1, npft !INICIALIZE OUTPUTS VARIABLES
-         height = 0.0D0
-         diameter = 0.0D0
-         crown_area = 0.0D0
+         height(p) = 0.0D0
+         diameter(p) = 0.0D0
+         crown_area(p) = 0.0D0
       enddo
 
       !PLS DIAMETER (in m.)
-      do p = 1, npft
-         diameter(p) = (4*(cawood(p)*1.0D3)/(dwood*1D7)*pi*k_allom2)&
-         &**(1/(2+k_allom3))
-         ! print*, 'diameter', diameter(p), p
+      do p = 1, npft !to grasses
+         if(awood(p) .le. 0.0D0) then
+            height(p) = 0.0D0
+            diameter(p) = 0.0D0
+            crown_area(p) = 0.0D0
+            dwood(p) = 0.0D0
+         else
+            diameter(p) = (4*(cawood(p)*1.0D3)/(dwood(p)*1D7)*pi*k_allom2)&
+            &**(1/(2+k_allom3))
+
+            height(p) = k_allom2*(diameter(p)**k_allom3)
+
+            crown_area(p) = k_allom1*(diameter(p)**krp)
+         endif
+         ! print*, 'diameter', diameter(p), p, 'dwood', dwood(p)
       enddo
 
-      !PLS HEIGHT (in m.)
-      do p = 1, npft
-         height(p) = k_allom2*(diameter(p)**k_allom3)
-         !print*, 'height', height(p), p 
-      enddo
-
-      !PLS CROWN AREA (in m2)
-      do p = 1, npft
-         crown_area(p) = k_allom1*(diameter(p)**krp)
-         !print*, 'crown_area', crown_area(p), p 
-      enddo
-
-
+ 
    end subroutine pls_allometry
 
 end module photo
