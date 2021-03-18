@@ -228,6 +228,7 @@ class grd:
         self.cleaf = None
         self.cawood = None
         self.cfroot = None
+        self.csap = None
         self.area = None
         self.wue = None
         self.cue = None
@@ -291,6 +292,7 @@ class grd:
         self.vp_cleaf = None
         self.vp_croot = None
         self.vp_cwood = None
+        self.vp_csap = None
         self.vp_dcl = None
         self.vp_dca = None
         self.vp_dcf = None
@@ -562,6 +564,7 @@ class grd:
             self.vp_cleaf, self.vp_croot, self.vp_cwood, self.pls_table[6, :])
         self.vp_lsid = np.where(a > 0.0)[0]
         del a, b, c, d
+        self.vp_csap = self.vp_cwood*0.05
         self.vp_dcl = np.zeros(shape=(npls,), order='F')
         self.vp_dca = np.zeros(shape=(npls,), order='F')
         self.vp_dcf = np.zeros(shape=(npls,), order='F')
@@ -793,6 +796,7 @@ class grd:
                 cleaf = np.zeros(npls, order='F')
                 cwood = np.zeros(npls, order='F')
                 croot = np.zeros(npls, order='F')
+                csap = np.zeros(npls, order='F')
                 dcl = np.zeros(npls, order='F')
                 dca = np.zeros(npls, order='F')
                 dcf = np.zeros(npls, order='F')
@@ -808,6 +812,8 @@ class grd:
                     cleaf[n] = self.vp_cleaf[c]
                     cwood[n] = self.vp_cwood[c]
                     croot[n] = self.vp_croot[c]
+                    csap[n] =  self.vp_cwood[c]*0.05
+                    # print('cwood caete=', cwood[n], 'csap caete=', csap[n])
                     dcl[n] = self.vp_dcl[c]
                     dca[n] = self.vp_dca[c]
                     dcf[n] = self.vp_dcf[c]
@@ -819,7 +825,7 @@ class grd:
                                          self.soil_temp, temp[step], p_atm[step],
                                          ipar[step], ru[step], self.sp_available_n, self.sp_available_p,
                                          ton, top, self.sp_organic_p, co2, sto, cleaf, cwood, croot,
-                                         dcl, dca, dcf, uptk_costs, self.wmax_mm,step)
+                                         csap, dcl, dca, dcf, uptk_costs, self.wmax_mm,step)
 
                 del sto, cleaf, cwood, croot, dcl, dca, dcf, uptk_costs
                 # Create a dict with the function output
@@ -1083,6 +1089,7 @@ class grd:
         cleaf = self.vp_cleaf
         cwood = self.vp_cwood
         croot = self.vp_croot
+        csap = self.vp_csap
         dcl = self.vp_dcl
         dca = self.vp_dca
         dcf = self.vp_dcf
@@ -1113,7 +1120,7 @@ class grd:
                                      ipar[step], ru[step], self.sp_available_n, self.sp_available_p,
                                      self.sp_snc[:4].sum(
                                      ), self.sp_so_p, self.sp_snc[4:].sum(),
-                                     co2, sto, cleaf, cwood, croot,
+                                     co2, sto, cleaf, cwood, croot, csap,
                                      dcl, dca, dcf, uptk_costs, self.wmax_mm,step)
 
             # Create a dict with the function output

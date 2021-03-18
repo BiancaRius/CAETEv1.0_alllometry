@@ -26,7 +26,7 @@ module budget
 contains
 
    subroutine daily_budget(dt, w1, w2, ts, temp, p0, ipar, rh&
-        &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in, dleaf_in, dwood_in&
+        &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in,cs1_in, dleaf_in, dwood_in&
         &, droot_in, uptk_costs_in, wmax_in, evavg, epavg, phavg, aravg, nppavg&
         &, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
         &, cfrootavg_pft, storage_out_bdgt_1, ocpavg, wueavg, cueavg, c_defavg&
@@ -63,6 +63,7 @@ contains
       real(r_8),dimension(npls),intent(in) :: cl1_in  ! initial BIOMASS cleaf compartment kgm-2
       real(r_8),dimension(npls),intent(in) :: cf1_in  !                 froot
       real(r_8),dimension(npls),intent(in) :: ca1_in  !                 cawood
+      real(r_8),dimension(npls),intent(in) :: cs1_in  !                 csapwood
       real(r_8),dimension(npls),intent(in) :: dleaf_in  ! CHANGE IN cVEG (DAILY BASIS) TO GROWTH RESP
       real(r_8),dimension(npls),intent(in) :: droot_in  ! k gm-2
       real(r_8),dimension(npls),intent(in) :: dwood_in  ! k gm-2
@@ -117,7 +118,7 @@ contains
       real(r_4),parameter :: tsnow = -1.0
       real(r_4),parameter :: tice  = -2.5
 
-      real(r_8),dimension(npls) :: cl1_pft, cf1_pft, ca1_pft
+      real(r_8),dimension(npls) :: cl1_pft, cf1_pft, ca1_pft, cs1_pft
       real(r_4) :: soil_temp
       real(r_4) :: emax
 
@@ -152,6 +153,7 @@ contains
       real(r_8),dimension(:),allocatable :: cl2
       real(r_8),dimension(:),allocatable :: cf2
       real(r_8),dimension(:),allocatable :: ca2    ! carbon pos-allocation
+      real(r_8),dimension(:),allocatable :: cs2
       real(r_8),dimension(:,:),allocatable :: day_storage      ! D0=3 g m-2
       real(r_8),dimension(:),allocatable   :: vcmax            ! µmol m-2 s-1
       real(r_8),dimension(:),allocatable   :: specific_la      ! m2 g(C)-1
@@ -188,6 +190,7 @@ contains
          cl1_pft(i) = cl1_in(i)
          ca1_pft(i) = ca1_in(i)
          cf1_pft(i) = cf1_in(i)
+         cs1_pft(i) = cs1_in(i)
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -201,8 +204,6 @@ contains
       w = w1 + w2          ! soil water mm
       soil_temp = ts   ! soil temp °C
       soil_sat = wmax_in
-
-      !print*, 'IPAR=', ipar
 
       
 
@@ -263,6 +264,7 @@ contains
       allocate(cl2(nlen))
       allocate(cf2(nlen))
       allocate(ca2(nlen))
+      allocate(cs2(nlen))
       allocate(day_storage(3,nlen))
 
       !     Maximum evapotranspiration   (emax)
@@ -285,6 +287,9 @@ contains
          sr = 0.0D0
          ri = lp(p)
          dt1 = dt(:,ri) ! Pick up the pls functional attributes list
+
+         ! print*, 'cawood_in BUD=', ca1_pft(ri), p
+         ! print*, 'csap_in BUD=', cs1_pft(ri), p
          
          ! GABI hydro ocp_wood(ri)
 
@@ -324,10 +329,10 @@ contains
 
          !     Carbon/Nitrogen/Phosphorus allocation/deallocation
          !     =====================================================
-         call allocation (dt1,nppa(p),uptk_costs(ri), soil_temp, w, tra(p)&
+         call allocation (dt1, dwood_aux(p),nppa(p),uptk_costs(ri), soil_temp, w, tra(p)&
             &, mineral_n,labile_p, on, sop, op, cl1_pft(ri),ca1_pft(ri)&
-            &, cf1_pft(ri),storage_out_bdgt(:,p),day_storage(:,p),cl2(p),ca2(p)&
-            &, cf2(p),litter_l(p),cwd(p), litter_fr(p),nupt(:,p),pupt(:,p)&
+            &, cf1_pft(ri),cs1_pft(ri),storage_out_bdgt(:,p),day_storage(:,p),cl2(p),ca2(p)&
+            &, cf2(p), cs2(p), litter_l(p),cwd(p), litter_fr(p),nupt(:,p),pupt(:,p)&
             &, lit_nut_content(:,p), limitation_status(:,p), npp2pay(p), uptk_strat(:, p))
 
          ! Estimate growth of storage C pool
@@ -617,6 +622,7 @@ contains
       deallocate(cl2)
       deallocate(cf2)
       deallocate(ca2)
+      deallocate(cs2)
       deallocate(day_storage)
 
    end subroutine daily_budget

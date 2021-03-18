@@ -23,6 +23,7 @@ module alloc
                           & retran_nutri_cost, select_active_strategy
     use global_par, only: ntraits, sapwood
     use photo, only: f_four, spec_leaf_area, realized_npp
+    use allometry_par
 
     implicit none
     private
@@ -39,9 +40,9 @@ module alloc
 !c     Modified 02-08-2017 jp - nutrient cycles implementation
 !c=====================================================================
 
-   subroutine allocation(dt,npp,npp_costs,ts,wsoil,te,nmin, plab,on,&
-      & sop,op,scl1,sca1,scf1,storage,storage_out_alloc,scl2,sca2,scf2,&
-      & leaf_litter,cwd,root_litter,nitrogen_uptake, phosphorus_uptake,&
+   subroutine allocation(dt,dwood1,npp,npp_costs,ts,wsoil,te,nmin, plab,on,&
+      & sop,op,scl1,sca1,scf1,scs1,storage,storage_out_alloc,scl2,sca2,scf2,&
+      & scs2,leaf_litter,cwd,root_litter,nitrogen_uptake, phosphorus_uptake,&
       & litter_nutrient_content, limiting_nutrient, c_costs_of_uptake,&
       & uptk_strategy)
 
@@ -86,15 +87,18 @@ module alloc
       real(r_8),intent(in) :: scl1 ! previous day carbon content on leaf compartment (KgC/m2)
       real(r_8),intent(in) :: sca1 ! previous day carbon content on aboveground woody biomass compartment(KgC/m2)
       real(r_8),intent(in) :: scf1 ! previous day carbon content on fine roots compartment (KgC/m2)
+      real(r_8),intent(in) :: scs1 ! previous day carbon content on sapwood compartment (KgC/m2)
       real(r_4),intent(in) :: nmin ! N in mineral N pool(g m-2) SOLUTION
       real(r_4),intent(in) :: plab ! P in labile pool (g m-2)   SOLUTION
       real(r_8),intent(in) :: on,sop,op ! Organic N, Sorbed P, Organic P
+      real(r_8),intent(in) :: dwood1
       real(r_8),dimension(3),intent(in) :: storage ! Three element array- storage pool([C,N,P]) g m-2
       ! O
       real(r_8),dimension(3),intent(out) :: storage_out_alloc
       real(r_8),intent(out) :: scl2 ! final carbon content on leaf compartment (KgC/m2)
       real(r_8),intent(out) :: sca2 ! final carbon content on aboveground woody biomass compartment (KgC/m2)
       real(r_8),intent(out) :: scf2 ! final carbon content on fine roots compartment (KgC/m2)
+      real(r_8),intent(out) :: scs2 ! final carbon content on sapwood compartment (KgC/m2)
       real(r_8),intent(out) :: cwd  ! coarse wood debris (to litter)(C) g m-2
       real(r_8),intent(out) :: root_litter ! to litter g(C) m-2
       real(r_8),intent(out) :: leaf_litter ! to litter g(C) m-2
@@ -153,7 +157,6 @@ module alloc
       real(r_8) :: root_p2c
       real(r_8) :: pdia
       real(r_8) :: amp
-      real(r_8) :: dwood
 
       real(r_8) :: avail_n
       real(r_8) :: avail_p
@@ -183,6 +186,16 @@ module alloc
       real(r_8) :: p_cost_resorpt, n_cost_resorpt
       real(r_8) :: negative_one
       real(r_8) :: aux_on, aux_sop, aux_op
+      real(r_8) :: heartwood_carbon
+      real(r_8) :: tau1_calc
+      real(r_8) :: sapwood_carbon
+      real(r_8) :: bisection_leaf
+      real(r_8) :: to_call_sla 
+      real(r_8) :: heart
+      real(r_8) :: sca1_litter
+      real(r_8) :: sch2
+
+      ! print*, 'SCS1 alloc=', scs1
 
 
       ! initialize ALL outputs
@@ -191,6 +204,7 @@ module alloc
       scl2                   = 0.0D0
       scf2                   = 0.0D0
       sca2                   = 0.0D0
+      scs2                   = 0.0D0
       cwd                    = 0.0D0
       root_litter            = 0.0D0
       leaf_litter            = 0.0D0
@@ -252,6 +266,10 @@ module alloc
       plant_uptake(:)        = 0.0D0
       ccn(:)                 = 0.0D0
       ccp(:)                 = 0.0D0
+      heartwood_carbon       = 0.0D0
+      sapwood_carbon         = 0.0D0
+      bisection_leaf         = 0.0D0
+      to_call_sla            = 0.0D0
 
       ! Catch the functional/demographic traits of pls
       !  head = ['g1', 'resopfrac', 'tleaf', 'twood', 'troot', 'aleaf', 'awood', 'aroot', 'c4',
@@ -272,7 +290,7 @@ module alloc
       root_p2c = dt(15)
       pdia = dt(16)
       amp = dt(17)
-      dwood = dt(18)
+      ! dwood = dt(18)
 
 
       ! If there is not nutrients or NPP then no allocation process
@@ -367,6 +385,47 @@ module alloc
       ! Potential NPP for each compartment
       ! Partitioning NPP for CVEG pools
 
+!MÉTODO COM AS GRAMINEAS MANTENDO A LOGICA ANTIGA
+      ! Use the bisection method (function below) to solve the leaf mass increment
+      ! if (awood .gt. 0.0D0) then
+      !    npp_leaf = bisection_method(0.0, 3.0) !the new allocation logic, considering allometry
+      !    npp_root = (npp_leaf + scl1) / ltor - scf1
+      !    npp_wood = npp_pot - npp_leaf - npp_root   ! g(C)m⁻² !new logic.
+      !    !print*, 'bisection', npp_leaf
+      ! else 
+      !    npp_leaf =  aleaf * npp_pot    ! g(C)m⁻²
+      !    npp_root =  aroot * npp_pot    ! g(C)m⁻²
+      !    npp_wood = 0.0 !new logic.
+      ! endif
+
+! MÉTODO COM A ALOCAÇÃO PARA GRAMINEAS DO LPJ
+      ! !Use the bisection method (function below) to solve 
+      ! !the leaf mass increment in >woody strategies<:
+      ! if (awood .gt. 0.0D0) then
+      !    npp_leaf = bisection_method(0.0, 3.0) !g(C)m⁻² / the new allocation logic, considering allometry
+
+      !    !Once we have the leaf mass increment (to woody) we can cant get 
+      !    !root mass increment based on the LTOR constant
+      !    npp_root = (npp_leaf + scl1) / ltor - scf1  !g(C)m⁻²
+
+      !    !And wood mass increment:
+      !    npp_wood = npp_pot - npp_leaf - npp_root   ! g(C)m⁻² !new logic.  
+
+      ! else !To >grasses strategies< the leaf and root increment is:
+      !    npp_leaf = (npp_pot + scl1 - scf1 / ltor)/&
+      !    &(1.0+1.0/ltor)    !g(C)m⁻²
+      !    ! print*, 'LEAF GRASS dif. 0=', npp_leaf
+      !    if (npp_leaf .gt. 0.00) then
+      !       npp_root = npp_pot - npp_leaf !g(C)m⁻²
+      !    else
+      !       npp_root = npp_pot
+      !       npp_leaf = (scf1 + npp_root) * ltor - scl1
+      !       ! print*, 'LEAF GRASS 0=', npp_leaf
+      !    endif
+      !    npp_wood = 0.0 !dont have woody tissues
+      ! endif 
+
+      ! ==================== OLD LOGIC ======================= !
       ! POTENTIAL NPP FOR EACH POOL (WITH NO NUTRIENT LIMITATION)
       npp_leaf =  aleaf * npp_pot    ! g(C)m⁻²
       npp_root =  aroot * npp_pot    ! g(C)m⁻²
@@ -375,6 +434,7 @@ module alloc
       else
          npp_wood = 0.0
       endif
+      ! ====================================================== !
 
       ! POTENTIAL NUTRIENT UPTAKE
       nscl = npp_leaf * leaf_n2c    ! NITROGEN TO ALLOCATE LEAF NPP g(N)m⁻²
@@ -818,14 +878,39 @@ module alloc
       scl2 = (1D3 * scl1) + daily_growth(leaf) - (leaf_litter * 2.73791075D0)
       scf2 = (1D3 * scf1) + daily_growth(root) - (root_litter * 2.73791075D0)
 
+      ! print*,'scs1', scs1, 'sca1', sca1
+
+      !TO UPDATE
+      ! heartwood_carbon = heartwood2()
+      ! if (heartwood_carbon .lt. 0.0D0) then
+      !    heartwood_carbon = 0.0D0
+      ! endif
+
       ! ## if it's a woody strategy:
       if(awood .gt. 0.0D0) then
          cwd = sca1 / twood !/ tawood! Kg(C) m-2
          sca2 = (1D3 * sca1) + daily_growth(wood) - (cwd * 2.73791075D0)  ! g(C) m-2
+         print*, 'SCA2=', sca2
       else
          cwd = 0.0D0
          sca2 = 0.0D0
       endif
+
+      ! if(awood .gt. 0.0D0) then
+      !    heart = (scs1*1D3) * turnover_rate_sapwood ![total of sapwood that is converted in heartwood - year-1
+      !    scs2 = (scs1*1D3) + daily_growth(wood) - (heart * 2.73791075D0) !quantidade de C final no sap.
+
+      !    sch2 = (heartwood_carbon*1D3) + (heart * 2.73791075D0)
+
+      !    sca1_litter= ((scs1*1D3) + (heartwood_carbon*1D3))  !quantidade de C final no caule
+      !    cwd = sca1_litter / twood !/ tawood! Kg(C) m-2
+      !    sca2 = (scs2 + sch2) + daily_growth(wood) - (cwd * 2.73791075D0)  ! g(C) m-2
+
+      !    print*, 'SCS2=', scs2, 'SCH2=', sch2, 'SCA2=', sca2
+      ! else
+      !    cwd = 0.0D0
+      !    sca2 = 0.0D0
+      ! endif
 
       ! COnvert kg m-2 year-1 in  g m-2 day-1
       leaf_litter = leaf_litter * 2.73791075D0
@@ -900,6 +985,20 @@ module alloc
       &                   + n_cost_resorpt + p_cost_resorpt + negative_one
       ! END OF CALCULATIONS
 
+      !Internal variables print
+      heartwood_carbon = heartwood2()
+      ! print*, 'HEART_C=', heartwood_carbon, awood
+      tau1_calc = calc_tau1()
+      ! print*, 'CALC TAU1=', tau1_calc, 'densidade=', dwood1
+      sapwood_carbon = sapwood2()
+      ! print*, 'SAP_C=', sapwood_carbon, 'sap=', scs1,&
+      ! & 'leaf=', scl1, 'npp_pot=', npp_pot
+      bisection_leaf = bisection_method(0.0, 3.0)
+      ! print*, 'BISECTION=', bisection_leaf
+      to_call_sla = (spec_leaf_area(tleaf)*1D3) !x 1000 to transfor m2/gC -> cm2/gC
+      ! print*, 'SLA_ALLOC=', to_call_sla
+
+
    contains
 
       function add_pool(a1, a2) result(new_amount)
@@ -913,6 +1012,88 @@ module alloc
             new_amount = a1
          endif
       end function add_pool
+
+      function bisection_method(a, b) result(midpoint)
+
+         real(r_4) :: a, b
+         real(r_8) :: aux_a, aux_b
+         real(r_8) :: midpoint
+         
+         aux_a = a
+         aux_b = b
+ 
+         if((f(aux_a) * f(aux_b)) .gt. 0) then
+             midpoint = -2.0
+             return
+         endif
+         
+         do while((aux_b - aux_a) / 2.0 .gt. tol)
+             midpoint = (aux_a + aux_b) / 2
+             
+             if(f(midpoint) .eq. 0.0) then
+                 exit            
+             elseif(f(aux_a) * f(midpoint) .lt. 0) then
+                 aux_b = midpoint
+             else
+                 aux_a = midpoint
+             endif
+         end do
+      end function bisection_method
+
+      function f(ex) result(searched_x)
+
+         real(r_8) :: ex
+         real(r_8) :: searched_x
+         
+         searched_x = & 
+             calc_tau1() * &
+             (sapwood2() - ex - ex / ltor + heartwood2()) - &
+             ( &
+                 (sapwood2() - ex - ex / ltor) / &
+                 (scl1 + ex) * calc_tau3() &
+             ) ** calc_tau2()
+      end function f
+
+      function calc_tau1() result(tau1)
+
+         real(r_8) :: tau1
+         
+         tau1 = k_allom2 ** ((2.0 / k_allom3) * 4.0 / 3.14159 / dwood1)
+      end function calc_tau1
+
+      function calc_tau2() result(tau2)
+
+         real(r_8) :: tau2 
+         
+         tau2 = 1.0 + 2.0 / k_allom3
+      end function calc_tau2
+      
+      function calc_tau3() result(tau3)
+
+         real(r_8) :: tau3
+         
+         tau3 = klatosa / dwood1 / spec_leaf !Fixed value to SLA - SHOULD BE MODIFICATE!! 
+      end function calc_tau3
+
+      function sapwood2() result (SS) !The variable sapwood already exist then sapwood2 will be changed in the future
+   
+         real(r_8) :: SS
+
+         if(scs1 .eq. 0.0D0) then
+            SS = 0.0D0 !is grass
+         else
+            SS = scs1 + npp_pot - scl1 / (ltor + scf1)
+         endif
+      end function sapwood2
+
+      function heartwood2() result (cheart)
+
+         ! real(r_8), intent(in) :: sca1 !carbon initial on wood tissues
+         real(r_8) :: cheart
+
+         cheart = (sca1*0.95) + (turnover_rate_sapwood*scs1)
+
+      end function heartwood2
 
    end subroutine allocation
 

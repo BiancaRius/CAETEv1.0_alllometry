@@ -187,7 +187,7 @@ def table_gen(NPLS):
         1.0, 10.0, r_ceil), 0.083333333333, 100.0)
     while index1 < diffw:
         restime = np.zeros(shape=(3,), dtype=np.float64)
-        dwood = np.random.uniform(1., 3., NPLS)
+        dwood = np.random.uniform(0.3, 6., NPLS)
         allocatio = plsa_wood[np.random.randint(0, plsa_wood.shape[0])]
         restime[0] = rtime[np.random.randint(0, r_ceil)]
         restime[1] = rtime_wood[np.random.randint(0, r_ceil)]

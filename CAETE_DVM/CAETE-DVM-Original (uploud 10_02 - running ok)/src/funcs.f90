@@ -568,7 +568,7 @@ contains
       !                               START                                     !
       
       sla_aux = spec_leaf_area(leaf_turnover)
-      index_leaf = leaf_area_index(cleaf1, sla_aux)
+      index_leaf = (leaf_area_index(cleaf1, sla_aux)/10)
 
       ! =================================================
       !       LIGHT COMPETITION DYNAMIC. [LAYERS]
@@ -578,7 +578,7 @@ contains
       layer_size = 0.0D0
 
       num_layer = nint(max_height/5)
-      !print*, 'num layer is', num_layer
+      ! print*, 'num layer is', num_layer
 
       allocate(layer(1:num_layer))
 
@@ -586,14 +586,12 @@ contains
       ! print*, 'layer_size', layer_size
      
       last_with_pls=num_layer
-      !print*, 'LAST', last_with_pls
+      ! print*, 'LAST', last_with_pls
 
       do n = 1,num_layer
          layer(n)%layer_height = 0.0D0
          layer(n)%layer_height=layer_size*n
       end do
-
-      ! light1 = llight
 
       do n = 1, num_layer
          !Inicialize variables about layers dynamics
@@ -649,17 +647,23 @@ contains
       do n = num_layer,1,-1
          if(n.eq.num_layer) then
             layer(n)%linc = ipar
+            layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
          else
             if(layer(n)%mean_height.gt.0.0D0) then
                layer(n)%linc = layer(last_with_pls)%lavai
                last_with_pls=n
+               layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
             else
                continue
             endif
          endif
          layer(n)%lused = layer(n)%linc*(1-exp(-0.5*layer(n)%mean_LAI))
          layer(n)%lavai = layer(n)%linc - layer(n)%lused
-         ! print*, 'light avaialable', layer(n)%lavai, 'ipar', ipar
+
+         ! print*, 'light used=', layer(n)%lused, 'MEAN_LAI=', layer(n)%mean_LAI, n
+
+         ! print*,n, 'inc', layer(n)%linc, 'used', layer(n)%lused,& 
+         ! & 'avai', layer(n)%lavai
       enddo
 
       ! ======================================================
@@ -1402,7 +1406,7 @@ contains
 
             crown_area(p) = k_allom1*(diameter(p)**krp)
          endif
-         ! print*, 'diameter', diameter(p), p, 'dwood', dwood(p)
+         ! print*, 'height', height(p), p, 'dwood', dwood(p)
       enddo
 
  
