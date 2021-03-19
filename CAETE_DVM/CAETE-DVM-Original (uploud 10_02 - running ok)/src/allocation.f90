@@ -387,16 +387,19 @@ module alloc
 
 !MÉTODO COM AS GRAMINEAS MANTENDO A LOGICA ANTIGA
       ! Use the bisection method (function below) to solve the leaf mass increment
-      ! if (awood .gt. 0.0D0) then
-      !    npp_leaf = bisection_method(0.0, 3.0) !the new allocation logic, considering allometry
-      !    npp_root = (npp_leaf + scl1) / ltor - scf1
-      !    npp_wood = npp_pot - npp_leaf - npp_root   ! g(C)m⁻² !new logic.
-      !    !print*, 'bisection', npp_leaf
-      ! else 
-      !    npp_leaf =  aleaf * npp_pot    ! g(C)m⁻²
-      !    npp_root =  aroot * npp_pot    ! g(C)m⁻²
-      !    npp_wood = 0.0 !new logic.
-      ! endif
+      if (awood .gt. 0.0D0) then
+         npp_leaf = bisection_method(0.0, 3.0) !the new allocation logic, considering allometry
+         ! print*, 'NPP_LEAF=', npp_leaf
+         npp_root = (npp_leaf + scl1) / ltor - scf1
+         ! print*, 'NPP_ROOT=', npp_root
+         npp_wood = npp_pot - npp_leaf - npp_root   ! g(C)m⁻² !new logic.
+         ! print*, 'NPP_WOOD=', npp_wood
+         !print*, 'bisection', npp_leaf
+      else 
+         npp_leaf =  aleaf * npp_pot    ! g(C)m⁻²
+         npp_root =  aroot * npp_pot    ! g(C)m⁻²
+         npp_wood = 0.0 !new logic.
+      endif
 
 ! MÉTODO COM A ALOCAÇÃO PARA GRAMINEAS DO LPJ
       ! !Use the bisection method (function below) to solve 
@@ -427,13 +430,13 @@ module alloc
 
       ! ==================== OLD LOGIC ======================= !
       ! POTENTIAL NPP FOR EACH POOL (WITH NO NUTRIENT LIMITATION)
-      npp_leaf =  aleaf * npp_pot    ! g(C)m⁻²
-      npp_root =  aroot * npp_pot    ! g(C)m⁻²
-      if (awood .gt. 0.0D0) then
-         npp_wood =  awood * npp_pot    ! g(C)m⁻²
-      else
-         npp_wood = 0.0
-      endif
+      ! npp_leaf =  aleaf * npp_pot    ! g(C)m⁻²
+      ! npp_root =  aroot * npp_pot    ! g(C)m⁻²
+      ! if (awood .gt. 0.0D0) then
+      !    npp_wood =  awood * npp_pot    ! g(C)m⁻²
+      ! else
+      !    npp_wood = 0.0
+      ! endif
       ! ====================================================== !
 
       ! POTENTIAL NUTRIENT UPTAKE
@@ -890,7 +893,7 @@ module alloc
       if(awood .gt. 0.0D0) then
          cwd = sca1 / twood !/ tawood! Kg(C) m-2
          sca2 = (1D3 * sca1) + daily_growth(wood) - (cwd * 2.73791075D0)  ! g(C) m-2
-         print*, 'SCA2=', sca2
+         ! print*, 'SCA2=', sca2
       else
          cwd = 0.0D0
          sca2 = 0.0D0
@@ -904,7 +907,7 @@ module alloc
 
       !    sca1_litter= ((scs1*1D3) + (heartwood_carbon*1D3))  !quantidade de C final no caule
       !    cwd = sca1_litter / twood !/ tawood! Kg(C) m-2
-      !    sca2 = (scs2 + sch2) + daily_growth(wood) - (cwd * 2.73791075D0)  ! g(C) m-2
+      !    sca2 = (scs2 + sch2) - (cwd * 2.73791075D0)  ! g(C) m-2
 
       !    print*, 'SCS2=', scs2, 'SCH2=', sch2, 'SCA2=', sca2
       ! else
