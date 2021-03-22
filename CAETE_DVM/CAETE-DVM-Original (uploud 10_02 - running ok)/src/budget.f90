@@ -26,11 +26,12 @@ module budget
 contains
 
    subroutine daily_budget(dt, w1, w2, ts, temp, p0, ipar, rh&
-        &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in,cs1_in, dleaf_in, dwood_in&
-        &, droot_in, uptk_costs_in, wmax_in, evavg, epavg, phavg, aravg, nppavg&
-        &, laiavg, rcavg, f5avg, rmavg, rgavg, cleafavg_pft, cawoodavg_pft&
-        &, cfrootavg_pft, csapavg_pft, storage_out_bdgt_1, ocpavg, wueavg, cueavg, c_defavg&
-        &, vcmax_1, specific_la_1, nupt_1, pupt_1, litter_l_1, cwd_1, litter_fr_1, npp2pay_1, lit_nut_content_1&
+        &, mineral_n, labile_p, on, sop, op, catm, sto_budg_in, cl1_in, ca1_in, cf1_in&
+        &, cs1_in, ch1_in, dleaf_in, dwood_in,droot_in, uptk_costs_in&
+        &, wmax_in, evavg, epavg, phavg, aravg, nppavg, laiavg, rcavg, f5avg, rmavg&
+        &, rgavg, cleafavg_pft, cawoodavg_pft, cfrootavg_pft, csapavg_pft, cheartavg_pft&
+        &, storage_out_bdgt_1, ocpavg, wueavg, cueavg, c_defavg, vcmax_1, specific_la_1, nupt_1&
+        &, pupt_1, litter_l_1, cwd_1, litter_fr_1, npp2pay_1, lit_nut_content_1&
         &, delta_cveg_1, limitation_status_1, uptk_strat_1, cp,step)
 
 
@@ -64,6 +65,7 @@ contains
       real(r_8),dimension(npls),intent(in) :: cf1_in  !                 froot
       real(r_8),dimension(npls),intent(in) :: ca1_in  !                 cawood
       real(r_8),dimension(npls),intent(in) :: cs1_in  !                 csapwood
+      real(r_8),dimension(npls),intent(in) :: ch1_in  !                 heartwood
       real(r_8),dimension(npls),intent(in) :: dleaf_in  ! CHANGE IN cVEG (DAILY BASIS) TO GROWTH RESP
       real(r_8),dimension(npls),intent(in) :: droot_in  ! k gm-2
       real(r_8),dimension(npls),intent(in) :: dwood_in  ! k gm-2
@@ -98,6 +100,7 @@ contains
       real(r_8),dimension(npls),intent(out) :: cawoodavg_pft  !
       real(r_8),dimension(npls),intent(out) :: cfrootavg_pft  !
       real(r_8),dimension(npls),intent(out) :: csapavg_pft
+      real(r_8),dimension(npls),intent(out) :: cheartavg_pft
       real(r_8),dimension(npls),intent(out) :: ocpavg         ! [0-1] Gridcell occupation
       real(r_8),dimension(3,npls),intent(out) :: delta_cveg_1
       real(r_8),dimension(3,npls),intent(out) :: storage_out_bdgt_1
@@ -119,7 +122,7 @@ contains
       real(r_4),parameter :: tsnow = -1.0
       real(r_4),parameter :: tice  = -2.5
 
-      real(r_8),dimension(npls) :: cl1_pft, cf1_pft, ca1_pft, cs1_pft
+      real(r_8),dimension(npls) :: cl1_pft, cf1_pft, ca1_pft, cs1_pft, ch1_pft
       real(r_4) :: soil_temp
       real(r_4) :: emax
 
@@ -150,11 +153,14 @@ contains
       real(r_8),dimension(:),allocatable :: cl1_int
       real(r_8),dimension(:),allocatable :: cf1_int
       real(r_8),dimension(:),allocatable :: ca1_int
+      real(r_8),dimension(:),allocatable :: cs1_int
+      real(r_8),dimension(:),allocatable :: ch1_int
       real(r_8),dimension(:),allocatable :: tra
       real(r_8),dimension(:),allocatable :: cl2
       real(r_8),dimension(:),allocatable :: cf2
       real(r_8),dimension(:),allocatable :: ca2    ! carbon pos-allocation
-      real(r_8),dimension(:),allocatable :: cs2
+      ! real(r_8),dimension(:),allocatable :: cs2
+      ! real(r_8),dimension(:),allocatable :: ch2
       real(r_8),dimension(:,:),allocatable :: day_storage      ! D0=3 g m-2
       real(r_8),dimension(:),allocatable   :: vcmax            ! µmol m-2 s-1
       real(r_8),dimension(:),allocatable   :: specific_la      ! m2 g(C)-1
@@ -192,6 +198,7 @@ contains
          ca1_pft(i) = ca1_in(i)
          cf1_pft(i) = cf1_in(i)
          cs1_pft(i) = cs1_in(i)
+         ch1_pft(i) = ch1_in(i)
          dleaf(i) = dleaf_in(i)
          dwood(i) = dwood_in(i)
          droot(i) = droot_in(i)
@@ -206,7 +213,6 @@ contains
       soil_temp = ts   ! soil temp °C
       soil_sat = wmax_in
 
-      
 
       call pft_area_frac(cl1_pft, cf1_pft, ca1_pft, awood_aux,&
       &                  ocpavg, ocp_wood, run, ocp_mm)
@@ -262,10 +268,13 @@ contains
       allocate(cl1_int(nlen))
       allocate(cf1_int(nlen))
       allocate(ca1_int(nlen))
+      allocate(cs1_int(nlen))
+      allocate(ch1_int(nlen))
       allocate(cl2(nlen))
       allocate(cf2(nlen))
       allocate(ca2(nlen))
-      allocate(cs2(nlen))
+      ! allocate(cs2(nlen))
+      ! allocate(ch2(nlen))
       allocate(day_storage(3,nlen))
 
       !     Maximum evapotranspiration   (emax)
@@ -330,11 +339,15 @@ contains
 
          !     Carbon/Nitrogen/Phosphorus allocation/deallocation
          !     =====================================================
-         call allocation (dt1, dwood_aux(p),nppa(p),uptk_costs(ri), soil_temp, w, tra(p)&
+         call allocation (p, dt1, dwood_aux(p),nppa(p),uptk_costs(ri), soil_temp, w, tra(p)&
             &, mineral_n,labile_p, on, sop, op, cl1_pft(ri),ca1_pft(ri)&
-            &, cf1_pft(ri),cs1_pft(ri),storage_out_bdgt(:,p),day_storage(:,p),cl2(p),ca2(p)&
-            &, cf2(p), cs2(p), litter_l(p),cwd(p), litter_fr(p),nupt(:,p),pupt(:,p)&
+            &, cf1_pft(ri), cs1_pft(ri), ch1_pft(ri),storage_out_bdgt(:,p),day_storage(:,p),cl2(p),ca2(p)&
+            &, cf2(p), litter_l(p),cwd(p), litter_fr(p),nupt(:,p),pupt(:,p)&
             &, lit_nut_content(:,p), limitation_status(:,p), npp2pay(p), uptk_strat(:, p))
+         
+         ! print*, 'wood_budget=', ca2(p), p
+
+         ! print*, p
 
          ! Estimate growth of storage C pool
          ! print*, uptk_strat(:,p)
@@ -367,7 +380,7 @@ contains
          if(dt1(4) .le. 0) then
             delta_cveg(2,p) = 0.0D0
          else
-            delta_cveg(2,p) = ca2(p) - ca1_pft(ri)
+            delta_cveg(2,p) = ca2(p) - ca1_pft(ri) !crescimento
          endif
          delta_cveg(3,p) = cf2(p) - cf1_pft(ri)
 
@@ -481,6 +494,8 @@ contains
       cleafavg_pft(:) = 0.0D0
       cawoodavg_pft(:) = 0.0D0
       cfrootavg_pft(:) = 0.0D0
+      csapavg_pft (:) = 0.0D0
+      cheartavg_pft (:) = 0.0D0
       delta_cveg_1(:, :) = 0.0D0
       storage_out_bdgt_1(:, :) = 0.0D0
       limitation_status_1(:,:) = 0
@@ -573,7 +588,8 @@ contains
          cleafavg_pft(ri)  = cl1_int(p)
          cawoodavg_pft(ri) = ca1_int(p)
          cfrootavg_pft(ri) = cf1_int(p)
-         csapavg_pft(ri) = 2.0D0
+         csapavg_pft(ri) = cs1_int(p)
+         cheartavg_pft(ri) = ch1_int(p)
          delta_cveg_1(:,ri) = delta_cveg(:,p)
          storage_out_bdgt_1(:,ri) = storage_out_bdgt(:,p)
          limitation_status_1(:,ri) = limitation_status(:,p)
@@ -621,10 +637,13 @@ contains
       deallocate(cl1_int)
       deallocate(cf1_int)
       deallocate(ca1_int)
+      deallocate(cs1_int)
+      deallocate(ch1_int)
       deallocate(cl2)
       deallocate(cf2)
       deallocate(ca2)
-      deallocate(cs2)
+      ! deallocate(cs2)
+      ! deallocate(ch2)
       deallocate(day_storage)
 
    end subroutine daily_budget

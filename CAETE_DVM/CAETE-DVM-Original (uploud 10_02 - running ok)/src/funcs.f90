@@ -736,7 +736,7 @@ contains
          !       aux_ipar = ipar-(ipar*light_limitation(light1(p)))
          !    endif
          ! enddo
-
+         ! aux_ipar = ipar
          jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
 
@@ -795,7 +795,7 @@ contains
          !       aux_ipar = ipar-(ipar*light_limitation(light1(p)))
          !    endif
          ! enddo
-
+         ! aux_ipar = ipar
          ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
          !print*, 'IPAR1', ipar1, 'AUX_IPAR', aux_ipar, 'IPAR ONLY', ipar
 
@@ -1406,7 +1406,7 @@ contains
 
             crown_area(p) = k_allom1*(diameter(p)**krp)
          endif
-         ! print*, 'height', height(p), p, 'dwood', dwood(p)
+         ! print*, 'height', height(p), p, 'cawood', cawood(p)
       enddo
 
  
