@@ -26,9 +26,9 @@ module productivity
 
 contains
 
-  subroutine prod(p, dt,light_limit,catm,temp,ts,p0,w,ipar,rh,emax,cl1_prod,&
+  subroutine prod(p, dt,catm,temp,ts,p0,w,ipar,sla1,rh,emax,cl1_prod,&
        & ca1_prod,cf1_prod,beta_leaf,beta_awood,beta_froot,height1,max_height,wmax,ph,ar,&
-       & nppa,laia,f5,vpd,rm,rg,rc,wue,c_defcit,vm_out,sla, e)
+       & nppa,laia,f5,vpd,rm,rg,rc,wue,c_defcit,vm_out,e)
 
     use types
     use global_par
@@ -48,10 +48,10 @@ contains
     real(r_8), intent(in) :: beta_leaf            !npp allocation to carbon pools (kg/m2/day)
     real(r_8), intent(in) :: beta_awood
     real(r_8), intent(in) :: beta_froot, wmax
-    real(r_8), intent(in) :: light_limit
     real(r_8), intent(in) :: height1
     real(r_8), intent(in) :: max_height
     integer(r_4), intent(in) :: p
+    real(r_8), intent(in) :: sla1
 
     ! logical(l_1), intent(in) :: light_limit                !True for no ligth limitation
 
@@ -68,7 +68,7 @@ contains
     real(r_4), intent(out) :: rg
     real(r_4), intent(out) :: wue
     real(r_4), intent(out) :: c_defcit     ! Carbon deficit gm-2 if it is positive, aresp was greater than npp + sto2(1)
-    real(r_8), intent(out) :: sla, e        !specific leaf area (m2/kg)
+    real(r_8), intent(out) :: e        !specific leaf area (m2/kg)
     real(r_8), intent(out) :: vm_out
 !     Internal
 !     --------
@@ -118,8 +118,8 @@ contains
 ! rate (molCO2/m2/s)
 
     
-    call photosynthesis_rate(p,ca1_prod, cl1_prod, catm,temp,p0,ipar,light_limit,c4_int,n2cl,&
-    & p2cl,height1,max_height,tleaf,f1a,vm_out,jl_out)
+    call photosynthesis_rate(p,sla1,ca1_prod,catm,temp,p0,ipar,c4_int,n2cl,&
+    & p2cl,cl1_prod,height1,max_height,tleaf,f1a,vm_out,jl_out)
 
     ! VPD
     !========
@@ -154,17 +154,17 @@ contains
     ! Leaf area index (m2/m2)
     ! recalcula rc e escalona para dossel
     ! laia = 0.2D0 * dexp((2.5D0 * f1)/p25)
-    sla = spec_leaf_area(tleaf)  ! m2 g-1  ! Convertions made in leaf_area_index &  gross_ph + calls therein
+    ! sla = spec_leaf_area(tleaf)  ! m2 g-1  ! Convertions made in leaf_area_index &  gross_ph + calls therein
     ! print*, 'sla out funcs', sla
 
-    laia = leaf_area_index(cl1_prod, sla)
+    laia = leaf_area_index(cl1_prod, sla1)
 
     rc = rc_aux * real(laia,kind=r_4) ! RCM -!s m-1
 
 !     Canopy gross photosynthesis (kgC/m2/yr)
 !     =======================================x
 
-    ph =  gross_ph(f1,cl1_prod,sla)       ! kg m-2 year-1
+    ph =  gross_ph(f1,cl1_prod,sla1)       ! kg m-2 year-1
 
 !     Autothrophic respiration
 !     ========================

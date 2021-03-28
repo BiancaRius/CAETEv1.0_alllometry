@@ -168,6 +168,7 @@ def table_gen(NPLS):
     while index0 < diffg:
         restime = np.zeros(shape=(3,), dtype=np.float64)
         dwood = 0.0
+        sla = np.random.uniform(0.003250975, 0.045045045, NPLS) #values obtained through LMA (range: 22.2 - 307.4g/m-2)
         allocatio = plsa_grass[np.random.randint(0, plsa_grass.shape[0])]
         restime[0] = rtime[np.random.randint(0, r_ceil)]
         restime[1] = 0.0
@@ -187,7 +188,8 @@ def table_gen(NPLS):
         1.0, 10.0, r_ceil), 0.083333333333, 100.0)
     while index1 < diffw:
         restime = np.zeros(shape=(3,), dtype=np.float64)
-        dwood = np.random.uniform(0.3, 6., NPLS)
+        dwood = np.random.uniform(0.3, 1.3, NPLS)
+        sla = np.random.uniform(0.003250975, 0.045045045, NPLS) #values obtained through LMA (Asner et al., 2011 -range: 22.2 - 307.4 g/m-2)
         allocatio = plsa_wood[np.random.randint(0, plsa_wood.shape[0])]
         restime[0] = rtime[np.random.randint(0, r_ceil)]
         restime[1] = rtime_wood[np.random.randint(0, r_ceil)]
@@ -246,11 +248,11 @@ def table_gen(NPLS):
     stack = (g1, resorption, alloc[:, 0], alloc[:, 1], alloc[:, 2],
              alloc[:, 3], alloc[:, 4], alloc[:, 5], c4, leaf_n2c,
              awood_n2c, froot_n2c, leaf_p2c, awood_p2c, froot_p2c,
-             amp, pdia, dwood)
+             amp, pdia, dwood, sla)
 
     head = ['g1', 'resopfrac', 'tleaf', 'twood', 'troot', 'aleaf', 'awood', 'aroot', 'c4',
             'leaf_n2c', 'awood_n2c', 'froot_n2c', 'leaf_p2c', 'awood_p2c', 'froot_p2c',
-            'amp', 'pdia', 'dwood']
+            'amp', 'pdia', 'dwood', 'sla']
 
     pls_table = np.vstack(stack)
 
