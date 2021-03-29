@@ -47,7 +47,7 @@ module photo
         pft_area_frac          ,& ! (s), area fraction by biomass
         water_ue               ,&
         leap                   ,&
-        pls_allometry             ! (s)
+        pls_allometry             ! (s)      
 
 contains
 
@@ -115,6 +115,8 @@ contains
       lai  = cleaf * 1.0D3 * sla  ! Converts cleaf from (KgC m-2) to (gCm-2)
       if(lai .lt. 0.0D0) lai = 0.0D0
 
+      ! print*, 'LAI_Funcs=', lai, 'cleaf=', cleaf, 'sla_funcs=', sla
+
    end function leaf_area_index
 
    !=================================================================
@@ -137,6 +139,30 @@ contains
       sla_fixed = (3D-2 * (365.2420D0 / tl0) ** (-0.460D0))
 
    end function spec_leaf_area
+
+   ! function spec_leaf_area(tau_leaf) result(sla_fixed)
+   !    ! based on JeDi DGVM
+   !    use types, only : r_8
+   !    !implicit none
+
+   !    real(r_8),intent(in) :: tau_leaf  !years
+   !    real(r_8) :: sla_fixed   !m2 gC-1
+
+   !    real(r_8) :: leaf_t_months
+   !    real(r_8) :: leaf_t_coeff
+   !    real(r_8) :: leaf_turnover
+
+   !    leaf_t_months = tau_leaf*12.0D0 ! turnover time in months
+   !    leaf_t_coeff = leaf_t_months/100.0D0 !1 - 100 months == ~ 1/12 to 8.3 years (TRY-kattge et al. 2011; Jedi-Pavlick 2012)
+
+   !    ! leaf_turnover =  (365.0/12.0) * exp(2.6*leaf_t_coeff)
+   !    leaf_turnover =  (365.242D0/12.0D0) * (10.00D0 ** (2.00D0*leaf_t_coeff))
+
+   !    ! sla = (3e-2 * (365.0/leaf_turnover)**(-1.02))
+   !    sla_fixed = (3D-2 * (365.2420D0/leaf_turnover)**(-0.460D0))
+
+   !    !print*, 'sla-function=', sla
+   ! end function spec_leaf_area
 
    !=================================================================
    !=================================================================
@@ -244,7 +270,9 @@ contains
       endif
 
       f5 = f5_64
-      if (f5 .lt. 0.0D0) f5 = 0.0D0
+      if (f5 .lt. 0.0D0) then
+         f5 = 0.0D0
+      endif
    end function water_stress_modifier
 
    ! =============================================================
@@ -373,7 +401,6 @@ contains
       endif
    end function transpiration
 
-
    !=================================================================
    !=================================================================
 
@@ -433,30 +460,25 @@ contains
 
    !=================================================================
    !=================================================================
-   ! def nrubisco(leaf_t, n_in):
-      ! from math import e
-
-      ! tl = e**(-(leaf_t + 1.03)) + 0.08
-
-      ! return tl * (n_in * 0.7)
+   
    function nrubisco(leaf_t,n_in) result(nb)
       use types
       real(r_8), intent(in) :: leaf_t
       real(r_8), intent(in) :: n_in
       real(r_8) :: nb, tl
       real(r_8) :: e = 2.718281828459045D0
-
+   
       tl = e**(-(leaf_t + 1.2)) + 0.04
-
+   
       nb = tl * n_in
-
+   
    end function nrubisco
 
    !=================================================================
    !=================================================================
 
    subroutine photosynthesis_rate(p,sla1,cawood1,c_atm,temp,p0,ipar,c4,nbio,pbio,cbio,&
-        & height1,max_height,leaf_turnover,f1ab,vm,amax)
+      & height1,max_height,leaf_turnover,f1ab,vm,amax)
 
       ! f1ab SCALAR returns instantaneous photosynthesis rate at leaf level (molCO2/m2/s)
       ! vm SCALAR Returns maximum carboxilation Rate (Vcmax) (molCO2/m2/s)
@@ -496,7 +518,9 @@ contains
       real(r_8) :: b,c,c2,b2,es,j1,j2
       real(r_8) :: delta, delta2,aux_ipar
       real(r_8) :: f1a
-       !Internal Variables [LIGHT COMPETITION] ---------------------------------------
+      ! logical(l_1) :: ll ! is light limited?
+
+      !Internal Variables [LIGHT COMPETITION] ---------------------------------------
       integer(i_4) :: n
       real(r_8) :: sla_aux
       real(r_8) :: index_leaf
@@ -563,6 +587,12 @@ contains
       vm =  10**vm_nutri * 1D-6
       if(vm + 1 .eq. vm) vm = p25 - 5.0D-5
       if(vm .gt. p25) vm = p25
+
+      ! ! Calculation of reference carboxilation rate of rubisco
+      ! vm_nutri = 3.946D0 + (0.921D0 * dlog(nbio2)) - (0.121D0 * dlog(pbio2))
+      ! vm_nutri = vm_nutri + (0.282D0 * dlog(nbio2) * dlog(pbio2))
+      ! vm = (dexp(vm_nutri)) * 1.0D-6 ! Vcmax convert µmol m-2 s-1 to mol m-2 s-1
+
 
       ! Rubisco Carboxilation Rate - temperature dependence
       vm_in = (vm*2.0D0**(0.1D0*(temp-25.0D0)))/(1.0D0+dexp(0.3D0*(temp-36.0)))
@@ -707,6 +737,7 @@ contains
       ! print*, 'aux_ipar_out', aux_ipar, p
 
       !                                   END                                         !
+
       if(c4 .eq. 0) then
          !====================-C3 PHOTOSYNTHESIS-===============================
          !Photo-respiration compensation point (Pa)
@@ -725,12 +756,18 @@ contains
          ci = p19* (1.-(r/p20)) * ((c_atm/9.901)-mgama) + mgama
          !Rubisco carboxilation limited photosynthesis rate (molCO2/m2/s)
          jc = vm_in*((ci-mgama)/(ci+(f2*(1.+(p3/f3)))))
+
          !Light limited photosynthesis rate (molCO2/m2/s)
-         ! if (ll) then
-         !    aux_ipar = ipar
-         ! else
-         !    aux_ipar = ipar - (ipar * 0.20)
-         ! endif
+         
+         ! ll = .false.
+         ! do p = 1, npft
+         !    if (ll) then
+         !       aux_ipar = ipar
+         !    else
+         !       aux_ipar = ipar-(ipar*light_limitation(light1(p)))
+         !    endif
+         ! enddo
+
          jl = p4*(1.0-p5)*aux_ipar*((ci-mgama)/(ci+(p6*mgama)))
          amax = jl
 
@@ -768,11 +805,16 @@ contains
          t25 = 273.15 + 25.0          ! K
          kp = kp25 * (2.1**(0.1*(tk-t25))) ! ppm
 
-         ! if (ll) then
-         !    aux_ipar = ipar
-         ! else
-         !    aux_ipar = ipar - (ipar * 0.20)
-         ! endif
+         !Light limited photosynthesis rate (molCO2/m2/s)
+         
+         ! ll = .false.
+         ! do p = 1, npft
+         !    if (ll) then
+         !       aux_ipar = ipar
+         !    else
+         !       aux_ipar = ipar-(ipar*light_limitation(light1(p)))
+         !    endif
+         ! enddo
 
          ipar1 = aux_ipar * 1e6  ! µmol m-2 s-1 - 1e6 converts mol to µmol
 
@@ -808,7 +850,6 @@ contains
          j2 = (-b2+(sqrt(delta2)))/(2.0*a2)
          f1a = dmin1(j1,j2)
 
-
          f1ab = f1a
          if(f1ab .lt. 0.0D0) f1ab = 0.0D0
          return
@@ -817,7 +858,6 @@ contains
 
    !=================================================================
    !=================================================================
-
 
    subroutine spinup3(nppot,dt,cleafini,cfrootini,cawoodini)
       use types
@@ -1039,7 +1079,7 @@ contains
   !===================================================================
 
    function m_resp(temp, ts,cl1_mr,cf1_mr,ca1_mr,&
-        & n2cl,n2cw,n2cf,aawood_mr) result(rm)
+      & n2cl,n2cw,n2cf,aawood_mr) result(rm)
 
       use types, only: r_4,r_8
       use global_par, only: sapwood
@@ -1387,13 +1427,13 @@ module water
 
   ! functions defined here:
 
-  public ::               &
-        soil_temp        ,&
-        soil_temp_sub    ,&
-        penman           ,&
-        evpot2           ,&
-        available_energy ,&
-        runoff
+  public ::              &
+       soil_temp        ,&
+       soil_temp_sub    ,&
+       penman           ,&
+       evpot2           ,&
+       available_energy ,&
+       runoff
 
 
 contains

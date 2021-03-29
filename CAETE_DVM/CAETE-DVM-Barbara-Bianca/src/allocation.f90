@@ -212,6 +212,8 @@ module alloc
 
       ! real(r_8) :: test_a = 1
       ! real(r_8) :: test_b = 2
+      carbon_sapwood = sapwood2()
+      ! print*, 'CARBON_SAP=', carbon_sapwood
 
  !     print*,'entrada alloc', 'sap', scs1,'hrt',sch1,'wd',sca1
       ! initialize ALL outputs
@@ -418,13 +420,13 @@ module alloc
 
       ! Use the bisection method (function below) to solve the leaf mass increment
       npp_leaf = bisection_method(0.0, 3.0) !the new allocation logic, considering allometry
-      print*, 'bisection', npp_leaf
+      !print*, 'bisection', npp_leaf
       ! Once we have the leaf mass increment we can cant get 
       ! root mass increment based on the LTOR constant
       npp_root = (npp_leaf + scl1) / ltor - scf1
 
       if (awood .gt. 0.0D0) then  !new logic.
-         npp_sapwood = npp_pot - npp_leaf - npp_root   ! g(C)m⁻² !new logic.
+         npp_wood = npp_pot - npp_leaf - npp_root   ! g(C)m⁻² !new logic.
       else
          npp_sapwood = 0.0 !new logic.
       endif
@@ -1003,7 +1005,7 @@ module alloc
       ! teste_one = diameter(dw, k_allom2, k_allom3, pi, sca2)
       ! print*, 'RESULTADO TESTE/DELTA_LEAF =', teste_one
       funcs_calc_tau1=calc_tau1()
-      print*,'TAU1', funcs_calc_tau1
+      !print*,'TAU1', funcs_calc_tau1
 
    contains
 
@@ -1092,7 +1094,7 @@ module alloc
          SS = scs1 + npp_pot - scl1 / ltor + scf1
       end function sapwood2
 
-       function heartwood2() result (H)
+      function heartwood2() result (H)
 
           real(r_8) :: H
 

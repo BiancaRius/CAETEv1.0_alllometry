@@ -281,3 +281,4 @@ def table_gen(NPLS, fpath=None):
 
     pls_table = np.vstack(stack[1:])
     return np.asfortranarray(pls_table, dtype=np.float64)
+    

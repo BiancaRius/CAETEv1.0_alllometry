@@ -649,14 +649,14 @@ class grd:
                         croot[n] = self.vp_croot[c]
                         csap[n] = cwood[n]*0.05
                         cheart[n] = cwood[n]*0.95
-                        print('lb0','csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
+                        print('lb0', lb, 'csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
                     else: # csap and cheart calculated by allometric restrictions
                         cleaf[n] = self.vp_cleaf[c]
                         croot[n] = self.vp_croot[c]
                         csap[n] = self.vp_csap[c]
                         cheart[n] = self.vp_cheart[c]
                         cwood[n] = csap[n]+cheart[n]
-                        print('lb dif. 0','csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
+                        print('lb dif. 0', lb, 'csap 1=',csap[n],'cheart 1=',cheart[n],'cwood 1=', cwood[n],'n',n)
 
                     dcl[n] = self.vp_dcl[c]
                     dca[n] = self.vp_dca[c]
