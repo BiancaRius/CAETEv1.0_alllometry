@@ -29,7 +29,7 @@ from pathlib import Path
 import warnings
 import bz2
 
-from joblib import dump
+from joblib import load, dump
 import cftime
 import numpy as np
 from numpy import log as ln

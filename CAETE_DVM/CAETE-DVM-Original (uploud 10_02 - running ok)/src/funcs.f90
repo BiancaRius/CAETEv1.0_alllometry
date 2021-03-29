@@ -112,7 +112,7 @@ contains
 
       sla = sla1
 
-      lai  = (cleaf * 1.0D3) * sla  ! Converts cleaf from (KgC m-2) to (gCm-2)
+      lai  = cleaf * 1.0D3 * sla  ! Converts cleaf from (KgC m-2) to (gCm-2)
       if(lai .lt. 0.0D0) lai = 0.0D0
 
       ! print*, 'LAI_Funcs=', lai, 'cleaf=', cleaf, 'sla_funcs=', sla
@@ -493,7 +493,7 @@ contains
       real(r_4),intent(in) :: p0    ! atm Pressure hPa
       real(r_4),intent(in) :: ipar  ! mol Photons m-2 s-1
       real(r_8),intent(in) :: nbio, c_atm  ! gm-2, ppm
-      real(r_8),intent(in) :: pbio, cbio  ! gm-2
+      real(r_8),intent(in) :: pbio, cbio  ! kg m-2
       integer(i_4),intent(in) :: c4 ! is C4 Photosynthesis pathway?
       real(r_8),intent(in) :: leaf_turnover   ! y
       real(r_8),intent(in) :: height1
@@ -1164,7 +1164,6 @@ contains
       endif
       return
 
-
    end function sto_resp
 
 
@@ -1262,7 +1261,7 @@ contains
       real(kind=r_8),dimension(npft),intent(out) :: ocp_coeffs
       logical(kind=l_1),dimension(npft),intent(out) :: ocp_wood
       integer(kind=i_4),dimension(npft),intent(out) :: run_pls
-      real(kind=r_8), dimension(npls), intent(out) :: c_to_soil
+      real(kind=r_8), dimension(npls), intent(out) :: c_to_soil ! NOT IMPLEMENTED IN BUDGET
       logical(kind=l_1),dimension(npft) :: is_living
       real(kind=r_8),dimension(npft) :: cleaf, cawood, cfroot
       real(kind=r_8),dimension(npft) :: total_biomass_pft,total_w_pft
@@ -1375,7 +1374,7 @@ contains
       integer(i_4),parameter :: npft = npls ! plss futuramente serao
       real(r_8),dimension(npft),intent(in) :: cleaf1, cfroot1, cawood1, awood, dwood1
       real(r_8),dimension(npft),intent(out) :: height, diameter, crown_area
-      real(r_8),dimension(npft) :: cleaf, cawood, cfroot, dwood
+      real(r_8),dimension(npft) :: cleaf, cawood, cfroot, dwood, height_2
       integer(i_4) :: p
 
       
@@ -1388,6 +1387,7 @@ contains
     
       do p = 1, npft !INICIALIZE OUTPUTS VARIABLES
          height(p) = 0.0D0
+         height_2(p) = 0.0D0 !TFS TEST
          diameter(p) = 0.0D0
          crown_area(p) = 0.0D0
       enddo
@@ -1395,17 +1395,24 @@ contains
       !PLS DIAMETER (in m.)
       do p = 1, npft !to grasses
          if(awood(p) .le. 0.0D0) then
-            height(p) = 0.0D0
-            diameter(p) = 0.0D0
-            crown_area(p) = 0.0D0
-            dwood(p) = 0.0D0
+            height(p) = 0.0D0 !in m.
+            height_2(p) = 0.0D0 !TFS TEST
+            diameter(p) = 0.0D0 !in m.
+            crown_area(p) = 0.0D0 !in m2.
+            dwood(p) = 0.0D0 !in g/cm-3 - is transfor to g/m-3 in diameter equation.
          else
             diameter(p) = (4*(cawood(p)*1.0D3)/(dwood(p)*1D7)*pi*k_allom2)&
             &**(1/(2+k_allom3))
             height(p) = k_allom2*(diameter(p)**k_allom3)
             crown_area(p) = k_allom1*(diameter(p)**krp)
+
+            !--------------------------- TEST -----------------------------!
+            height_2(p) = 61.7*(1-exp(-0.0352*((diameter(p)*100)**0.694))) !TFS.v1 equation (Fyllas et al., 2014)
          endif
-         ! print*, 'height', height(p), p, 'carbon on wood', cawood(p)
+
+         print*, 'HEIGHT_TFS=', height_2(p), 'cawood', cawood(p), p
+         print*, 'HEIGHT_LPJ=', height(p), 'cawood', cawood(p), p
+
       enddo
    end subroutine pls_allometry
 

@@ -26,7 +26,7 @@ module productivity
 
 contains
 
-  subroutine prod(p, dt,catm,temp,ts,p0,w,ipar,sla1,rh,emax,cl1_prod,&
+  subroutine prod(p,dt,catm,temp,ts,p0,w,ipar,sla1,rh,emax,cl1_prod,&
        & ca1_prod,cf1_prod,beta_leaf,beta_awood,beta_froot,height1,max_height,wmax,ph,ar,&
        & nppa,laia,f5,vpd,rm,rg,rc,wue,c_defcit,vm_out,e)
 
@@ -84,7 +84,6 @@ contains
     real(r_8) :: p2cl
     integer(i_4) :: c4_int
     real(r_8) :: jl_out
-    real(r_8) :: amax
 
     real(r_8) :: f1       !Leaf level gross photosynthesis (molCO2/m2/s)
     real(r_8) :: f1a      !auxiliar_f1
@@ -119,7 +118,7 @@ contains
 
     
     call photosynthesis_rate(p,sla1,ca1_prod,catm,temp,p0,ipar,c4_int,n2cl,&
-    & p2cl,cl1_prod,height1,max_height,tleaf,f1a,vm_out,jl_out)
+            & p2cl,cl1_prod,height1,max_height,tleaf,f1a,vm_out,jl_out)
 
     ! VPD
     !========
@@ -159,7 +158,7 @@ contains
 
     laia = leaf_area_index(cl1_prod, sla1)
 
-    rc = rc_aux * real(laia,kind=r_4) ! RCM -!s m-1
+    rc = rc_aux !* real(laia,kind=r_4) ! RCM -!s m-1 ! CANOPY SCALING --
 
 !     Canopy gross photosynthesis (kgC/m2/yr)
 !     =======================================x
