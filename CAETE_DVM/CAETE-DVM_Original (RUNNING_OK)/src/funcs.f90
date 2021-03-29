@@ -1410,8 +1410,8 @@ contains
             height_2(p) = 61.7*(1-exp(-0.0352*((diameter(p)*100)**0.694))) !TFS.v1 equation (Fyllas et al., 2014)
          endif
 
-         ! print*, 'HEIGHT_TFS=', height_2(p), 'cawood', cawood(p), p
-         ! print*, 'HEIGHT_LPJ=', height(p), 'cawood', cawood(p), p
+         print*, 'HEIGHT_TFS=', height_2(p), 'cawood', cawood(p), p
+         print*, 'HEIGHT_LPJ=', height(p), 'cawood', cawood(p), p
 
       enddo
    end subroutine pls_allometry
