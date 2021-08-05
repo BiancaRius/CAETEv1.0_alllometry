@@ -9,6 +9,14 @@ module allocation
     ! real(REAL64) :: S = 0.0
 
     !the 1st thing to do is to calculate the potential npp, verify the nutrients availability
+    !!!!!!
+
+    
+    
+    
+    
+    ! Variables with generic values for testing the logic code
+
 
     real(REAL64) :: H = 18.91909828977032 !in kgC/m2 --> /densindiv (numindv/m2) !HEARTWOOD - SOMENTE PARA TESTES (Valores: Cod. Phillip)
     real(REAL64) :: L = 1.2279169651518438 !LEAF BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
@@ -148,6 +156,17 @@ module allocation
         return
     end subroutine updating_pool_stem
 
+    subroutine diam_nind (d_wood,cwood,diam,nind)
+        real,dimension(npls),intent(in):: d_wood
+        real,dimension(npls),intent(in):: cwood
+        real,dimension(npls),intent(out):: nind
+        real,dimension(npls),intent(out):: diam
+        
+        diam = ((4+(cwood))/((d_wood)*3.14*40))**(1/(2+0.5))
+        nind= diam**(-1.6)
+
+    end subroutine diam_nind
+
 
 	!==============================!
 	!= Functions
@@ -214,7 +233,7 @@ module allocation
         real(REAL64) :: tau3
         
         tau3 = klatosa / dw / spec_leaf
-        print*,tau3
+        
     end function calc_tau3
 
     function sapwood () result (SS)
@@ -223,6 +242,8 @@ module allocation
         
          SS = S + bminc - L / ltor + R
      end function sapwood
+
+    
 
      
 

@@ -7,6 +7,7 @@ module constants
     !==============================!
     != Constants
     !==============================!
+    integer, parameter:: npls = 20
     real(REAL64), parameter :: klatosa = 6000.0
     real(REAL64), parameter :: dw = 200 !(*1000) converte de g/cm3 para kg/m3
     real(REAL64), parameter :: ltor = 0.77302587552347657
