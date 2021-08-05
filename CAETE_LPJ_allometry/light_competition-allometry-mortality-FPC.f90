@@ -15,7 +15,7 @@ program light_competition
 
     integer, parameter::npls=14
     real, dimension(npls), allocatable :: height (:)
-     real, dimension(npls), allocatable :: Cleaf (:) !leaf increment
+    real, dimension(npls), allocatable :: Cleaf (:) !leaf increment
     real, dimension(npls), allocatable :: LA (:) !Leaf Area  (m2)
     real, dimension(npls), allocatable :: LAI (:) !Leaf Area Index (m2/m2)
     real, dimension(npls), allocatable :: diam (:) !Tree diameter in m. (Smith et al., 2001 - Supplementary)
@@ -24,7 +24,7 @@ program light_competition
     real, allocatable :: FPCind (:) !Foliage projective cover for each PLS (Sitch et al., 2003)
     real, allocatable :: FPCgrid (:) !Fractional projective cover in grid cell (Sitch et al., 2003)
     real, allocatable :: FPCgrid_perc (:) !Fractional projective cover in grid cell relative to grid cell area (Sitch et al., 2003)
-    real, allocatable :: nind (:) !number of individuals per PLS (Smith, 2001, thesis)
+    integer, allocatable :: nind (:) !number of individuals per PLS (Smith, 2001, thesis)
     real, allocatable :: nind_red (:) !reduced number of individuals per PLS according to the self-thinning rule (Smith, 2001, thesis)
     real, allocatable :: new_diam (:) !diameter updated with new number of ind (for testing purpose)
     real, allocatable :: Hcrit (:) !critical buckling height (in m) to be mechanic stable (Langam, 2017)
@@ -114,7 +114,7 @@ program light_competition
 
     do j=1,npls
         nind(j) = diam(j)**(-1.6)
-        !print*, 'Nind', nind(j)
+        print*, 'Nind', nind(j)
 
         FPCind(j) = (1-exp(-0.5*LAI(j)))
         !print*, 'FPC', FPCind(j)
@@ -168,7 +168,7 @@ program light_competition
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     
     
     !Percentage of tree population reduction in all area: (IAP-DGVM; Zeng et al., 2014) - !ATTENTION!
-    mort_occupation = (1.-(95/sum_FPCgrid)) *sum_nind
+    mort_occupation = (1.-(0.95/sum_FPCgrid))*sum_nind
     !print*, '*******mort_light', mort_occupation
 
     !!!!testing the reduction in individuals number!!!
@@ -248,7 +248,7 @@ program light_competition
 
         layer(i)%mean_LAI=layer(i)%sum_LAI/&
             &layer(i)%num_height
-             print*,'mean_LAI',layer(i)%mean_LAI
+             !print*,'mean_LAI',layer(i)%mean_LAI
 
         if(layer(i)%sum_LAI.eq.0.) then
             layer(i)%mean_LAI=0.
