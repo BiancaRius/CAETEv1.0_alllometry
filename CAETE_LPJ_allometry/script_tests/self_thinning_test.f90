@@ -3,7 +3,6 @@ program self_thinning
     !Variables to use
     integer :: j,k
     integer, parameter:: npls = 20
-    real, dimension(npls), allocatable :: Cleaf (:) !leaf increment
     real, dimension(npls), allocatable :: LAI (:) !Leaf Area Index (m2/m2)
     real, dimension(npls), allocatable :: diam (:) !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls), allocatable :: crown_area (:) !Tree crown area (m2) (Sitch et al., 2003)
@@ -14,13 +13,16 @@ program self_thinning
     real, allocatable :: FPCgrid_updt (:) !Fractional projective cover in grid cell (Sitch et al., 2003) - updated to occupy 95%
     real, allocatable :: FPCgrid_perc_updt (:) !Fractional projective cover in grid cell relative to grid cell area (Sitch et al., 2003)-updated to occupy 95%
     real :: sum_FPCgrid=0.0
+    real :: sum_total_inc = 0.0
     real :: sum_FPCgrid_perc=0.0
     real :: sum_nind=0.0
-    real :: ocp_rest=0.0
-    real :: gc_area = 100 !grid cell size - 300 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 300 !grid cell size - 300 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area95
     real :: sum_FPCgrid_updt = 0.0 !!the new number of total PLS average-individuals after % reduction equals maximum to
                                  !! not to exceed 95% occupation.
     real :: sum_FPCgrid_perc_updt = 0.0 !the new percentage of occupation of all PLS after % reduction. 
+    real :: exc_area
+    real :: exc_area_perc
 
     !Parameters and constants
     real :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
@@ -30,8 +32,7 @@ program self_thinning
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
     real, dimension(npls) :: npp_inc = 0.0 !incremento anual de C para cada PLS
-    real, dimension(npls) :: npp = 0.0!quantidade de NPP com os incrementos.
-    real, dimension(npls) :: annual_npp !total NPP for each year (npp1 + npp_inc)
+    real, dimension(npls) :: annual_npp = 0.0!quantidade de NPP com os incrementos.
     real, dimension(npls) :: cl2
     real, dimension(npls) :: cw2
 
@@ -47,6 +48,10 @@ program self_thinning
     real, dimension(npls) :: spec_leaf !m2/gC
     real, dimension(npls) :: leaf_inc !kgC/ ind
     real, dimension(npls) :: wood_inc !kgC/ ind
+    real, dimension(npls) :: root_inc !kgC/ ind
+    real, dimension(npls) :: total_inc !kgC/ ind
+    real, dimension(npls) :: cont_inc!kgC/ ind
+    real, dimension(npls) :: cont_inc_perc!kgC/ ind
 
     dwood=(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
     cl1=(/2.15,3.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,1.18,1.6,1.5,1.8,0.3,2./)
@@ -65,55 +70,106 @@ program self_thinning
 
     ! Increment of carbon on tissues per individual 
     
-    do k = 1, 100
+    do k = 1, 3
         ! Allometric Equations =================================================
-        
-        !INITIAL ALLOMETRY
-        diam = ((4+(cw1))/((dwood)*3.14*40))**(1/(2+0.5))
-        !print*, 'diam', diam
-        
-        crown_area = k_allom1*(diam**krp)
-        !print*, 'crown', crown_area
-
-        !LAI individual (Sitch et al., 2003) - Cleaf/nind
-        LAI = ((cl1*1000)*spec_leaf)/crown_area !transfor SLA gC to kgC
-        !print*, 'LAI', LAI
 
         ! Grid-Cell Properties =================================================
 
-        do j=1,npls
-            npp(j) = npp1(j) + 0.35 !a cada ano NPP aumenta 0.35kgC/ano
-            print*, 'npp', npp(j), 'npp1', npp1(j), k, j
+        if (k .eq. 1) then 
+            !INITIAL ALLOMETRY
+            diam = ((4+(cw1))/((dwood)*3.14*40))**(1/(2+0.5))
+            !print*, 'diam', diam
+            
+            crown_area = k_allom1*(diam**krp)
+            !print*, 'crown', crown_area
 
-            annual_npp(j) = npp(j) + npp1(j) !total do ano para ser incrementado em cada tecido
+            !LAI individual (Sitch et al., 2003) - Cleaf/nind
+            LAI = ((cl1*1000)*spec_leaf)/crown_area !transfor SLA gC to kgC
+            !print*, 'LAI', LAI
+            
+            annual_npp = npp1 + 0.35 !a cada ano NPP aumenta 0.35kgC/ano
 
-            nind(j) = diam(j)**(-1.6) !número de individuos-médios de cada PLS
+            nind = diam**(-1.6) !número de individuos-médios de cada PLS
 
-            npp_inc(j) = annual_npp(j) / nind(j) !quantidade de npp pra ser alocado por individuo-médio
+            npp_inc = annual_npp / nind !quantidade de npp pra ser alocado por individuo-médio
 
             !==================================================
             !INCREMENTS TO LEAF AND WOOD TISSUES PER INDIVIDUO
 
-            leaf_inc(j) = 0.35*npp_inc(j)
+            leaf_inc = 0.35*npp_inc
 
-            wood_inc(j) = 0.3*npp_inc(j)
+            root_inc = 0.35*npp_inc
+
+            wood_inc = 0.3*npp_inc
+
             !==================================================
             !CARBON TISSUES
 
-            cl2(j) = cl1(j) + leaf_inc(j)
+            cl2 = cl1 + leaf_inc
 
-            cw2(j) = cw1(j) + wood_inc(j)
+            cw2 = cw1 + wood_inc
             !==================================================
 
-            FPCind(j) = (1-exp(-0.5*LAI(j)))
-            !print*, 'FPC', FPCind(j)
+        else
+            diam = ((4+(cw2))/((dwood)*3.14*40))**(1/(2+0.5))
+            !print*, 'diam', diam
+            
+            crown_area = k_allom1*(diam**krp)
+            !print*, 'crown', crown_area
 
-            FPCgrid(j) = crown_area(j)*nind(j)*FPCind(j)
-            !print*, 'FPC-GRID', FPCgrid(j)
+            !LAI individual (Sitch et al., 2003) - Cleaf/nind
+            LAI = ((cl2*1000)*spec_leaf)/crown_area !transfor SLA gC to kgC
 
-            FPCgrid_perc(j) = (FPCgrid(j)*100)/gc_area
-            !print*, 'FPC-GRID-PERC', FPCgrid_perc(j), gc_area
-        enddo
+            annual_npp = annual_npp + 0.35
+
+            nind = diam**(-1.6) !número de individuos-médios de cada PLS
+
+            npp_inc = annual_npp / nind !quantidade de npp pra ser alocado por individuo-médio
+
+            !==================================================
+            !INCREMENTS TO LEAF AND WOOD TISSUES PER INDIVIDUO
+
+            leaf_inc = 0.35*npp_inc
+            root_inc = 0.35*npp_inc
+            wood_inc = 0.3*npp_inc
+            !==================================================
+            !CARBON TISSUES
+
+            cl2 = cl1 + leaf_inc
+
+            cw2 = cw1 + wood_inc
+            !==================================================
+        endif
+        ! print*, k, 'nind', nind
+        ! print*, k, 'npp_inc', npp_inc
+
+        total_inc = cleaf_inc + wood_inc + root_inc
+        sum_total_inc = sum(total_inc)
+        cont_inc = total_inc/sum_total_inc
+        cont_inc_perc = (cont_inc*100)/sum_total_inc
+        ! print*, 'cont_inc', cont_inc
+        ! print*, 'cont_inc_perc', cont_inc_perc
+
+        FPCind = (1-exp(-0.5*LAI))
+
+        FPCgrid = crown_area*nind*FPCind
+
+        sum_FPCgrid = sum(FPCgrid)
+
+        gc_area95 = gc_area*0.95
+
+        if (sum_FPCgrid .gt. gc_area95) then
+            exc_area = sum_FPCgrid - gc_area95
+            ! print*, 'exc_area', exc_area, 'FPC_sum', sum_FPCgrid, 'gc95', gc_area95
+            exc_area_perc = (exc_area*100)/gc_area95
+            ! print*, 'exc_perc', exc_area_perc
+
+            
+        endif
+
+        FPCgrid_perc = (FPCgrid*100)/gc_area
+        ! print*, 'FPC-GRID-PERC', FPCgrid_perc(j), gc_area
+
     enddo
 
 end program self_thinning
