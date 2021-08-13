@@ -12,6 +12,7 @@ program self_thinning
     real, allocatable :: FPC_avg_ind (:) !Average idividual occupation for a PLS (Sitch et al., 2003)
     real, allocatable :: FPCgrid_perc (:) !Fractional projective cover in grid cell relative to grid cell area (Sitch et al., 2003)
     real, allocatable :: nind (:) !number of individuals per PLS (Smith, 2001, thesis)
+    real, allocatable :: nind_upt (:)
     real, allocatable :: FPCgrid_updt (:) !Fractional projective cover in grid cell (Sitch et al., 2003) - updated to occupy 95%
     real, allocatable :: FPCgrid_perc_updt (:) !Fractional projective cover in grid cell relative to grid cell area (Sitch et al., 2003)-updated to occupy 95%
     real :: FPC_grid_total = 0.0 !Fractional projective cover in grid cell (Sitch et al., 2003)
@@ -56,12 +57,13 @@ program self_thinning
     real, dimension(npls) :: total_inc !kgC/ ind
     real, dimension(npls) :: cont_inc!kgC/ ind
     real, dimension(npls) :: cont_inc_perc!kgC/ ind
+    real, dimension(npls) :: nind_exc
 
     dwood=(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
     cl1=(/2.15,3.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,1.18,1.6,1.5,1.8,0.3,2./)
     spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
     &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
-    cw1=(/7.,12.,7.2,8.3,8.8,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,5.3,9.2,15.,12.6,10.7,11.4/)
+    cw1=(/7.,12.,14.,8.3,25.2,9.7,17.5,11.5,10.,18.6,7.3,10.3,16.8,22.,5.3,20.2,15.,22.6,10.7,21.4/)
     cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
     npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
 
@@ -70,6 +72,7 @@ program self_thinning
     allocate (FPC_avg_ind(1:npls))
     allocate (FPC_ind_ocp(1:npls))
     allocate (cont_exc(1:npls))
+    allocate (nind_upt(1:npls))
 
     allocate (FPCgrid_perc(1:npls))
     allocate (FPCgrid_updt(1:npls))
@@ -84,8 +87,8 @@ program self_thinning
 
         if (k .eq. 1) then 
             !INITIAL ALLOMETRY
-            diam = ((4+(cw1))/((dwood)*3.14*40))**(1/(2+0.5))
-            !print*, 'diam', diam
+            diam = ((4+(cw1*1.0D3))/((dwood*1D7)*3.14*36))**(1/(2+0.22))
+            print*, 'diam', diam
             
             crown_area = k_allom1*(diam**krp)
             !print*, 'crown', crown_area
@@ -97,6 +100,7 @@ program self_thinning
             annual_npp = npp1 + 0.35 !a cada ano NPP aumenta 0.35kgC/ano
 
             nind = diam**(-1.6) !número de individuos-médios de cada PLS
+            print*, 'nind', nind
 
             npp_inc = annual_npp / nind !quantidade de npp pra ser alocado por individuo-médio
 
@@ -118,18 +122,19 @@ program self_thinning
             !==================================================
 
         else
-            diam = ((4+(cw2))/((dwood)*3.14*40))**(1/(2+0.5))
-            !print*, 'diam', diam
+            diam = ((4+(cw2*1.0D3))/((dwood*1D7)*3.14*36))**(1/(2+0.22))
+            print*, 'diam', diam
             
             crown_area = k_allom1*(diam**krp)
             !print*, 'crown', crown_area
 
             !LAI individual (Sitch et al., 2003) - Cleaf/nind
-            LAI = ((cl2*1000)*spec_leaf)/crown_area !transfor SLA gC to kgC
+            LAI = ((cl2*1000)*spec_leaf)/crown_area !transfor CL2 gC to kgC
 
             annual_npp = annual_npp + 0.35
 
             nind = diam**(-1.6) !número de individuos-médios de cada PLS
+            print*, 'nind', nind
 
             npp_inc = annual_npp / nind !quantidade de npp pra ser alocado por individuo-médio
 
@@ -168,19 +173,26 @@ program self_thinning
 
         FPC_ind_ocp = FPC_pls/nind                  !ocupação de cada ind em cada PLS
 
-       ! print*, 'OCP IND', FPC_ind_ocp, 'FPC PLS', FPC_pls , 'NIND', nind, 'FPC', FPC_ind_ocp*nind
+        ! print*, 'OCP IND', FPC_ind_ocp, 'FPC PLS', FPC_pls , 'NIND', nind, 'DIAMETRO', diam, 'CA', crown_area, 'dwood', dwood
+        !'FPC', FPC_ind_ocp*nind
         
         FPC_grid_total = sum(FPC_pls) !FPC da célula
 
         ! print*, 'FPC ind medio=', FPC_avg_ind, 'FPC_grid_total', FPC_grid_total
 
         gc_area95 = gc_area*0.95
-        print*,'gc_area95', gc_area95
+        ! print*,'gc_area95', gc_area95
 
         if (FPC_grid_total .gt. gc_area95) then
             exc_area = FPC_grid_total - gc_area95
-            cont_exc = cont_inc*exc_area
-            print*, 'teste'!'exc_area', exc_area !, 'CONT EXC',cont_exc, 'SUM CONT EXC', sum(cont_exc)        
+            cont_exc = cont_inc*exc_area !Biomass individual contribution to area excedent
+            ! print*, 'teste'!'exc_area', exc_area !, 'CONT EXC',cont_exc, 'SUM CONT EXC', sum(cont_exc)    
+            nind_exc = cont_exc/FPC_ind_ocp !quanto deve-se reduzir do nº de individuo de cada PLS
+            ! print*, 'exc_nind', nind_exc
+            ! print*, 'nind', nind
+            nind_upt = nind - nind_exc
+            ! print*, 'nind_upt', nind_upt
+            ! print*, 'nind_old', nind
         endif
 
         FPCgrid_perc = (FPC_grid_total*100)/gc_area
