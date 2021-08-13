@@ -2,20 +2,24 @@ program self_thinning
 
     !Variables to use
     integer :: j,k
-    integer, parameter:: npls = 20
+    integer, parameter:: npls = 5
     real, dimension(npls), allocatable :: LAI (:) !Leaf Area Index (m2/m2)
     real, dimension(npls), allocatable :: diam (:) !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls), allocatable :: crown_area (:) !Tree crown area (m2) (Sitch et al., 2003)
-    real, allocatable :: FPCind (:) !Foliage projective cover for each PLS (Sitch et al., 2003)
-    real, allocatable :: FPCgrid (:) !Fractional projective cover in grid cell (Sitch et al., 2003)
+    real, allocatable :: FPC_pls (:) !Foliage projective cover for each PLS (Sitch et al., 2003)
+    real, allocatable :: cont_exc (:)
+    real, allocatable :: FPC_ind_ocp (:)
+    real, allocatable :: FPC_avg_ind (:) !Average idividual occupation for a PLS (Sitch et al., 2003)
     real, allocatable :: FPCgrid_perc (:) !Fractional projective cover in grid cell relative to grid cell area (Sitch et al., 2003)
     real, allocatable :: nind (:) !number of individuals per PLS (Smith, 2001, thesis)
     real, allocatable :: FPCgrid_updt (:) !Fractional projective cover in grid cell (Sitch et al., 2003) - updated to occupy 95%
     real, allocatable :: FPCgrid_perc_updt (:) !Fractional projective cover in grid cell relative to grid cell area (Sitch et al., 2003)-updated to occupy 95%
-    real :: sum_FPCgrid=0.0
+    real :: FPC_grid_total = 0.0 !Fractional projective cover in grid cell (Sitch et al., 2003)
+    real :: cont_inc_perc_total = 0.0
     real :: sum_total_inc = 0.0
     real :: sum_FPCgrid_perc=0.0
     real :: sum_nind=0.0
+    real :: sum_cont_inc = 0.0
     real :: gc_area = 300 !grid cell size - 300 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     real :: gc_area95
     real :: sum_FPCgrid_updt = 0.0 !!the new number of total PLS average-individuals after % reduction equals maximum to
@@ -53,17 +57,20 @@ program self_thinning
     real, dimension(npls) :: cont_inc!kgC/ ind
     real, dimension(npls) :: cont_inc_perc!kgC/ ind
 
-    dwood=(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
-    cl1=(/2.15,3.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,1.18,1.6,1.5,1.8,0.3,2./)
-    spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
-    &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
-    cw1=(/7.,12.,7.2,8.3,8.8,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,5.3,9.2,15.,12.6,10.7,11.4/)
-    cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
-    npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
+    dwood=(/0.74,0.73,0.59,0.52,0.41/)!,0.44,0.86,0.42,0.64,0.69,0.92,0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
+    cl1=(/2.15,3.,1.18,1.6,1.5/)!,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,1.18,1.6,1.5,1.8,0.3,2./)
+    spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012/)!,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
+   ! &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
+    cw1=(/7.,12.,7.2,8.3,8.8/)!,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,5.3,9.2,15.,12.6,10.7,11.4/)
+    cr1=(/0.63,0.8,0.9,1.5,1.3/)!,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
+    npp1 = (/0.5,0.8,1.5,1.2,1.9/)!,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
 
     allocate (nind(1:npls))
-    allocate (FPCind(1:npls))
-    allocate (FPCgrid(1:npls))
+    allocate (FPC_pls(1:npls))
+    allocate (FPC_avg_ind(1:npls))
+    allocate (FPC_ind_ocp(1:npls))
+    allocate (cont_exc(1:npls))
+
     allocate (FPCgrid_perc(1:npls))
     allocate (FPCgrid_updt(1:npls))
     allocate (FPCgrid_perc_updt(1:npls))
@@ -143,31 +150,40 @@ program self_thinning
         ! print*, k, 'nind', nind
         ! print*, k, 'npp_inc', npp_inc
 
-        total_inc = cleaf_inc + wood_inc + root_inc
-        sum_total_inc = sum(total_inc)
-        cont_inc = total_inc/sum_total_inc
-        cont_inc_perc = (cont_inc*100)/sum_total_inc
+        total_inc = cleaf_inc + wood_inc + root_inc !somatoria de inc de todos os tecidos p/ um PLS
+        sum_total_inc = sum(total_inc)              !somatória de inc p/ todos os PLS
+        cont_inc = total_inc/sum_total_inc          !contribuição relativa de cada PLS p/ inc total
+        sum_cont_inc = sum(cont_inc)
+        ! print*, 'TOTAL INC=', total_inc, 'SUM DE INC', sum_total_inc, 'CONT INC', cont_inc, 'SUM CONT', sum_cont_inc
+
+
+        ! cont_inc_perc = (cont_inc*100)/sum_total_inc
+        ! cont_inc_perc_total = sum(cont_inc_perc)
         ! print*, 'cont_inc', cont_inc
-        ! print*, 'cont_inc_perc', cont_inc_perc
+        ! print*, 'cont_inc_perc', cont_inc_perc,'total', cont_inc_perc_total
 
-        FPCind = (1-exp(-0.5*LAI))
+        FPC_avg_ind = (1-exp(-0.5*LAI)) !FPC ind médio m2
 
-        FPCgrid = crown_area*nind*FPCind
+        FPC_pls = crown_area*nind*FPC_avg_ind 
 
-        sum_FPCgrid = sum(FPCgrid)
+        FPC_ind_ocp = FPC_pls/nind                  !ocupação de cada ind em cada PLS
+
+        ! print*, 'OCP IND', FPC_ind_ocp, 'FPC PLS', FPC_pls , 'NIND', nind, 'FPC', FPC_ind_ocp*nind
+        
+        FPC_grid_total = sum(FPC_pls) !FPC da célula
+
+        ! print*, 'FPC ind medio=', FPC_avg_ind, 'FPC_grid_total', FPC_grid_total
 
         gc_area95 = gc_area*0.95
 
-        if (sum_FPCgrid .gt. gc_area95) then
-            exc_area = sum_FPCgrid - gc_area95
-            ! print*, 'exc_area', exc_area, 'FPC_sum', sum_FPCgrid, 'gc95', gc_area95
-            exc_area_perc = (exc_area*100)/gc_area95
-            ! print*, 'exc_perc', exc_area_perc
-
-            
+        if (FPC_grid_total .gt. gc_area95) then
+            exc_area = FPC_grid_total - gc_area95
+            cont_exc = cont_inc*exc_area
+            ! print*, 'exc_area', exc_area, 'CONT EXC',cont_exc, 'SUM CONT EXC', sum(cont_exc)
+                 
         endif
 
-        FPCgrid_perc = (FPCgrid*100)/gc_area
+        FPCgrid_perc = (FPC_grid_total*100)/gc_area
         ! print*, 'FPC-GRID-PERC', FPCgrid_perc(j), gc_area
 
     enddo
