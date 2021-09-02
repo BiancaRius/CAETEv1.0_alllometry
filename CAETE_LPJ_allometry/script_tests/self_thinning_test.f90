@@ -44,7 +44,8 @@ program self_thinning
     real :: exc_area_perc
     real, dimension(npls) :: FPC_inc_pls 
     real, dimension(npls) :: FPC_inc_pls_cont  !contribuição de cada PLS para o incremento da célula de grade
-    real, dimension(npls) :: cont_exc 
+    real, dimension(npls) :: cont_exc
+    real, dimension(npls) :: dens_ind_pls = 2  !densidade de indivíduos em cada PLS (0.5 é um número genérico)
 
     !Parameters and constants
     real :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
@@ -78,10 +79,10 @@ program self_thinning
     real, dimension(npls) :: diameter, diameter_t2
 
     dwood=(/0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
-    cl1=(/2.15,3.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,1.18,1.6,1.5,1.8,0.3,2./)
+    cl1=(/.7,1.,0.3,1.6,1.1,1.8,0.3,0.2,0.8,.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)
     spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
     &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
-    cw1=(/30.,12.,24.,18.3,20.2,19.7,27.5,11.5,20.,28.6,17.3,19.3,26.8,22.,18.3,20.2,15.,22.6,10.7,21.4/)
+    cw1=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)
     cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
     npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
     diameter = (/0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)
@@ -120,24 +121,26 @@ program self_thinning
 
         if (k .eq. 1) then !usando o time step t1
             !INITIAL ALLOMETRY
-            ! diam = ((4*(cw1))/((dwood)*3.14*36))**(1/(2+0.22))
-            ! print*, 'diam', diam
+            cw1 = (cw1/dens_ind_pls)*1000. !*1000 transforma de kgC para gC
+            diam = ((4*(cw1))/((dwood*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em g/m3
+            ! print*, 'diam===', diam*100
             
-            ! crown_area = k_allom1*(diam**krp)
-            crown_area = k_allom1*(diameter**krp)
-            ! !print*, 'crown', crown_area
+            crown_area = k_allom1*(diam**krp)
+            !crown_area = k_allom1*(diameter**krp)
+            ! print*, 'crown===', crown_area
 
             !LAI individual (Sitch et al., 2003) - Cleaf/nind
-            LAI = ((cl1*1000)*spec_leaf)/crown_area !transfor SLA gC to kgC
-            !print*, 'LAI', LAI
+            cl1 = (cl1/dens_ind_pls)*1000
+            LAI = (cl1*spec_leaf)/crown_area 
+            ! print*, 'LAI===', LAI
             
-            annual_npp = npp1 + 0.35 !a cada ano NPP aumenta 0.35kgC/ano
+            npp_inc = 0.15 / dens_ind_pls !quantidade de npp pra ser alocado por individuo-médio
 
-            nind = diameter**(-1.6) !número de individuos-médios de cada PLS
-            ! print*, 'nind', nind
 
-            npp_inc = annual_npp / nind !quantidade de npp pra ser alocado por individuo-médio
-
+            annual_npp = ((npp1/dens_ind_pls) + npp_inc)*1000 !a cada ano NPP aumenta 0.35kgC/ano
+            ! print*,'annual_npp====' ,annual_npp
+            
+            
             !==================================================
             !INCREMENTS TO LEAF AND WOOD TISSUES PER INDIVIDUO
 
@@ -150,33 +153,33 @@ program self_thinning
             !==================================================
             !CARBON TISSUES
 
-            cl2 = cl1 + leaf_inc
+            cl2 = cl1 + leaf_inc !cl1 e leaf_inc já está dividido peela densidade
 
-            cw2 = cw1 + wood_inc
+            cw2 = cw1 + wood_inc !cw1 e wood_inc já está dividido peela densidade
+
+            ! print*, 'CL2', cl2/1000, 'CW2', cw2/1000
             !==================================================
             ! FPC FOR t1
             FPC_avg_ind_t1 = (1-exp(-0.5*LAI)) !FPC ind médio m2
-            ! print*, 'FPC_avg_ind_t1',FPC_avg_ind_t1
+            print*, 'FPC_avg_ind_t1',FPC_avg_ind_t1
 
-            FPC_pls_t1 = crown_area*nind*FPC_avg_ind_t1
-            ! print*, 'FPC_pls_t1', FPC_pls_t1
+            FPC_pls_t1 = crown_area*dens_ind_pls*FPC_avg_ind_t1
+            print*, 'FPC_pls_t1', FPC_pls_t1
 
             FPC_grid_total_t1 = sum(FPC_pls_t1)
-            ! print*, 'FPC_grid_total_t1', FPC_grid_total_t1
+            print*, 'FPC_grid_total_t1', FPC_grid_total_t1
         else !simulando time step t2 (diametro modificado)
         !     
-             ! diam = ((4*(cw2))/((dwood)*3.14*36))**(1/(2+0.22))
-        !     ! print*, 'diam', diam
+            diam = ((4*(cw2))/((dwood*1000000)*3.14*36))**(1/(2+0.22))
+            print*, 'diam', diam*100
             
-            ! crown_area = k_allom1*(diam**krp)
-        !     !print*, 'crown', crown_area
-            crown_area = k_allom1*(diameter_t2**krp)
-            ! print*, 'CA1', crown_area
+            crown_area = k_allom1*(diam**krp)
+            print*, 'crown', crown_area
+            
         !     !LAI individual (Sitch et al., 2003) - Cleaf/nind
-        !    LAI = ((cl2*1000)*spec_leaf)/crown_area !transfor CL2 gC to kgC
+            LAI = ((cl2)*spec_leaf)/crown_area !transfor CL2 gC to kgC
 
-            LAI = ((4*1000)*spec_leaf)/crown_area !transfor CL2 gC to kgC /// 4 -> valor genérico 4kgC/individuo médio
-            ! print*, 'LAI', LAI
+            
             annual_npp = annual_npp + 0.35
 
             nind_t2 = diameter_t2**(-1.6) !número de individuos-médios de cada PLS
@@ -268,7 +271,7 @@ program self_thinning
     enddo
      !!!!!TENTATIVA DE UTILIZAR O INCREMENTO DOS FPCs!!!!!!!!!!1
     exc_area = FPC_grid_total_t2 - gc_area95 ! excedente de ocupação da célula de grade inteira
-    print*, 'exc_area', exc_area , FPC_grid_total_t2, gc_area95,gc_area
+    ! print*, 'exc_area', exc_area , FPC_grid_total_t2, gc_area95,gc_area
 
     FPC_pls_t1=(gc_area95/20.) !contribuição de cada PLS p/o excedente !!!ATENÇÃO para a variável que deve ocupar o lugar de 285
 
@@ -307,7 +310,7 @@ program self_thinning
     ! nind_upt = 1/diam_upt**(1.6)
     !nind_upt**(1.25) = 1/diam_upt**2 ! elevei os dois lados da equação a 1.25 para conseguir fazer a raiz quadrada
     diam_upt = sqrt(1/(nind_upt**1.25))
-    print*, 'DIAM UPT', diam_upt, 'DIAM T2',diameter_t2
+    ! print*, 'DIAM UPT', diam_upt, 'DIAM T2',diameter_t2
 
     
 
@@ -315,7 +318,7 @@ program self_thinning
 
 !!!ATENÇÃO: DIMINUIÇÃO NOS COMPARTIMENTOS DE CARBONO!!!!    
     crown_area_upt = k_allom1*(diam_upt**krp)
-    print*, 'CA2', crown_area_upt
+    ! print*, 'CA2', crown_area_upt
 
     cl_upt=cl2/(nind_t2/FPC_pls_t2)
     ! print*, 'CLP_UPT', cl_upt, 'CL2', cl2
