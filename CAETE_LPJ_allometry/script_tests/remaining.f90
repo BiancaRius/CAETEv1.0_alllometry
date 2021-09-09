@@ -58,12 +58,12 @@ program self_thinning
     allocate (FPC_grid_t2(1:npls))
     allocate (fpc_dec(1:npls))
 
-    ! ================= AND VARIABLES DECLARATION ===================== !
+    ! ================= END VARIABLES DECLARATION ===================== !
 
     ! ==================== ALLOMETRY EQUATIONS =========================!
     !        Increment of carbon on tissues per individual 
 
-    do k = 1, 2
+    do k = 1, 2 !Loop dos anos
         if (k .eq. 1) then !*usando o time step t1 - INITIAL ALLOMETRY*
 
             !Carbon on tissues (wood and leaf) per average-individual (this considers the individual density [dens])
@@ -93,13 +93,13 @@ program self_thinning
             !CARBON TISSUES
 
             cl2 = cl1 + leaf_inc !cl1 e leaf_inc já está dividido peela densidade
-            cw2 = cw1 + wood_inc !cw1 e wood_inc já est2á dividido peela densidade
+            cw2 = cw1 + wood_inc !cw1 e wood_inc já está dividido peela densidade
 
             !==================================================
             !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)
             
             FPC_ind = (1-exp(-0.5*lai)) !FPC ind médio [m2]
-            FPC_grid_t1 = crown_area*dens*FPC_ind !FPC pls [occupation on grid cell considers all average-individual of PLS; m2]
+            FPC_grid_t1 = crown_area*dens*FPC_ind !FPC of pls [occupation on grid cell considers all average-individual of PLS; m2]
             FPC_total_t1 = sum(FPC_grid_t1)
 
         else !*usando time step 2*
@@ -113,25 +113,26 @@ program self_thinning
             !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)
             
             FPC_ind = (1-exp(-0.5*lai)) !FPC ind médio [m2]
-            FPC_grid_t2 = crown_area*dens*FPC_ind
+            FPC_grid_t2 = crown_area*dens*FPC_ind !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
             FPC_total_t2 = sum(FPC_grid_t2)
 
         endif
 
         fpc_max_tree = gc_area*0.95
-        if (FPC_total_t2 .gt. fpc_max_tree) then !WHEN WOODYS PLS ACROSS 95% OF GRID-CELL 
-            !Self-Thinning imposed when total tree cover above 'FPC MAX TREE' [max; of occupation]
+        if (FPC_total_t2 .gt. fpc_max_tree) then
+            !Self-Thinning imposed when total tree cover above 'FPC MAX TREE' [max. of occupation]
             !partitioned among tree PLS in proportion to this year's FPC increment
 
-            fpc_dec = (FPC_total - fpc_max_tree)*(FPC_grid_t2/FPC_total_t2) !*** TODOS OS VALORES ESTÃO NEGATIVOS ***
-            mort = 1.0-((FPC_grid_t2-fpc_dec)/FPC_grid_t2) !*** TODOS OS VALORES ESTÃO NEGATIVOS ***
+            fpc_dec = (FPC_total_t2 - fpc_max_tree)*(FPC_grid_t2/FPC_total_t2)
+            mort = 1.0-((FPC_grid_t2-fpc_dec)/FPC_grid_t2)
             remaining = 1.0-mort
 
             ! ==================== REDUCES INDIVIDUAL BIOMASS AND INDIVIDUAL DENSITY ==================== !
             !New individual density and leaf/wood biomass (remaining)
-            dens = dens*remaining !** AUMENTOU **
-            cl2 = cl2*remaining !** AUMENTOU **
-            cw2 = cw2*remaining !** AUMENTOU **
+            dens = dens*remaining 
+            cl2 = cl2*remaining 
+            cw2 = cw2*remaining 
+            ! print*, 'NEW DENS', dens, 'NEW CL2', cl2, 'NEW CW2', cw2
         endif
     enddo
 
