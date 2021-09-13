@@ -60,13 +60,14 @@ program self_thinning
     allocate (FPC_grid_t2(1:npls))
     allocate (fpc_dec(1:npls))
     allocate (remaining(1:npls))
+    allocate (mort(1:npls))
 
     ! ================= END VARIABLES DECLARATION ===================== !
 
     ! ==================== ALLOMETRY EQUATIONS =========================!
     !        Increment of carbon on tissues per individual 
 
-    do k = 1, 3 !Loop dos anos
+    do k = 1, 2 !Loop dos anos
         if (k .eq. 1) then !*usando o time step t1 - INITIAL ALLOMETRY*
 
             !Carbon on tissues (wood and leaf) per average-individual (this considers the individual density [dens])
@@ -111,7 +112,7 @@ program self_thinning
             diam = ((4*(cw2))/((dwood*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
             crown_area = k_allom1*(diam**krp)
             lai = (cl2*spec_leaf)/crown_area 
-            print*, 'diametro_old', diam
+            !print*, 'diametro_old', diam
 
             !==================================================
             !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)               
@@ -119,6 +120,7 @@ program self_thinning
             FPC_ind = (1-exp(-0.5*lai)) !FPC ind médio [m2]
             FPC_grid_t2 = crown_area*dens*FPC_ind !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
             FPC_total_t2 = sum(FPC_grid_t2)
+            
 
         endif
 
@@ -132,69 +134,62 @@ program self_thinning
 
             !Area excedent
             exc_area = FPC_total_t2 - fpc_max_tree
+            print*, 'exc_area', exc_area
 
             !Contribuição excedente de cada PLS
             FPC_inc = FPC_grid_t2 - FPC_grid_t1 !!incremento de cada PLS ! delta entre tempo 1 e 2
 
-            FPC_inc_cont = FPC_inc/exc_area   !contribuição relativa de cada PLS para o incremento total
+            !FPC_inc_cont = FPC_inc/exc_area   !contribuição relativa de cada PLS para o incremento total
             ! print*, 'FPC_INC_pls cont====', FPC_inc_cont
 
             fpc_dec = (exc_area)*(FPC_inc/(FPC_total_t2-FPC_total_t1))
-            mort = 1.0-((FPC_grid_t2-fpc_dec)/FPC_grid_t2)
-            
-            do j = 1, npls
-                if (mort(j) .gt. 1.) then
+            mort = 1.0 - ((FPC_grid_t2-fpc_dec)/FPC_grid_t2)
+            do j=1,npls
+                if (mort(j).gt.1.)then
                     mort(j) = 1.
-                    FPC_grid_t2(j) = 0.0
-                    dens(j) = 0.0
-                    diam(j) = 0.0
-                    crown_area(j) = 0.0
-                    lai(j) = 0.0
-                    cl2(j) = 0.0
-                    cw2 (j) = 0.0
-                    FPC_ind(j) = 0.0
-                    remaining(j) = 0.0 
-
-                else
-                    remaining(j) = 1.0-mort(j)
-
-                    ! print*, 'FPC_DEC=', fpc_dec, 'mort', mort, 'remaining', remaining
-        
-                    ! ==================== REDUCES INDIVIDUAL BIOMASS AND INDIVIDUAL DENSITY ==================== !
-                    !New individual density and leaf/wood biomass (remaining)
-                    dens(j) = dens(j)*remaining(j) 
-                    cl2(j) = cl2(j)*remaining(j) 
-                    cw2(j) = cw2(j)*remaining(j) 
-
-                    !PLS structure [diam, crown area and leaf area index]
-                    diam(j) = ((4*(cw2(j)))/((dwood(j)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-                    crown_area(j) = k_allom1*(diam(j)**krp)
-                    lai(j) = (cl2(j)*spec_leaf(j))/crown_area(j) 
-
-                    !==================================================
-                    !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)               
-                    
-                    FPC_ind(j) = (1-exp(-0.5*lai(j))) !FPC ind médio [m2]
-                    FPC_grid_t2(j) = crown_area(j)*dens(j)*FPC_ind(j) !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
-                    ! FPC_total_t2(j) = FPC_grid_t2(j)+FPC_grid_t2(j+1)
-
                 endif
             enddo
-            
-            remaining = 1.0-mort
 
-            ! print*, 'FPC_DEC=', fpc_dec, 'mort', mort, 'remaining', remaining
-
-            ! ==================== REDUCES INDIVIDUAL BIOMASS AND INDIVIDUAL DENSITY ==================== !
-            !New individual density and leaf/wood biomass (remaining)
-            dens = dens*remaining 
-            cl2 = cl2*remaining 
-            cw2 = cw2*remaining 
-
+        else
+            mort = 0.0
         endif
-
-        print*, k, 'SOMA_TOTAL',sum(FPC_grid_t2), '95% area', fpc_max_tree, 'diametro', diam
-
+        remaining = 1.0-mort
+        ! print*, 'remainig', remaining
+        dens = dens*remaining 
+        cl2 = cl2*remaining 
+        cw2 = cw2*remaining 
+        !print*,'dens update', dens, 'cl2 updt', cl2, 'cw2 updt', cw2
+        
+        do j = 1, npls
+            if (remaining(j) .le. 0.) then
+                   
+                FPC_grid_t2(j) = 0.0
+                    ! dens(j) = 0.0
+                    ! diam(j) = 0.0
+                    ! crown_area(j) = 0.0
+                    ! lai(j) = 0.0
+                    ! cl2(j) = 0.0
+                    ! cw2 (j) = 0.0
+                    ! FPC_ind(j) = 0.0
+                    ! remaining(j) = 0.0 
+! 
+            else
+!          recalculate PLS structure [diam, crown area and leaf area index]
+                diam(j) = ((4*(cw2(j)))/((dwood(j)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
+                crown_area(j) = k_allom1*(diam(j)**krp)
+                lai(j) = (cl2(j)*spec_leaf(j))/crown_area(j) 
+! 
+                    ! ==================================================
+                    ! Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)               
+                    ! 
+                FPC_ind(j) = (1-exp(-0.5*lai(j))) !FPC ind médio [m2]
+                FPC_grid_t2(j) = crown_area(j)*dens(j)*FPC_ind(j) !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
+                
+! 
+            endif
+        enddo
+        ! print*, k, 'SOMA_TOTAL',sum(FPC_grid_t2),'FPC pls', FPC_grid_t2, '95% area', fpc_max_tree, 'diametro', diam
+        ! print*, 'exc_area', exc_area
     enddo
 
 end program self_thinning
