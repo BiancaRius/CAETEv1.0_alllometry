@@ -6,9 +6,11 @@ program self_thinning
     real, dimension(npls), allocatable :: lai (:) !Leaf Area Index (m2/m2)
     real, dimension(npls), allocatable :: diam (:) !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls), allocatable :: crown_area (:) !Tree crown area (m2) (Sitch et al., 2003)
-    real, dimension(npls) :: dens = 2  !densidade de indivíduos em cada PLS (0.5 é um número genérico)
+    real, dimension(npls) :: dens != 2  !densidade de indivíduos em cada PLS (0.5 é um número genérico)
     real, dimension(npls) :: FPC_inc 
     real, dimension(npls) :: FPC_inc_cont  !contribuição de cada PLS para o incremento da célula de grade
+    real, dimension(npls) :: carbon_pls 
+    real, dimension(npls) :: est_pls !establishment for a specific PLS
     real, allocatable :: FPC_ind (:) !Foliage projective cover for each PLS (Stich et al., 2003)
     real, allocatable :: FPC_grid_t1 (:) !Fractional projective cover for each PLS in time 1 (Sitch et al., 2003)
     real, allocatable :: FPC_grid_t2 (:) !Fractional projective cover for each PLS in time 2 (Sitch et al., 2003)
@@ -17,14 +19,19 @@ program self_thinning
     real, allocatable :: remaining (:) !taxa de redução
     real :: FPC_total_t1 = 0.0 !sum of FPC_grid in time step 1
     real :: FPC_total_t2 = 0.0 !sum of FPC_grid in time step 2
-    real :: gc_area = 15 !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 19. !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     real :: fpc_max_tree !95% of grid-cell (in m2)
     real :: exc_area
+    real :: gen_est !general establishment for all the PLS 
+    
+    real :: FPC_perc ! percentage of FPC occupation related to the grid cell
+    real :: carbon_grid_cell !total carbon in the grid cell (considering all PLS)
 
     !Parameters and constants
     real :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
     real :: krp = 1.6 !allometric constant (Table 3; Sitch et al., 2003)
     real :: ltor = 0.77302587552347657
+    real :: k_est = 0.06 !establishment constant !Smith et al 2001 - Table A1
 
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
@@ -32,6 +39,7 @@ program self_thinning
     real, dimension(npls) :: annual_npp = 0.0!quantidade de NPP com os incrementos.
     real, dimension(npls) :: cl2 !carbon on leaves after allocation
     real, dimension(npls) :: cw2 !carbon on wood after allocation
+    real, dimension(npls) :: cr2 !carbon on wood after allocation
 
     ! Variables with generic values for testing the logic code
     real, dimension(npls) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
@@ -54,6 +62,7 @@ program self_thinning
     cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
     npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
     diameter = (/0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)
+    dens = (/1.,2.,5., 0.3, 0.1, 7., 0.8, 3.,0.5,0.7,0.6,9.,4.,0.45,0.27,4.6,8.2,0.29,3.,0.8/)
 
     allocate (FPC_ind(1:npls))
     allocate (FPC_grid_t1(1:npls))
@@ -67,7 +76,7 @@ program self_thinning
     ! ==================== ALLOMETRY EQUATIONS =========================!
     !        Increment of carbon on tissues per individual 
 
-    do k = 1, 2 !Loop dos anos
+    do k = 1, 3 !Loop dos anos
         if (k .eq. 1) then !*usando o time step t1 - INITIAL ALLOMETRY*
 
             !Carbon on tissues (wood and leaf) per average-individual (this considers the individual density [dens])
@@ -98,6 +107,7 @@ program self_thinning
 
             cl2 = cl1 + leaf_inc !cl1 e leaf_inc já está dividido peela densidade
             cw2 = cw1 + wood_inc !cw1 e wood_inc já está dividido peela densidade
+            cr2 = cr1 + root_inc
 
             !==================================================
             !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)
@@ -120,6 +130,7 @@ program self_thinning
             FPC_ind = (1-exp(-0.5*lai)) !FPC ind médio [m2]
             FPC_grid_t2 = crown_area*dens*FPC_ind !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
             FPC_total_t2 = sum(FPC_grid_t2)
+            ! print*, 'inc summing t1', FPC_total_t2
             
 
         endif
@@ -134,22 +145,25 @@ program self_thinning
 
             !Area excedent
             exc_area = FPC_total_t2 - fpc_max_tree
-            print*, 'exc_area', exc_area
+            ! print*, 'exc_area', exc_area
 
             !Contribuição excedente de cada PLS
             FPC_inc = FPC_grid_t2 - FPC_grid_t1 !!incremento de cada PLS ! delta entre tempo 1 e 2
+            ! print*, 'soma dos incrementos', sum(FPC_inc), 'diferença t2t1', FPC_total_t2-FPC_total_t1
 
-            !FPC_inc_cont = FPC_inc/exc_area   !contribuição relativa de cada PLS para o incremento total
+            FPC_inc_cont = (FPC_inc/(FPC_total_t2-FPC_total_t1))  !contribuição relativa de cada PLS para o incremento total
             ! print*, 'FPC_INC_pls cont====', FPC_inc_cont
 
-            fpc_dec = (exc_area)*(FPC_inc/(FPC_total_t2-FPC_total_t1))
-            mort = 1.0 - ((FPC_grid_t2-fpc_dec)/FPC_grid_t2)
+            fpc_dec = (exc_area)*(FPC_inc_cont) !porcentagem em relação ao exc de area que cada pls tem que reduzir o fpc
+            mort = 1.0 - (((FPC_grid_t2-fpc_dec)/FPC_grid_t2))
+            
+            
             do j=1,npls
                 if (mort(j).gt.1.)then
                     mort(j) = 1.
                 endif
             enddo
-
+            ! print*, 'mort total', mort, 'mort', ((FPC_grid_t2-fpc_dec)/FPC_grid_t2), 'fpd dec',fpc_dec, sum(FPC_dec)
         else
             mort = 0.0
         endif
@@ -158,6 +172,17 @@ program self_thinning
         dens = dens*remaining 
         cl2 = cl2*remaining 
         cw2 = cw2*remaining 
+        cr2 = cr2*remainig
+        
+        carbon_pls = cl2 + cw2 + cr2
+
+        carbon_grid_cell = sum(carbon_pls)
+
+        ! print*, 'carbon_pls', carbon_pls, 'total carbon', carbon_grid_cell/1000.
+
+      
+
+
         !print*,'dens update', dens, 'cl2 updt', cl2, 'cw2 updt', cw2
         
         do j = 1, npls
@@ -184,12 +209,18 @@ program self_thinning
                     ! 
                 FPC_ind(j) = (1-exp(-0.5*lai(j))) !FPC ind médio [m2]
                 FPC_grid_t2(j) = crown_area(j)*dens(j)*FPC_ind(j) !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
-                
+                FPC_grid_total_t2 = sum(FPC_grid_t2)
 ! 
             endif
         enddo
         ! print*, k, 'SOMA_TOTAL',sum(FPC_grid_t2),'FPC pls', FPC_grid_t2, '95% area', fpc_max_tree, 'diametro', diam
         ! print*, 'exc_area', exc_area
+        FPC_perc = FPC_grid_total_t2/gc_area
+        gen_est = k_est*(1-exp(-5*(1-FPC_perc)))*(1-FPC_perc) 
+        gen_est = k_est*(1-FPC_perc)
+        print*, 'general establish', gen_est, FPC_grid_total_t2, 'FPC_perc', FPC_perc
+        est_pls = gen_est*(carbon_pls/carbon_grid_cell)*FPC_grid_t2*(1-FPC_perc)
+        print*, 'EST_PLS', est_pls, sum(est_pls), '+ DENS', dens+est_pls
     enddo
 
 end program self_thinning
