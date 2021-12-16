@@ -7,11 +7,12 @@ program caete
     real(REAL64) :: delta_leaf
     real(REAL64) :: delta_root
     real(REAL64) :: delta_sapwood
-
+    
     
     integer :: j, k
     real, dimension(npls) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
     real, dimension(npls) :: cw1,cl1,cr1 !KgC/m2 (Cheart + Csap)
+    real, dimension(npls) :: cleaf_init, cheart_init, csap_init, croot_init, SS
     real, dimension(npls):: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls) :: nind !number of individuals per PLS (Smith, 2001, thesis)
 
@@ -21,8 +22,12 @@ program caete
     cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
 
    
-    call diam_nind(dwood,cw1,diam,nind)
-    print*,'diam',diam,'nind',nind
+    
+    call initial_c_pool(cl1,cw1,cr1,cleaf_init,cheart_init,csap_init,croot_init)
+    ! print*, cleaf_init,cheart_init,csap_init,croot_init
+
+    ! SS = sapwood(csap_init,cleaf_init,croot_init,bminc)
+    ! ! print*,'function SS', SS
 
     call leaf_increment(delta_leaf)
     print*, 'CARBON LEAF INCREMENT =', delta_leaf

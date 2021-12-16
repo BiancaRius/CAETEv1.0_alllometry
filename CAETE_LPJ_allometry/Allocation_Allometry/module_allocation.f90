@@ -18,10 +18,16 @@ module allocation
     ! Variables with generic values for testing the logic code
 
 
-    real(REAL64) :: H = 18.91909828977032 !in kgC/m2 --> /densindiv (numindv/m2) !HEARTWOOD - SOMENTE PARA TESTES (Valores: Cod. Phillip)
+    ! real(REAL64) :: H = 18.91909828977032 !in kgC/m2 --> /densindiv (numindv/m2) !HEARTWOOD - SOMENTE PARA TESTES (Valores: Cod. Phillip)
+    ! real(REAL64) :: L = 1.2279169651518438 !LEAF BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    ! real(REAL64) :: S = 9.790591253578555 !SAPWOOD - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    ! real(REAL64) :: R = 0.88026193814051623 !ROOT BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+
+    real(REAL64) :: H = 108.91909828977032 !in kgC/m2 --> /densindiv (numindv/m2) !HEARTWOOD - SOMENTE PARA TESTES (Valores: Cod. Phillip)
     real(REAL64) :: L = 1.2279169651518438 !LEAF BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
-    real(REAL64) :: S = 9.790591253578555 !SAPWOOD - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    real(REAL64) :: S = 29.790591253578555 !SAPWOOD - SOMENTE PARA TESTES (Valores: Cod. Philipe)
     real(REAL64) :: R = 0.88026193814051623 !ROOT BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    
     
     real(REAL64) :: stem = 0.0   !stem (heartwood + sapwood) pool update 
     real(REAL64) :: L_updt = 0.0 !Leaf pool update (L year before + delta_heartwood)
@@ -32,8 +38,11 @@ module allocation
     real(REAL64) :: turnover_leaf = 0.0 !Leaf turnover (yr-1; Sitch et al 2003) 
     real(REAL64) :: turnover_root = 0.0 !Root turnover (yr-1; Sitch et al 2003)
     real(REAL64) :: funcs_calc_tau1 
+    
     contains
 
+
+    
     !==============================!
 	!= Subrotines
 	!==============================!
@@ -156,16 +165,17 @@ module allocation
         return
     end subroutine updating_pool_stem
 
-    subroutine diam_nind (d_wood,cwood,diam,nind)
-        real,dimension(npls),intent(in):: d_wood
-        real,dimension(npls),intent(in):: cwood
-        real,dimension(npls),intent(out):: nind
-        real,dimension(npls),intent(out):: diam
-        
-        diam = ((4+(cwood))/((d_wood)*3.14*40))**(1/(2+0.5))
-        nind= diam**(-1.6)
+    subroutine initial_c_pool (cl1,cw1,cr1,cleaf_init,cheart_init,csap_init,croot_init)
+        real,dimension(npls),intent(in):: cl1,cw1,cr1
+    
+        real,dimension(npls),intent(out):: cleaf_init,cheart_init,csap_init,croot_init
+      
+        cleaf_init = cl1
+        cheart_init = cw1*0.95
+        csap_init = cw1*0.05
+        croot_init = cr1
 
-    end subroutine diam_nind
+    end subroutine initial_c_pool
 
 
 	!==============================!
@@ -236,11 +246,19 @@ module allocation
         
     end function calc_tau3
 
+    ! function sapwood (csap_init,cleaf_init,croot_init,bminc) result (SS)
     function sapwood () result (SS)
          implicit none
-         real(REAL64) :: SS
+         real(REAL64):: SS
+        !  real, dimension(npls) :: SS
+        !  real, dimension(npls) :: csap_init
+        !  real, dimension(npls) :: cleaf_init
+        !  real, dimension(npls) :: croot_init
+        !  real :: bminc
         
-         SS = S + bminc - L / ltor + R
+         SS = S + bminc - L/ ltor + R
+        
+        !  SS = csap_init + bminc - cleaf_init / ltor + croot_init
      end function sapwood
 
     

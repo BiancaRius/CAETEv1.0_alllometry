@@ -129,7 +129,7 @@ program self_thinning
             !LAI individual (Sitch et al., 2003) - Cleaf/nind
             cl1 = (cl1/dens_ind_pls)*1000
             LAI = (cl1*spec_leaf)/crown_area 
-            ! print*, 'LAI===', LAI
+            print*, 'LAI===', LAI
             
             npp_inc = 0.15 / dens_ind_pls !quantidade de npp pra ser alocado por individuo-médio
 
@@ -182,7 +182,7 @@ program self_thinning
             ! print*, 'nind_t2', nind_t2
 
             FPC_avg_ind = (1-exp(-0.5*LAI)) !FPC ind médio m2
-            ! print*, 'FPC_avg_ind_t2', FPC_avg_ind_t2
+            print*, 'FPC_avg_ind_t2', FPC_avg_ind_t2
 
             FPC_pls_t2 = crown_area*dens_ind_pls*FPC_avg_ind
             ! print*, 'FPC_pls_t2', FPC_pls_t2
