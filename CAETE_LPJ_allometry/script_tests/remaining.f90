@@ -21,6 +21,8 @@ program self_thinning
     real, allocatable :: fpc_dec (:) !'decrease FPC' in other words: the excedend of FPC in eac year [LPJ-GUESS - Phillip's video]
     real, allocatable :: fpc_dec_prop (:) !proportion of the decrease of a PLS
     real, allocatable :: mort (:) !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
+    real, allocatable :: mort_greff (:) ! motallity from growth efficiency (Sitch et al 2003)
+    real, allocatable :: greff (:) ! motallity from growth efficiency (Sitch et al 2003)
     real, allocatable :: remaining (:) !taxa de redução
     real, allocatable :: FPC_inc (:)
     real, allocatable :: FPC_inc_cont (:)
@@ -46,6 +48,8 @@ program self_thinning
     real :: leaf_allocation = 0.35 !% of NPP allocaed to leaves
     real :: wood_allocation = 0.3  !% of NPP allocated to wood
     real :: root_allocation = 0.35 !% of NPP allocated to roots
+    real :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
+    real :: k_mort2 = 0.3
 
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
@@ -93,6 +97,8 @@ program self_thinning
     allocate (FPC_inc_cont(1:npls))
     allocate (remaining(1:npls))
     allocate (mort(1:npls))
+    allocate (mort_greff(1:npls))
+    allocate (greff(1:npls))
     allocate (diam(1:npls))
     allocate (crown_area(1:npls))
     allocate (lai(1:npls))
@@ -182,7 +188,7 @@ program self_thinning
     enddo
 
    
-    do k = 1, 5
+    do k = 1, 10
 
         print*, '**********************************************************'
         print*, '                                                           '
@@ -219,7 +225,7 @@ program self_thinning
         
 
         do j = 1, npls
-        print*, 'carbon increment', carbon_increment(j)/1000.
+        
         !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
@@ -319,7 +325,7 @@ program self_thinning
                     FPC_inc_cont(j) = 0.
                     fpc_dec(j) = 0.                   
                     fpc_dec_prop(j) = 0.               
-    
+                    greff(j) = 0.
                     mort(j) = 0.
                     ! print*, 'dead PLS', j
                  
@@ -347,14 +353,15 @@ program self_thinning
                
                     fpc_dec_prop(j) = (((FPC_pls_2(j) - fpc_dec(j))/FPC_pls_2(j)))
 
-                    ! mort_greff(j) = delta_carbon_pls(j)/cl2(j)*spec_leaf(j)
-
-                    ! print*, 'mort_greff', mort_greff(j), j
+                    
                     
                 
+                    greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j))
 
-                    mort(j) = 1.0 - fpc_dec_prop(j)
-                    print*, 'mort(j)', mort(j)
+                    mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
+
+                    mort(j) = 1.0 - (fpc_dec_prop(j)+mort_greff(j))
+                   
                 endif    
               
 
@@ -365,7 +372,7 @@ program self_thinning
                 endif        
  
 
-
+                
 
             enddo
 
@@ -386,7 +393,7 @@ program self_thinning
         
         
         do j=1,npls
-            ! print*, 'mort',mort(j)   
+            print*, 'mort',mort(j)   
             remaining(j) = 1.0 - mort(j)
             ! print*, remaining(j)
             if (remaining(j) .le. 0.) then
@@ -529,7 +536,7 @@ program self_thinning
                 wood_inc(j) = wood_allocation * annual_npp(j)  
 
                 carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
-                print*, 'final', carbon_increment(j)/1000.
+                ! print*, 'final', carbon_increment(j)/1000.
 
                 cl1(j) = cl1(j) + leaf_inc(j)
 
