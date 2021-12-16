@@ -143,24 +143,7 @@ program self_thinning
         npp_inc(j) = 0.1*1000.
 
 !!---------------------------------------------------
-        !Define allocation
-        !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
         
-        annual_npp(j) = ((npp1(j)/dens_1(j)) + npp_inc(j))
-
-        print*, 'annual npp', annual_npp(j)/1000.
-
-         !-------------------------------------------------------------------------------
-         ! !Increments to each compartments per individual. Here, the NPP proportions allocated
-         ! to each compartment is being used for testing purpose. The actual values will be calculated
-         ! in allocation routine.
-
-            leaf_inc(j) = leaf_allocation * annual_npp(j)
-
-            root_inc(j) = root_allocation * annual_npp(j) 
-
-            wood_inc(j) = wood_allocation * annual_npp(j)
-
 !!!-------------------------------------------------------
 !----------------------------------------------------------
         !Define a general value for FPC in order to initialize and 
@@ -216,7 +199,7 @@ program self_thinning
         
 
         do j = 1, npls
-           
+        print*, 'carbon increment', carbon_increment(j) 
         !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
@@ -525,8 +508,8 @@ program self_thinning
 
                 wood_inc(j) = wood_allocation * annual_npp(j)  
 
-                ! delta_carbon_pls(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
-                ! ! print*, 'final', delta_carbon_pls(j)
+                carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
+                print*, 'final', carbon_increment(j)/1000.
 
                 cl1(j) = cl1(j) + leaf_inc(j)
 
@@ -545,6 +528,8 @@ program self_thinning
             cr1(j) = cr1(j) * dens_1(j)
 
             npp_inc(j) = npp_inc(j) * dens_1(j)
+
+            carbon_increment(j) = carbon_increment(j)
 
             ! delta_carbon_pls(j) = delta_carbon_pls(j)
 
