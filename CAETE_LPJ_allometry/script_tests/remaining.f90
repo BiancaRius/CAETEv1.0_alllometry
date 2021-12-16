@@ -142,6 +142,26 @@ program self_thinning
 
         npp_inc(j) = 0.1*1000.
 
+!Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
+        
+        annual_npp(j) = ((npp1(j)/dens_1(j)) + npp_inc(j))
+
+        ! print*, 'annual npp', annual_npp(j)/1000.
+
+         !-------------------------------------------------------------------------------
+         ! !Increments to each compartments per individual. Here, the NPP proportions allocated
+         ! to each compartment is being used for testing purpose. The actual values will be calculated
+         ! in allocation routine.
+
+        leaf_inc(j) = leaf_allocation * annual_npp(j)
+
+        root_inc(j) = root_allocation * annual_npp(j) 
+
+        wood_inc(j) = wood_allocation * annual_npp(j)  
+
+        carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
+        print*, '1st year', carbon_increment(j)/1000.
+
 !!---------------------------------------------------
         
 !!!-------------------------------------------------------
@@ -162,7 +182,7 @@ program self_thinning
     enddo
 
    
-    do k = 1, 20
+    do k = 1, 5
 
         print*, '**********************************************************'
         print*, '                                                           '
@@ -199,7 +219,7 @@ program self_thinning
         
 
         do j = 1, npls
-        print*, 'carbon increment', carbon_increment(j) 
+        print*, 'carbon increment', carbon_increment(j)/1000.
         !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
