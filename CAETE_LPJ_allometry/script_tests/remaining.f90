@@ -34,7 +34,7 @@ program self_thinning
     real :: FPC_total_accu_1 = 0.0
     real :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 20. !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 15. !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     
     real :: fpc_max_tree !95% of grid-cell (in m2)
     real :: exc_area
@@ -359,8 +359,10 @@ program self_thinning
                     greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j))
 
                     mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
+                    ! print*, 'mort_greff', mort_greff(j), j
 
                     mort(j) = 1.0 - (fpc_dec_prop(j)+mort_greff(j))
+                    print*, 'mort', mort(j)
                    
                 endif    
               
@@ -378,8 +380,16 @@ program self_thinning
 
         else
             print*, 'n ultrapassou'
+            !if the occupation is smaller than the stand area the mortality is defined only by
+            !the growth efficiency and the loss of carbon through turnover
             do j=1, npls
-                mort(j) = 0.
+                greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j))
+
+                mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
+                
+                mort(j) = 1.0 - mort_greff(j)
+                ! print*, 'mort_greff', mort_greff(j), j
+                ! print*, 'mort', mort(j)
                 !fpc_dec(j) = 0.
             enddo
             
@@ -393,9 +403,9 @@ program self_thinning
         
         
         do j=1,npls
-            print*, 'mort',mort(j)   
+            ! print*, 'mort',mort(j)   
             remaining(j) = 1.0 - mort(j)
-            ! print*, remaining(j)
+            print*, remaining(j)
             if (remaining(j) .le. 0.) then
                 ! print*, 'PLS dead===============================================================',j
                 ! goto 10 
@@ -425,6 +435,7 @@ program self_thinning
             ! print*, '                            '
 
             cl2(j) = cl2(j) * remaining(j)
+            print*, 'cl2', cl2(j)/1000.
 
             cw2(j) = cw2(j) * remaining(j)
 
