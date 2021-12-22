@@ -188,7 +188,7 @@ program self_thinning
     enddo
 
    
-    do k = 1, 300
+    do k = 1, 3
 
         print*, '**********************************************************'
         print*, '                                                           '
@@ -232,6 +232,7 @@ program self_thinning
 
             ! print*, '1st cl', cl1(j)/1000.
             if(cl1(j).eq.0) then
+                print*, 'cl1 eq 0'
                 cl2(j) = 0.
 
                 cw2(j) =0.
@@ -253,6 +254,7 @@ program self_thinning
                 dens_2(j) = 0.
                
             else
+                print*, 'cl1 ne 0'
                 cl2(j) = (cl1(j)/dens_1(j)) 
 
                 cw2(j) = (cw1(j)/dens_1(j)) 
@@ -284,6 +286,10 @@ program self_thinning
                 
             endif
 
+            
+                print*,cl2(j), j
+            
+            
             ! print*, 'FPC_pls_2', FPC_pls_2(j),j
 
             FPC_total_2 = FPC_total_2 + (FPC_pls_2(j)) !accumulate the values in the variable FPC_total.
@@ -326,9 +332,9 @@ program self_thinning
                     fpc_dec(j) = 0.                   
                     fpc_dec_prop(j) = 0.               
                     greff(j) = 0.
-                    mort(j) = 0.
+                    mort(j) = 1.
                     mort_greff(j) = 0.
-                    ! print*, 'dead PLS', j
+                    print*, 'dead PLS', j
                  
                 else
                     ! print*, j
@@ -338,21 +344,27 @@ program self_thinning
 
                     FPC_inc(j) = FPC_pls_2(j) - FPC_pls_1(j)
                     
-                    if(FPC_inc(j).lt.0.)then
+                    if(FPC_inc(j).lt.0..or.FPC_total_accu_1.gt.FPC_total_accu_2)then
                         FPC_inc(j) = 0.
                         FPC_inc_cont(j) = 0.
                         fpc_dec(j) = 0.                   
                         fpc_dec_prop(j) = 0.               
                         greff(j) = 0.
-                        mort(j) = 0.
+                        mort(j) = 1.
                         mort_greff(j) = 0.
-                        print*, 'dead PLS', j
+                        print*, 'dead PLSSSSSSSSSS', j
                     
                     else
                         !Calculating the relative contribution to total increment considering all PLSs
 
                         FPC_inc_cont(j) = (FPC_inc(j)/(FPC_total_accu_2-FPC_total_accu_1))
-                
+                        print*, 'inc_cont', FPC_inc_cont(j), j
+                        print*,''
+                        print*, 'FPC inc',FPC_inc(j),j
+                        print*,''
+                        ! print*, 'fpc total accu 2', FPC_total_accu_2
+                        ! print*,''
+                        ! print*, 'fpc total accu 1', FPC_total_accu_1
                
                         !    Calculating the percentage of FPC reduction of each PLS in relation to the area excedent
 
@@ -397,15 +409,23 @@ program self_thinning
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
             do j=1, npls
-                greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j))
+                if(cl2(j).eq.0.) then
+                    greff(j) = 0.
+                    mort_greff(j) = 0.
+                    mort(j) = 1.
+                    print*,'cl2 eq 0'
 
-                mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
+                else    
+                    greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j))
+
+                    mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
                 
-                mort(j) = mort_greff(j)
-                print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
-                print*, 'mort_greff', mort_greff(j), j
-                print*, 'mort', mort(j)
-                !fpc_dec(j) = 0.
+                    mort(j) = mort_greff(j)
+                    print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
+                    print*, 'mort_greff', mort_greff(j), j
+                    print*, 'mort', mort(j)
+                    !fpc_dec(j) = 0.
+                endif
             enddo
             
             !print*, 'NAO ULTRAPASSOU ==', 'este FPC_total_accu_2 tem que ser igual ao valor anterior==', FPC_total_accu_2
@@ -457,7 +477,7 @@ program self_thinning
             ! print*, '                            '
 
             cl2(j) = cl2(j) * remaining(j)
-            ! print*, 'cl2', cl2(j)/1000.
+            print*, 'cl2', cl2(j)/1000.
 
             cw2(j) = cw2(j) * remaining(j)
 
