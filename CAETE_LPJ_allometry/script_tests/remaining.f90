@@ -50,6 +50,9 @@ program self_thinning
     real :: root_allocation = 0.35 !% of NPP allocated to roots
     real :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
     real :: k_mort2 = 0.3
+    real :: res_time_leaf = 2 !general residence time value for testing purpose
+    real :: res_time_root = 2
+    real :: res_time_wood = 50
 
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
@@ -231,7 +234,7 @@ program self_thinning
     enddo
 
    
-    do k = 1, 10
+    do k = 1, 500
 
         print*, '**********************************************************'
         print*, '                                                           '
@@ -318,7 +321,7 @@ program self_thinning
                 ! and of the grid cell (FPC_total)
 
                 FPC_ind(j) = (1-(exp(-0.5*lai(j))))
-                ! print*, "FPC_ind", FPC_ind(j)
+                print*, "FPC_ind", FPC_ind(j)
                 
             
                 FPC_pls_2(j) = crown_area(j) * dens_1(j) * FPC_ind(j) 
@@ -518,13 +521,25 @@ program self_thinning
             ! print*, '                            '
             ! print*, '                            '
 
-            cl2(j) = cl2(j) * remaining(j)
-            
-            ! print*, 'cl2', cl2(j)/1000.
+            cl2(j) = cl2(j) * remaining(j)         
 
             cw2(j) = cw2(j) * remaining(j)
 
             cr2(j) = cr2(j) * remaining(j)
+
+
+
+            !! Loss of carbon through residence time
+           
+
+            cl2(j) = cl2(j) - (cl2(j)/res_time_leaf)
+            ! print*, 'cl2 after restime', cl2(j)/1000., (cl1(j)/res_time)/1000.
+            ! print*, ''
+
+            cw2(j) = cw2(j) - (cw2(j)/res_time_wood)
+
+            cr2(j) = cl2(j) - (cr2(j)/res_time_root)
+
 
             !!carbon to litter
             ! carbon_litter_leaf(j) = cl2(j) - ((cl2(j))*remaining(j))
@@ -543,6 +558,8 @@ program self_thinning
        
 
         ! !---------------------------------------------------------------------------
+
+        !!
        
         !----------------------------------------------------------------------------
         !updating the variables for the next year
@@ -635,14 +652,18 @@ program self_thinning
                 ! print*, 'final', carbon_increment(j)/1000.
 
                 cl1(j) = cl1(j) + leaf_inc(j)
-
+                
+                
                 cw1(j) = cw1(j) + wood_inc(j)
 
                 cr1(j) = cr1(j) + root_inc(j)
             endif
 
-            ! print*, 'cl1 com incremento após aloca', cl1(j)/1000., j, npp_inc(j), dens_1(j)
-            !print*, j
+            print*, 'cl1 com incremento após aloca', cl1(j)/1000., j
+            print*, ''
+            print*, 'cw1 com incremento após aloca', cw1(j)/1000., j
+            print*, ''
+            print*, 'cr1 com incremento após aloca', cr1(j)/1000., j
 
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
 
