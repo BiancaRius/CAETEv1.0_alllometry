@@ -1,8 +1,10 @@
 program self_thinning
+    
 
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
     integer, parameter:: npls = 20 !40 !20
+    integer, parameter:: time = 500 !40 !20
     real, dimension(npls), allocatable :: lai (:) !Leaf Area Index (m2/m2)
     real, dimension(npls), allocatable :: diam (:) !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls), allocatable :: crown_area (:) !Tree crown area (m2) (Sitch et al., 2003)
@@ -11,7 +13,6 @@ program self_thinning
 
    
     
-    real, dimension(npls) :: est_pls !establishment for a specific PLS
     real, allocatable :: FPC_ind (:) !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
     real, allocatable :: FPC_pls_1 (:) !Total Foliage projective cover of a PLS (Stich et al., 2003)
     real, allocatable :: FPC_pls_2 (:) !Total Foliage projective cover of a PLS (Stich et al., 2003)
@@ -72,6 +73,9 @@ program self_thinning
     real, dimension(npls) :: wood_inc !kgC/ ind
     real, dimension(npls) :: root_inc !kgC/ ind
     real, dimension(npls) :: diameter !
+
+    !Variables for output
+    real, dimension(npls,time) :: cl1_aux
     
 
     
@@ -234,7 +238,7 @@ program self_thinning
     enddo
 
    
-    do k = 1, 500
+    do k = 1, time
 
         print*, '**********************************************************'
         print*, '                                                           '
@@ -687,6 +691,15 @@ program self_thinning
         !dens_1 = dens_2
 
     enddo
+
+    open(unit=1,file='cleaf.csv',status='unknown')
+    do j = 1,npls
+      
+       cl1_aux(j)= cl1(j)
+       write(1,*) cl1_aux(j) ! newline
+    enddo    
+    
+    close(1)
 
 end program self_thinning 
   
