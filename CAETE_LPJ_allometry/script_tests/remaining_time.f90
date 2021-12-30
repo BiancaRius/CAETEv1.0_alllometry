@@ -2,7 +2,8 @@ program self_thinning
 
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter:: npls = 20 !40 !20
+    integer, parameter :: npls = 20 !40 !20
+    integer, parameter :: time = 410
     real, dimension(npls), allocatable :: lai (:) !Leaf Area Index (m2/m2)
     real, dimension(npls), allocatable :: diam (:) !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls), allocatable :: crown_area (:) !Tree crown area (m2) (Sitch et al., 2003)
@@ -11,7 +12,7 @@ program self_thinning
 
    
     
-    real, dimension(npls) :: est_pls !establishment for a specific PLS
+    ! real, dimension(npls) :: est_pls !establishment for a specific PLS
     real, allocatable :: FPC_ind (:) !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
     real, allocatable :: FPC_pls_1 (:) !Total Foliage projective cover of a PLS (Stich et al., 2003)
     real, allocatable :: FPC_pls_2 (:) !Total Foliage projective cover of a PLS (Stich et al., 2003)
@@ -52,29 +53,30 @@ program self_thinning
     real :: k_mort2 = 0.3
     real :: res_time_leaf = 2 !general residence time value for testing purpose
     real :: res_time_root = 2
-    real :: res_time_wood = 100
+    real :: res_time_wood = 100 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
 
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
     real, dimension(npls) :: npp_inc  !incremento anual de C para cada PLS
     real, dimension(npls) :: annual_npp !quantidade de NPP com os incrementos.
-    real, dimension(npls) :: cl2 !carbon on leaves after allocation
+    real, dimension(npls,time) :: cl2 !carbon on leaves after allocation
     real, dimension(npls) :: cw2 !carbon on wood after allocation
     real, dimension(npls) :: cr2 !carbon on wood after allocation
+    real, dimension(npls) :: cw1 !KgC/m2 (Cheart + Csap)
+    real, dimension(npls,time) :: cl1 !KgC/m2 
+    real, dimension(npls) :: cr1 !KgC/m2
 
     ! Variables with generic values for testing the logic code
     real, dimension(npls) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
-    real, dimension(npls) :: cw1 !KgC/m2 (Cheart + Csap)
-    real, dimension(npls) :: cl1 !KgC/m2 
-    real, dimension(npls) :: cr1 !KgC/m2
     real, dimension(npls) :: spec_leaf !m2/gC
     real, dimension(npls) :: leaf_inc !kgC/ ind
     real, dimension(npls) :: wood_inc !kgC/ ind
     real, dimension(npls) :: root_inc !kgC/ ind
     real, dimension(npls) :: diameter !
+    real, dimension(npls) :: cl1_initial
 
     !auxiliary variables for outputs
-    real, dimension (npls) :: cl1_aux
+    real, dimension (npls,time) :: cl1_aux
     
 
     
@@ -86,7 +88,7 @@ program self_thinning
     ! &0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
 
 
-    cl1=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)!,&
+    cl1_initial=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)!,&
     ! &.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)
 
     ! cl1=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8,&
@@ -181,7 +183,7 @@ program self_thinning
     do j = 1, npls ! print*, j
         ! print*, 'FPC_pls2', FPC_pls_2(j), j, 'dens', dens_1(j)
 
-        cl1(j) = cl1(j)*1000.
+        cl1_initial(j) = cl1_initial(j)*1000.
 
         cw1(j) = cw1(j)*1000.
 
@@ -237,7 +239,7 @@ program self_thinning
     enddo
 
    
-    do k = 1, 1000
+    do k = 1, time
 
         print*, '**********************************************************'
         print*, '                                                           '
@@ -257,7 +259,7 @@ program self_thinning
         FPC_dec = 0.
         fpc_dec_prop = 0.
         dens_2 = 0.
-        cl2 = 0.
+        cl2(:,k) = 0.
         cw2 = 0.
         cr2 = 0.
         lai = 0.
@@ -268,18 +270,25 @@ program self_thinning
         wood_inc = 0.
         root_inc = 0.
       
-        
+        if(k.eq.1)then
+            cl1(:,k) = cl1_initial
+            print*,'cl previous yr', cl1(:,k)/1000.
+        endif 
+
+        cl1(:,k) = cl1_aux(:,k-1)
+        print*, 'cl1 nxt year', cl1(:,k)/1000.
 
         do j = 1, npls
         
         !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
+            
 
             ! print*, '1st cl', cl1(j)/1000.
-            if(cl1(j).eq.0) then
+            if(cl1(j,k).eq.0) then
                 ! print*, 'cl1 eq 0'
-                cl2(j) = 0.
+                cl2(j,k) = 0.
 
                 cw2(j) =0.
     
@@ -301,7 +310,7 @@ program self_thinning
                
             else
                 ! print*, 'cl1 ne 0'
-                cl2(j) = (cl1(j)/dens_1(j)) 
+                cl2(j,k) = (cl1(j,k)/dens_1(j)) 
 
                 cw2(j) = (cw1(j)/dens_1(j)) 
 
@@ -315,7 +324,7 @@ program self_thinning
             
                 crown_area(j) = k_allom1*(diam(j)**krp)
             
-                lai(j) = (cl2(j)*spec_leaf(j))/crown_area(j) 
+                lai(j) = (cl2(j,k)*spec_leaf(j))/crown_area(j) 
 
                 
                 !------------------------------------------------------------------------------
@@ -324,7 +333,7 @@ program self_thinning
                 ! and of the grid cell (FPC_total)
 
                 FPC_ind(j) = (1-(exp(-0.5*lai(j))))
-                print*, "FPC_ind", FPC_ind(j)
+                ! print*, "FPC_ind", FPC_ind(j)
                 
             
                 FPC_pls_2(j) = crown_area(j) * dens_1(j) * FPC_ind(j) 
@@ -404,10 +413,10 @@ program self_thinning
                         !Calculating the relative contribution to total increment considering all PLSs
 
                         FPC_inc_cont(j) = (FPC_inc(j)/(FPC_total_accu_2-FPC_total_accu_1))
-                        print*, 'inc_cont', FPC_inc_cont(j), j
-                        print*,''
-                        print*, 'FPC inc',FPC_inc(j),j
-                        print*,''
+                        ! print*, 'inc_cont', FPC_inc_cont(j), j
+                        ! print*,''
+                        ! print*, 'FPC inc',FPC_inc(j),j
+                        ! print*,''
                         ! print*, 'fpc total accu 2', FPC_total_accu_2
                         ! print*,''
                         ! print*, 'fpc total accu 1', FPC_total_accu_1
@@ -424,7 +433,7 @@ program self_thinning
                         fpc_dec_prop(j) = (((FPC_pls_2(j) - fpc_dec(j))/FPC_pls_2(j))) !calculating shade mortality
 
                                       
-                        greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j)) !growth efficiency
+                        greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j)) !growth efficiency
 
                         mort_greff(j) = k_mort1/(1+(k_mort2*greff(j))) !mortality by gowth efficiency
 
@@ -455,14 +464,14 @@ program self_thinning
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
             do j=1, npls
-                if(cl2(j).eq.0.) then
+                if(cl2(j,k).eq.0.) then
                     greff(j) = 0.
                     mort_greff(j) = 0.
                     mort(j) = 1.
                     ! print*,'cl2 eq 0'
 
                 else    
-                    greff(j) = carbon_increment(j)/(cl2(j)*spec_leaf(j))
+                    greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j))
 
                     mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
                 
@@ -500,7 +509,7 @@ program self_thinning
                 ! print*, 'PLS dead===============================================================',j
                 ! goto 10 
                 dens_2(j) = 0.
-                cl2(j) = 0.
+                cl2(j,k) = 0.
                 cw2(j) = 0.
                 cr2(j) = 0.
                 FPC_pls_2(j) = 0.
@@ -510,7 +519,7 @@ program self_thinning
                 leaf_inc(j) = 0.
                 root_inc(j) = 0.
                 wood_inc(j) = 0.
-                cl1(j) = 0.
+                cl1(j,k) = 0.
                 cw1(j) = 0.
                 cr1(j) = 0.
             endif
@@ -524,7 +533,7 @@ program self_thinning
             ! print*, '                            '
             ! print*, '                            '
 
-            cl2(j) = cl2(j) * remaining(j)         
+            cl2(j,k) = cl2(j,k) * remaining(j)         
 
             cw2(j) = cw2(j) * remaining(j)
 
@@ -535,7 +544,7 @@ program self_thinning
             !! Loss of carbon through residence time
            
 
-            cl2(j) = cl2(j) - (cl2(j)/res_time_leaf)
+            cl2(j,k) = cl2(j,k) - (cl2(j,k)/res_time_leaf)
             ! print*, 'cl2 after restime', cl2(j)/1000., (cl1(j)/res_time)/1000.
             ! print*, ''
 
@@ -549,27 +558,106 @@ program self_thinning
             ! print*,  'litter', carbon_litter_leaf(j), cl2(j), remaining(j)
             !add litter of previous time step
             !the litter when pls dies is equal to cl, cw, cr
-            
-            ! print*, 'cl2 remaining', cl2(j)/1000., 'remaining', remaining(j)
-            ! print*, j
-     
-            ! print*, 'cw2', cw2(j)/1000., 'cw1', cw1(j)/1000.
-         
-            ! print*, 'cr2', cr2(j)/1000., 'cr1', cr1(j)/1000.
-            ! print*, j
+        
         enddo
        
+        !-----------------------------------------------------------------------------
+        !!!---------------------------------------------------------------------------
+        !!!Fictitious allocation process in order to test the logic developed
+         !------------------------------------------------------------------------------
+        !NPP increment (NPPt-NPPt-1); for testing purpose a general value was defined
+        !Transforms NPP increment from m2 to NPP increment for each averge individual
+        
+        do j=1,npls
 
-        ! !---------------------------------------------------------------------------
+           
+            if(dens_1(j).le.0.) then
+                npp_inc(j) = 0.
+            
+                annual_npp(j) = 0.
 
-        !!
-       
+                leaf_inc(j) = 0.
+
+                root_inc(j) = 0.
+
+                wood_inc(j) = 0.
+
+                cl2(j,k) = 0.
+
+                cw2(j) = 0.
+
+                cr2(j) = 0.
+
+                ! delta_carbon_pls(j) = 0.
+
+                ! print*, 'delta', delta_carbon_pls(j), j
+            
+            else
+            
+            
+            
+                npp_inc(j) = npp_inc(j)/dens_2(j)
+
+           
+
+            !-------------------------------------------------------------------------------
+            !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
+        
+                annual_npp(j) = ((npp1(j)/dens_2(j)) + npp_inc(j))
+
+            ! print*, 'annual npp', annual_npp(j)/1000.
+
+             !-------------------------------------------------------------------------------
+             ! !Increments to each compartments per individual. Here, the NPP proportions allocated
+             ! to each compartment is being used for testing purpose. The actual values will be calculated
+             ! in allocation routine.
+
+                leaf_inc(j) = leaf_allocation * annual_npp(j)
+
+                root_inc(j) = root_allocation * annual_npp(j) 
+
+                wood_inc(j) = wood_allocation * annual_npp(j)  
+
+                carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
+                ! print*, 'final', carbon_increment(j)/1000.
+
+                cl2(j,k) = cl2(j,k) + leaf_inc(j)
+                
+                
+                cw2(j) = cw2(j) + wood_inc(j)
+
+                cr2(j) = cr2(j) + root_inc(j)
+            endif
+
+            ! print*, 'cl1 com incremento após aloca', cl1(j)/1000., j
+            ! print*, ''
+            ! print*, 'cw1 com incremento após aloca', cw1(j)/1000., j
+            ! print*, ''
+            ! print*, 'cr1 com incremento após aloca', cr1(j)/1000., j
+
+            !print*, 'densidade p/ ano seguinte =======', dens_1(j)
+
+            cl2(j,k) = cl2(j,k) * dens_2(j)
+            cw2(j) = cw2(j) * dens_2(j)
+            cr2(j) = cr2(j) * dens_2(j)
+
+            npp_inc(j) = npp_inc(j) * dens_2(j)
+
+            carbon_increment(j) = carbon_increment(j)
+
+            ! delta_carbon_pls(j) = delta_carbon_pls(j)
+
+            ! print*, '==============================='
+            ! print*,'cl final', cl1(j)/1000., j
+
+        enddo
+
         !----------------------------------------------------------------------------
         !updating the variables for the next year
 
-        cl1 = cl2
+        cl1_aux(:,k) = cl2(:,k)
         
-        print*, 'cl1 atualizado p/ a aloca', cl1/1000.
+        print*, 'cl1_aux', cl1_aux(:,k)/1000.
 
         cw1 = cw2
 
@@ -593,112 +681,9 @@ program self_thinning
 
     
 
-        
-        !-----------------------------------------------------------------------------
-        !!!---------------------------------------------------------------------------
-        !!!Fictitious allocation process in order to test the logic developed
-         !------------------------------------------------------------------------------
-        !NPP increment (NPPt-NPPt-1); for testing purpose a general value was defined
-        !Transforms NPP increment from m2 to NPP increment for each averge individual
-        
-        do j=1,npls
-
-           
-            if(dens_1(j).le.0.) then
-                npp_inc(j) = 0.
-            
-                annual_npp(j) = 0.
-
-                leaf_inc(j) = 0.
-
-                root_inc(j) = 0.
-
-                wood_inc(j) = 0.
-
-                cl1(j) = 0.
-
-                cw1(j) = 0.
-
-                cr1(j) = 0.
-
-                ! delta_carbon_pls(j) = 0.
-
-                ! print*, 'delta', delta_carbon_pls(j), j
-            
-            else
-            
-            
-            
-                npp_inc(j) = npp_inc(j)/dens_1(j)
-
-           
-
-            !-------------------------------------------------------------------------------
-            !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
-        
-                annual_npp(j) = ((npp1(j)/dens_1(j)) + npp_inc(j))
-
-            ! print*, 'annual npp', annual_npp(j)/1000.
-
-             !-------------------------------------------------------------------------------
-             ! !Increments to each compartments per individual. Here, the NPP proportions allocated
-             ! to each compartment is being used for testing purpose. The actual values will be calculated
-             ! in allocation routine.
-
-                leaf_inc(j) = leaf_allocation * annual_npp(j)
-
-                root_inc(j) = root_allocation * annual_npp(j) 
-
-                wood_inc(j) = wood_allocation * annual_npp(j)  
-
-                carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
-                ! print*, 'final', carbon_increment(j)/1000.
-
-                cl1(j) = cl1(j) + leaf_inc(j)
-                
-                
-                cw1(j) = cw1(j) + wood_inc(j)
-
-                cr1(j) = cr1(j) + root_inc(j)
-            endif
-
-            print*, 'cl1 com incremento após aloca', cl1(j)/1000., j
-            print*, ''
-            print*, 'cw1 com incremento após aloca', cw1(j)/1000., j
-            print*, ''
-            print*, 'cr1 com incremento após aloca', cr1(j)/1000., j
-
-            !print*, 'densidade p/ ano seguinte =======', dens_1(j)
-
-            cl1(j) = cl1(j) * dens_1(j)
-            cw1(j) = cw1(j) * dens_1(j)
-            cr1(j) = cr1(j) * dens_1(j)
-
-            npp_inc(j) = npp_inc(j) * dens_1(j)
-
-            carbon_increment(j) = carbon_increment(j)
-
-            ! delta_carbon_pls(j) = delta_carbon_pls(j)
-
-            ! print*, '==============================='
-            ! print*,'cl final', cl1(j)/1000., j
-
-        enddo
-
-        ! FPC_total_2 = 0.
-        !FPC_total_accu_2 = 0.
-        !dens_1 = dens_2
 
     enddo
 
-    ! open(unit=1,file='cleaf.csv',status='unknown')
-    ! do j = 1,npls
-
-    !    cl1_aux(j)= cl1(j)
-    !    write(1,*) j !newline
-    ! enddo    
-
-    ! close(1)
 
 end program self_thinning 
   
