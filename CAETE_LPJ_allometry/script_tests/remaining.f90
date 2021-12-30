@@ -72,6 +72,9 @@ program self_thinning
     real, dimension(npls) :: wood_inc !kgC/ ind
     real, dimension(npls) :: root_inc !kgC/ ind
     real, dimension(npls) :: diameter !
+
+    !auxiliary variables for outputs
+    real, dimension (npls) :: cl1_aux
     
 
     
@@ -687,6 +690,7 @@ program self_thinning
         !dens_1 = dens_2
 
     enddo
+
 
 end program self_thinning 
   
