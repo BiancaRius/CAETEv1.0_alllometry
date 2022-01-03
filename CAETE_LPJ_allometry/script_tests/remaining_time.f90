@@ -2,8 +2,8 @@ program self_thinning
 
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls = 5 !40 !20
-    integer, parameter :: time = 100
+    integer, parameter :: npls =20 !40 !20
+    integer, parameter :: time = 10
     real, dimension(npls) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -26,11 +26,11 @@ program self_thinning
     real, dimension(npls) :: FPC_inc_cont 
     real, dimension(npls) :: carbon_increment  ! used to calculate mort greff (Sitch et al 2003)
     
-    real :: FPC_total_1 = 0.0 !sum of FPC_grid 
-    real :: FPC_total_2 = 0.0 !sum of FPC_grid in
+    real, dimension(time) :: FPC_total_1 = 0.0 !sum of FPC_grid 
+    real, dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
     
-    real :: FPC_total_accu_1 = 0.0
-    real :: FPC_total_accu_2 = 0.0
+    real, dimension(time):: FPC_total_accu_1 = 0.0
+    real, dimension(time) :: FPC_total_accu_2 = 0.0
 
     real :: gc_area = 100. !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     
@@ -43,14 +43,14 @@ program self_thinning
     real :: krp = 1.6 !allometric constant (Table 3; Sitch et al., 2003)
     real :: ltor = 0.77302587552347657
     real :: k_est = 0.06 !establishment constant !Smith et al 2001 - Table A1
-    real :: leaf_allocation = 0.35 !% of NPP allocaed to leaves
+    real :: leaf_allocation = 0.4 !% of NPP allocaed to leaves
     real :: wood_allocation = 0.3  !% of NPP allocated to wood
-    real :: root_allocation = 0.35 !% of NPP allocated to roots
+    real :: root_allocation = 0.3 !% of NPP allocated to roots
     real :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
     real :: k_mort2 = 0.3
     real :: res_time_leaf = 2 !general residence time value for testing purpose
     real :: res_time_root = 2
-    real :: res_time_wood = 100 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real :: res_time_wood = 50 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
 
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
@@ -72,7 +72,9 @@ program self_thinning
     real, dimension(npls) :: diameter !
 
     !variables with initial values
-    real, dimension(npls) :: cl1_initial
+    real, dimension(npls,time) :: cl1_initial
+    real, dimension(npls,time) :: cl1_init
+
     real, dimension(npls) :: cw1_initial
     real, dimension(npls) :: cr1_initial
     real, dimension(npls) :: FPC_pls_initial
@@ -95,28 +97,28 @@ program self_thinning
 
     
     !ARRAYS WITH GENERIC VALUES OF SOME VARIABLES
-    dwood=(/0.24,0.53,0.39,0.32,0.31/)!,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/)!,&
+    dwood=(/0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/)!,&
     ! &0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
     
     ! dwood=(/0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42,&
     ! &0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
 
 
-    cl1_initial=(/.7,1.,0.3,1.6,1.10/)!,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)!,&
+    ! cl1_initial=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)!,&
     ! &.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)
 
     ! cl1=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8,&
     ! &.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)
     
-    spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012/)!,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
-   ! &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)! !,0.0153,0.0101,0.0107,0.0112,0.012,&
+    spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
+    &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)! !,0.0153,0.0101,0.0107,0.0112,0.012,&
     ! ! &0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
    
     ! spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
     ! &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.0153,0.0101,0.0107,0.0112,0.012,&
     ! &0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
     
-    cw1_initial=(/30.,22.,34.,28.3,20.2/)!,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)!,&
+    cw1_initial=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)!,&
     !&30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)
     
     ! cw1=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4,&
@@ -124,25 +126,25 @@ program self_thinning
     
 
 
-    cr1_initial=(/0.63,0.8,0.9,1.5,1.3/)!,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)!,&
+    cr1_initial=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)!,&
     ! !&0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
 
     ! cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5,&
     ! &0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
     
-    npp1 = (/0.5,0.8,1.5,1.2,1.9/)!,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)!,&
+    npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)!,&
     ! &0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
 
     ! npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55,&
     ! &0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
     
-    diameter = (/0.16,0.45,0.17,0.25,0.34/)!,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)!,&
+    diameter = (/0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)!,&
     ! !&0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)
 
     ! diameter = (/0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15,&
     ! &0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)
     
-    dens_1 = (/1.,2.,5.,3.3, 1.3/)!, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)!,&
+    dens_1 = (/1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)!,&
     !&1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)
 
     ! dens_1 = (/1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8,&
@@ -177,13 +179,34 @@ program self_thinning
     
 
 !!!------------------------------------------------------
-        !Transforms from kgC to gC (as in LPJ)
 
-    do j = 1, npls ! print*, j
-        ! print*, 'FPC_pls2', FPC_pls_2(j), j, 'dens', dens_1(j)
+! !creating value for initial cl1
 
-        cl1_initial(j) = cl1_initial(j)*1000.
-        ! print*, cl1_initial(j)
+
+    xmin = 0.2
+    xmax = 1.8
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            print*,x(j,k),j,k
+        enddo
+    enddo
+
+!________________________________________________________________
+!!!!!Transforms from kgC to gC (as in LPJ)
+
+    do j = 1, npls      
+
+        cl1_initial(j,:) =x(j,:)*1000.
+        print*, 'initial', cl1_initial(j,:)/1000.
+
+    enddo
+
+    do j = 1, npls
 
         cw1_initial(j) = cw1_initial(j)*1000.
 
@@ -194,19 +217,21 @@ program self_thinning
     enddo
 
 
+    !creating value for initial npp_inc
     xmin = 0.1
     xmax =  2.5
-       
+     
+    x(:,:) = 0.
     call random_number(x)
 
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            print*,x(j,k),j,k
+            ! print*,x(j,k),j,k
         enddo
     enddo
 
-    print*, x(:,:), 'try'
+  
        
 
 
@@ -214,12 +239,12 @@ program self_thinning
 !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
     do j = 1, npls
         npp_inc(j,:) = x(j,:)*1000
-        print*,'___________________________________'
-        print*, 'npp_inc', npp_inc(j,:)/1000.
+        ! print*,'___________________________________'
+        ! print*, 'npp_inc', npp_inc(j,:)/1000.
 
         annual_npp(j,:) = ((npp1(j)/dens_1(j)) + npp_inc(j,:))
 
-        print*, 'annual npp', annual_npp(j,:)/1000.
+        ! print*, 'annual npp', annual_npp(j,:)/1000.
 
          !-------------------------------------------------------------------------------
          ! !Increments to each compartments per individual. Here, the NPP proportions allocated
@@ -244,12 +269,12 @@ program self_thinning
 
         FPC_pls_initial(j) = .1
 
-        FPC_total_1 = FPC_total_1 + FPC_pls_initial(j)
+        FPC_total_1(:) = FPC_total_1(:) + FPC_pls_initial(j)
         !print*, 'FPC_total_1', FPC_total_1
        
         if (j.eq.npls) then
-            FPC_total_accu_1 = FPC_total_1
-            print*, 'FPC_total_accu_1', FPC_total_accu_1
+            FPC_total_accu_1(:) = FPC_total_1(:)
+            print*, 'FPC_total_accu_1', FPC_total_accu_1(k)
         endif
 
     enddo
@@ -264,8 +289,8 @@ program self_thinning
         
         FPC_ind(:,k) = 0.
         FPC_pls_2(:,k) = 0.
-        FPC_total_2 = 0.
-        FPC_total_accu_2 = 0.
+        FPC_total_2(k) = 0.
+        FPC_total_accu_2(k) = 0.
         fpc_max_tree = 0.
         exc_area = 0.
         FPC_inc = 0.
@@ -285,7 +310,7 @@ program self_thinning
         root_inc = 0.
       
         if(k.eq.1)then
-            cl1(:,k) = cl1_initial(:)
+            cl1(:,k) = cl1_initial(:,k)
             cw1(:,k) = cw1_initial(:)
             cr1(:,k) = cr1_initial(:)
             FPC_pls_1(:,k) = FPC_pls_initial(:)
@@ -296,7 +321,7 @@ program self_thinning
         cw1(:,k) = cw1_aux(:,k-1)
         cr1(:,k) = cr1_aux(:,k-1)
         FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
-        print*, 'cl1 nxt year', cl1(1,k)/1000.
+        ! print*, 'cl1 nxt year', cl1(1,k)/1000.
         
         endif
 
@@ -369,12 +394,12 @@ program self_thinning
             
             ! print*, 'FPC_pls_2', FPC_pls_2(j),j
 
-            FPC_total_2 = FPC_total_2 + (FPC_pls_2(j,k)) !accumulate the values in the variable FPC_total.
+            FPC_total_2(k) = FPC_total_2(k) + (FPC_pls_2(j,k)) !accumulate the values in the variable FPC_total.
                                                         !the actual value will only be obtained when j = npls
 
             if (j.eq.npls) then   !take the value accumulated until the last pls
               
-                FPC_total_accu_2 = FPC_total_2
+                FPC_total_accu_2(k) = FPC_total_2(k)
                 ! print*, 'FPC_total_accu_2', FPC_total_accu_2, j
 
             endif  
@@ -386,15 +411,15 @@ program self_thinning
                
         fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
                 
-        !print*, 'fpc_max_tree', fpc_max_tree
+        print*, 'fpc_max_tree', fpc_max_tree
         
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
-        if (FPC_total_accu_2 .gt. fpc_max_tree) then
+        if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
             print*, 'ultrapassou'
             ! Excedent area
         
-            exc_area = FPC_total_accu_2 - fpc_max_tree
+            exc_area = FPC_total_accu_2(k) - fpc_max_tree
 
             ! print*, exc_are
 
@@ -421,7 +446,7 @@ program self_thinning
 
                     FPC_inc(j) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
                     
-                    if(FPC_inc(j).lt.0..or.FPC_total_accu_1.gt.FPC_total_accu_2)then
+                    if(FPC_inc(j).lt.0..or.FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
                         FPC_inc(j) = 0.
                         FPC_inc_cont(j) = 0.
                         fpc_dec(j) = 0.                   
@@ -434,7 +459,7 @@ program self_thinning
                     else
                         !Calculating the relative contribution to total increment considering all PLSs
 
-                        FPC_inc_cont(j) = (FPC_inc(j)/(FPC_total_accu_2-FPC_total_accu_1))
+                        FPC_inc_cont(j) = (FPC_inc(j)/(FPC_total_accu_2(k)-FPC_total_accu_1(k)))
                         ! print*, 'inc_cont', FPC_inc_cont(j), j
                         ! print*,''
                         ! print*, 'FPC inc',FPC_inc(j),j
@@ -482,7 +507,7 @@ program self_thinning
             enddo
 
         else
-            ! print*, 'n ultrapassou', FPC_total_accu_2
+            print*, 'n ultrapassou', FPC_total_accu_2(k)
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
             do j=1, npls
@@ -535,7 +560,7 @@ program self_thinning
                 cw2(j,k) = 0.
                 cr2(j,k) = 0.
                 FPC_pls_2(j,k) = 0.
-                FPC_total_accu_2 = 0. 
+                FPC_total_accu_2(k) = 0. 
                 npp_inc(j,k) = 0
                 annual_npp(j,k) = 0.
                 leaf_inc(j) = 0.
@@ -589,7 +614,7 @@ program self_thinning
 
         cl1_aux(:,k) = cl2(:,k)
         
-        print*, 'cl1_aux', cl1_aux(:,k)/1000.
+        ! print*, 'cl1_aux', cl1_aux(:,k)/1000.
 
         cw1_aux(:,k) = cw2(:,k)
 
@@ -606,7 +631,7 @@ program self_thinning
         ! print*, 'FPC_atualizado', FPC_pls_1
 
 
-        FPC_total_accu_1 = FPC_total_accu_2
+        FPC_total_accu_1(k)= FPC_total_accu_2(k)
         ! print*, 'FPC_atualizado', FPC_pls_1
 
         dens_1 = dens_2
@@ -705,16 +730,27 @@ program self_thinning
 
     enddo
 
-    open(unit=1,file='cleaf_time.csv',status='unknown')
+    open(unit=1,file='carbon_pools_time.csv',status='unknown')
     do k=1, time
         do j = 1,npls
 
        
-            write(1,*) cl1_aux(j,k)/1000.,',','pls',j,',',k !newline
+            write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
         enddo
     enddo    
 
     close(1)
+
+    open(unit=2,file='FPC_total_time.csv',status='unknown')
+    do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k !newline
+        
+    enddo    
+
+    close(2)
 
 
 end program self_thinning 
