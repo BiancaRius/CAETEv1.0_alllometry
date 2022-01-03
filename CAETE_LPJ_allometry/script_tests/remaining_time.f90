@@ -3,7 +3,7 @@ program self_thinning
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
     integer, parameter :: npls = 5 !40 !20
-    integer, parameter :: time = 5
+    integer, parameter :: time = 100
     real, dimension(npls) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -13,12 +13,9 @@ program self_thinning
    
     
     ! real, dimension(npls) :: est_pls !establishment for a specific PLS
-    real, dimension(npls) :: FPC_ind !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
-    real, dimension(npls) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real, dimension(npls) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real, dimension(npls) :: FPC_pls  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real, dimension(npls) :: FPC_grid_t1  !Fractional projective cover for each PLS in time 1 (Sitch et al., 2003)
-    real, dimension(npls) :: FPC_grid_t2  !Fractional projective cover for each PLS in time 2 (Sitch et al., 2003)
+    real, dimension(npls,time) :: FPC_ind !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
+    real, dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
+    real, dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
     real, dimension(npls) :: fpc_dec  !'decrease FPC' in other words: the excedend of FPC in eac year [LPJ-GUESS - Phillip's video]
     real, dimension(npls) :: fpc_dec_prop  !proportion of the decrease of a PLS
     real, dimension(npls) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
@@ -73,15 +70,27 @@ program self_thinning
     real, dimension(npls) :: wood_inc !kgC/ ind
     real, dimension(npls) :: root_inc !kgC/ ind
     real, dimension(npls) :: diameter !
+
+    !variables with initial values
     real, dimension(npls) :: cl1_initial
     real, dimension(npls) :: cw1_initial
     real, dimension(npls) :: cr1_initial
+    real, dimension(npls) :: FPC_pls_initial
     
 
     !auxiliary variables for outputs
     real, dimension (npls,time) :: cl1_aux
     real, dimension (npls,time) :: cw1_aux
     real, dimension (npls,time) :: cr1_aux
+    real, dimension (npls,time) :: FPC_pls_1_aux
+
+
+    !creating random numbers for npp increment
+    
+    real:: x(npls,time)
+    
+    
+
     
 
     
@@ -162,6 +171,10 @@ program self_thinning
     !     print*, 'cl1_atualizado', cl1
     ! enddo
 
+    
+    
+
+    
 
 !!!------------------------------------------------------
         !Transforms from kgC to gC (as in LPJ)
@@ -178,17 +191,29 @@ program self_thinning
 
         npp1(j) = npp1(j)*1000.
         ! print*, npp1(j),j
+    enddo
+
+
+    xmin = 0.1
+    xmax =  2.5
+       
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            print*,x(j,k),j,k
+        enddo
+    enddo
+
 
        
 
-!----------------------------------------------------------
-        !Define a general value for NPP increment per year 
-        !Transforms from kgC to gC (as in LPJ)
 
-        npp_inc(j) = 0.1*1000.
 
 !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
-        
+    do j = 1, npls
+        npp_inc(j)=0.1*1000
         annual_npp(j) = ((npp1(j)/dens_1(j)) + npp_inc(j))
 
         ! print*, 'annual npp', annual_npp(j)/1000.
@@ -214,9 +239,9 @@ program self_thinning
         !Define a general value for FPC in order to initialize and 
         !use to calculate the FPC increments
 
-        FPC_pls_1(j) = .1
+        FPC_pls_initial(j) = .1
 
-        FPC_total_1 = FPC_total_1 + FPC_pls_1(j)
+        FPC_total_1 = FPC_total_1 + FPC_pls_initial(j)
         !print*, 'FPC_total_1', FPC_total_1
        
         if (j.eq.npls) then
@@ -234,8 +259,8 @@ program self_thinning
 
         
         
-        FPC_ind = 0.
-        FPC_pls_2 = 0.
+        FPC_ind(:,k) = 0.
+        FPC_pls_2(:,k) = 0.
         FPC_total_2 = 0.
         FPC_total_accu_2 = 0.
         fpc_max_tree = 0.
@@ -260,12 +285,14 @@ program self_thinning
             cl1(:,k) = cl1_initial(:)
             cw1(:,k) = cw1_initial(:)
             cr1(:,k) = cr1_initial(:)
+            FPC_pls_1(:,k) = FPC_pls_initial(:)
             ! print*,'cl previous yr', cl1(:,k)/1000.
         else
 
         cl1(:,k) = cl1_aux(:,k-1)
         cw1(:,k) = cw1_aux(:,k-1)
         cr1(:,k) = cr1_aux(:,k-1)
+        FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
         print*, 'cl1 nxt year', cl1(1,k)/1000.
         
         endif
@@ -292,9 +319,9 @@ program self_thinning
             
                 lai(j) = 0.
            
-                FPC_ind(j) = 0.
+                FPC_ind(j,k) = 0.
                 
-                FPC_pls_2(j) = 0.
+                FPC_pls_2(j,k) = 0.
 
                 dens_1(j) = 0.
 
@@ -324,11 +351,11 @@ program self_thinning
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
                 ! and of the grid cell (FPC_total)
 
-                FPC_ind(j) = (1-(exp(-0.5*lai(j))))
+                FPC_ind(j,k) = (1-(exp(-0.5*lai(j))))
                 ! print*, "FPC_ind", FPC_ind(j)
                 
             
-                FPC_pls_2(j) = crown_area(j) * dens_1(j) * FPC_ind(j) 
+                FPC_pls_2(j,k) = crown_area(j) * dens_1(j) * FPC_ind(j,k) 
 
                 
             endif
@@ -339,7 +366,7 @@ program self_thinning
             
             ! print*, 'FPC_pls_2', FPC_pls_2(j),j
 
-            FPC_total_2 = FPC_total_2 + (FPC_pls_2(j)) !accumulate the values in the variable FPC_total.
+            FPC_total_2 = FPC_total_2 + (FPC_pls_2(j,k)) !accumulate the values in the variable FPC_total.
                                                         !the actual value will only be obtained when j = npls
 
             if (j.eq.npls) then   !take the value accumulated until the last pls
@@ -373,7 +400,7 @@ program self_thinning
        
             do j = 1, npls
                 ! print*, 'FPC_pls2', FPC_pls_2(j)
-                if(FPC_pls_2(j).eq.0.)then
+                if(FPC_pls_2(j,k).eq.0.)then
                     FPC_inc(j) = 0.
                     FPC_inc_cont(j) = 0.
                     fpc_dec(j) = 0.                   
@@ -389,7 +416,7 @@ program self_thinning
             
                 
 
-                    FPC_inc(j) = FPC_pls_2(j) - FPC_pls_1(j)
+                    FPC_inc(j) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
                     
                     if(FPC_inc(j).lt.0..or.FPC_total_accu_1.gt.FPC_total_accu_2)then
                         FPC_inc(j) = 0.
@@ -422,7 +449,7 @@ program self_thinning
                         !!!ATENTION: include the other mortality sources
 
                
-                        fpc_dec_prop(j) = (((FPC_pls_2(j) - fpc_dec(j))/FPC_pls_2(j))) !calculating shade mortality
+                        fpc_dec_prop(j) = (((FPC_pls_2(j,k) - fpc_dec(j))/FPC_pls_2(j,k))) !calculating shade mortality
 
                                       
                         greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j)) !growth efficiency
@@ -504,7 +531,7 @@ program self_thinning
                 cl2(j,k) = 0.
                 cw2(j,k) = 0.
                 cr2(j,k) = 0.
-                FPC_pls_2(j) = 0.
+                FPC_pls_2(j,k) = 0.
                 FPC_total_accu_2 = 0. 
                 npp_inc(j) = 0
                 annual_npp(j) = 0.
@@ -571,7 +598,7 @@ program self_thinning
 
         !FPCs
 
-        FPC_pls_1 = FPC_pls_2
+        FPC_pls_1_aux(:,k) = FPC_pls_2(:,k)
 
         ! print*, 'FPC_atualizado', FPC_pls_1
 
