@@ -54,8 +54,8 @@ program self_thinning
 
     !Variables to allocation prototype
     real, dimension(npls) :: npp1 !KgC/ano
-    real, dimension(npls) :: npp_inc  !incremento anual de C para cada PLS
-    real, dimension(npls) :: annual_npp !quantidade de NPP com os incrementos.
+    real, dimension(npls,time) :: npp_inc  !incremento anual de C para cada PLS
+    real, dimension(npls,time) :: annual_npp !quantidade de NPP com os incrementos.
     real, dimension(npls,time) :: cl2 !carbon on leaves after allocation
     real, dimension(npls,time) :: cw2 !carbon on wood after allocation
     real, dimension(npls,time) :: cr2 !carbon on wood after allocation
@@ -206,28 +206,31 @@ program self_thinning
         enddo
     enddo
 
-
+    print*, x(:,:), 'try'
        
 
 
 
 !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
     do j = 1, npls
-        npp_inc(j)=0.1*1000
-        annual_npp(j) = ((npp1(j)/dens_1(j)) + npp_inc(j))
+        npp_inc(j,:) = x(j,:)*1000
+        print*,'___________________________________'
+        print*, 'npp_inc', npp_inc(j,:)/1000.
 
-        ! print*, 'annual npp', annual_npp(j)/1000.
+        annual_npp(j,:) = ((npp1(j)/dens_1(j)) + npp_inc(j,:))
+
+        print*, 'annual npp', annual_npp(j,:)/1000.
 
          !-------------------------------------------------------------------------------
          ! !Increments to each compartments per individual. Here, the NPP proportions allocated
          ! to each compartment is being used for testing purpose. The actual values will be calculated
          ! in allocation routine.
 
-        leaf_inc(j) = leaf_allocation * annual_npp(j)
+        leaf_inc(j) = leaf_allocation * annual_npp(j,k)
 
-        root_inc(j) = root_allocation * annual_npp(j) 
+        root_inc(j) = root_allocation * annual_npp(j,k) 
 
-        wood_inc(j) = wood_allocation * annual_npp(j)  
+        wood_inc(j) = wood_allocation * annual_npp(j,k)  
 
         carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
         ! print*, '1st year', carbon_increment(j)/1000.,j
@@ -276,7 +279,7 @@ program self_thinning
         lai = 0.
         crown_area = 0.
         diam = 0.
-        annual_npp = 0.
+        annual_npp(:,k) = 0.
         leaf_inc = 0.
         wood_inc = 0.
         root_inc = 0.
@@ -533,8 +536,8 @@ program self_thinning
                 cr2(j,k) = 0.
                 FPC_pls_2(j,k) = 0.
                 FPC_total_accu_2 = 0. 
-                npp_inc(j) = 0
-                annual_npp(j) = 0.
+                npp_inc(j,k) = 0
+                annual_npp(j,k) = 0.
                 leaf_inc(j) = 0.
                 root_inc(j) = 0.
                 wood_inc(j) = 0.
@@ -620,9 +623,9 @@ program self_thinning
 
            
             if(dens_1(j).le.0.) then
-                npp_inc(j) = 0.
+                npp_inc(j,k) = 0.
             
-                annual_npp(j) = 0.
+                annual_npp(j,k) = 0.
 
                 leaf_inc(j) = 0.
 
@@ -644,14 +647,14 @@ program self_thinning
             
             
             
-                npp_inc(j) = npp_inc(j)/dens_1(j)
+                npp_inc(j,k) = npp_inc(j,k)/dens_1(j)
 
            
 
             !-------------------------------------------------------------------------------
             !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
         
-                annual_npp(j) = ((npp1(j)/dens_1(j)) + npp_inc(j))
+                annual_npp(j,k) = ((npp1(j)/dens_1(j)) + npp_inc(j,k))
 
             ! print*, 'annual npp', annual_npp(j)/1000.
 
@@ -660,11 +663,11 @@ program self_thinning
              ! to each compartment is being used for testing purpose. The actual values will be calculated
              ! in allocation routine.
 
-                leaf_inc(j) = leaf_allocation * annual_npp(j)
+                leaf_inc(j) = leaf_allocation * annual_npp(j,k)
 
-                root_inc(j) = root_allocation * annual_npp(j) 
+                root_inc(j) = root_allocation * annual_npp(j,k) 
 
-                wood_inc(j) = wood_allocation * annual_npp(j)  
+                wood_inc(j) = wood_allocation * annual_npp(j,k)  
 
                 carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
                 ! print*, 'final', carbon_increment(j)/1000.
@@ -688,7 +691,7 @@ program self_thinning
             cw1_aux(j,k) = cw1_aux(j,k) * dens_1(j)
             cr1_aux(j,k) = cr1_aux(j,k) * dens_1(j)
 
-            npp_inc(j) = npp_inc(j) * dens_1(j)
+            npp_inc(j,k) = npp_inc(j,k) * dens_1(j)
 
             carbon_increment(j) = carbon_increment(j)
 
@@ -702,7 +705,7 @@ program self_thinning
 
     enddo
 
-    open(unit=1,file='cleaf.csv',status='unknown')
+    open(unit=1,file='cleaf_time.csv',status='unknown')
     do k=1, time
         do j = 1,npls
 
