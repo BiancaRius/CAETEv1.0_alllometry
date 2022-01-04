@@ -2,7 +2,7 @@ program self_thinning
 
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls =20 !40 !20
+    integer, parameter :: npls = 20 !40 !20
     integer, parameter :: time = 10
     real, dimension(npls) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
@@ -73,10 +73,10 @@ program self_thinning
 
     !variables with initial values
     real, dimension(npls,time) :: cl1_initial
-    real, dimension(npls,time) :: cl1_init
+    real, dimension(npls,time) :: cw1_initial
+    real, dimension(npls,time) :: cr1_initial
 
-    real, dimension(npls) :: cw1_initial
-    real, dimension(npls) :: cr1_initial
+
     real, dimension(npls) :: FPC_pls_initial
     
 
@@ -91,7 +91,7 @@ program self_thinning
     
     real:: x(npls,time)
     
-    
+        
 
     
 
@@ -118,7 +118,7 @@ program self_thinning
     ! &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.0153,0.0101,0.0107,0.0112,0.012,&
     ! &0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
     
-    cw1_initial=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)!,&
+    ! cw1_initial=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)!,&
     !&30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)
     
     ! cw1=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4,&
@@ -126,7 +126,7 @@ program self_thinning
     
 
 
-    cr1_initial=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)!,&
+    ! cr1_initial=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)!,&
     ! !&0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
 
     ! cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5,&
@@ -180,7 +180,7 @@ program self_thinning
 
 !!!------------------------------------------------------
 
-! !creating value for initial cl1
+! !creating value for initial cleaf
 
 
     xmin = 0.2
@@ -192,7 +192,7 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            print*,x(j,k),j,k
+            ! print*,x(j,k),j,k
         enddo
     enddo
 
@@ -202,16 +202,60 @@ program self_thinning
     do j = 1, npls      
 
         cl1_initial(j,:) =x(j,:)*1000.
-        print*, 'initial', cl1_initial(j,:)/1000.
+        ! print*, 'initial', cl1_initial(j,:)/1000.
 
     enddo
 
+!_______________________________________________
+!!    creating value for initial cwood
+    xmin = 10.
+    xmax = 35.
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            print*, 'x cwood',x(j,k),j,k
+        enddo
+    enddo
+
+    do j = 1, npls      
+
+        cw1_initial(j,:) =x(j,:)*1000.
+        print*, ' cw initial', cw1_initial(j,:)/1000.
+
+    enddo
+
+!____________________________________________________
+
+!!    creating value for initial croot
+    xmin = 0.2
+    xmax = 1.5
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            print*, 'x croot',x(j,k),j,k
+        enddo
+    enddo
+
+    do j = 1, npls      
+
+        cr1_initial(j,:) =x(j,:)*1000.
+        print*, ' cr initial', cr1_initial(j,:)/1000.
+
+    enddo
+
+!____________________________________________________
+   
+   
+   
     do j = 1, npls
-
-        cw1_initial(j) = cw1_initial(j)*1000.
-
-        cr1_initial(j) = cr1_initial(j)*1000.
-
         npp1(j) = npp1(j)*1000.
         ! print*, npp1(j),j
     enddo
@@ -311,8 +355,8 @@ program self_thinning
       
         if(k.eq.1)then
             cl1(:,k) = cl1_initial(:,k)
-            cw1(:,k) = cw1_initial(:)
-            cr1(:,k) = cr1_initial(:)
+            cw1(:,k) = cw1_initial(:,k)
+            cr1(:,k) = cr1_initial(:,k)
             FPC_pls_1(:,k) = FPC_pls_initial(:)
             ! print*,'cl previous yr', cl1(:,k)/1000.
         else
