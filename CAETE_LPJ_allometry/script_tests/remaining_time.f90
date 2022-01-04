@@ -75,6 +75,7 @@ program self_thinning
     real, dimension(npls,time) :: cl1_initial
     real, dimension(npls,time) :: cw1_initial
     real, dimension(npls,time) :: cr1_initial
+    real, dimension(npls,time) :: npp1_initial
 
 
     real, dimension(npls) :: FPC_pls_initial
@@ -132,7 +133,7 @@ program self_thinning
     ! cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5,&
     ! &0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
     
-    npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)!,&
+    ! npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)!,&
     ! &0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
 
     ! npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55,&
@@ -252,16 +253,34 @@ program self_thinning
     enddo
 
 !____________________________________________________
-   
-   
-   
-    do j = 1, npls
-        npp1(j) = npp1(j)*1000.
-        ! print*, npp1(j),j
+   !!    creating value for initial npp
+    xmin = 0.5
+    xmax = 2.
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            print*, 'x npp',x(j,k),j,k
+        enddo
     enddo
 
+    do j = 1, npls      
 
-    !creating value for initial npp_inc
+        npp1_initial(j,:) =x(j,:)*1000.
+        print*, ' npp initial', npp1_initial(j,:)/1000.
+
+    enddo
+   
+   
+  
+
+!______________________________________________
+!!!!creating value for initial npp_inc
+!__________________________________________
+
     xmin = 0.1
     xmax =  2.5
      
@@ -273,10 +292,7 @@ program self_thinning
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
             ! print*,x(j,k),j,k
         enddo
-    enddo
-
-  
-       
+    enddo  
 
 
 
@@ -286,7 +302,7 @@ program self_thinning
         ! print*,'___________________________________'
         ! print*, 'npp_inc', npp_inc(j,:)/1000.
 
-        annual_npp(j,:) = ((npp1(j)/dens_1(j)) + npp_inc(j,:))
+        annual_npp(j,:) = ((npp1_initial(j,:)/dens_1(j)) + npp_inc(j,:))
 
         ! print*, 'annual npp', annual_npp(j,:)/1000.
 
@@ -723,7 +739,7 @@ program self_thinning
             !-------------------------------------------------------------------------------
             !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
         
-                annual_npp(j,k) = ((npp1(j)/dens_1(j)) + npp_inc(j,k))
+                annual_npp(j,k) = ((npp1_initial(j,k)/dens_1(j)) + npp_inc(j,k))
 
             ! print*, 'annual npp', annual_npp(j)/1000.
 
