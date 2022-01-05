@@ -3,12 +3,10 @@ program self_thinning
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
     integer, parameter :: npls = 20 !40 !20
-    integer, parameter :: time = 10
-    real, dimension(npls) :: lai !Leaf Area Index (m2/m2)
-    real, dimension(npls) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
-    real, dimension(npls) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
-    real, dimension(npls) :: dens_1 != 2  !densidade de indivíduos em cada PLS (0.5 é um número genérico)
-    real, dimension(npls) :: dens_2 != 2  !densidade de indivíduos em cada PLS (0.5 é um número genérico)
+    integer, parameter :: time = 100
+    real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
+    real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
+    real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
 
    
     
@@ -25,6 +23,7 @@ program self_thinning
     real, dimension(npls) :: FPC_inc 
     real, dimension(npls) :: FPC_inc_cont 
     real, dimension(npls) :: carbon_increment  ! used to calculate mort greff (Sitch et al 2003)
+
     
     real, dimension(time) :: FPC_total_1 = 0.0 !sum of FPC_grid 
     real, dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
@@ -32,7 +31,7 @@ program self_thinning
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 100. !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 1000. !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     
     real :: fpc_max_tree !95% of grid-cell (in m2)
     real :: exc_area
@@ -48,37 +47,41 @@ program self_thinning
     real :: root_allocation = 0.3 !% of NPP allocated to roots
     real :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
     real :: k_mort2 = 0.3
-    real :: res_time_leaf = 2 !general residence time value for testing purpose
-    real :: res_time_root = 2
-    real :: res_time_wood = 50 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real :: res_time_leaf = 4 !general residence time value for testing purpose
+    real :: res_time_root = 4
+    real :: res_time_wood = 60 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
 
     !Variables to allocation prototype
-    real, dimension(npls) :: npp1 !KgC/ano
     real, dimension(npls,time) :: npp_inc  !incremento anual de C para cada PLS
     real, dimension(npls,time) :: annual_npp !quantidade de NPP com os incrementos.
     real, dimension(npls,time) :: cl2 !carbon on leaves after allocation
     real, dimension(npls,time) :: cw2 !carbon on wood after allocation
     real, dimension(npls,time) :: cr2 !carbon on wood after allocation
+    real, dimension(npls,time) :: dens2
+
+    real, dimension(npls,time) :: cleaf_avg_ind
+    real, dimension(npls,time) :: cwood_avg_ind
+    real, dimension(npls,time) :: croot_avg_ind
+
     real, dimension(npls,time) :: cw1 !KgC/m2 (Cheart + Csap)
     real, dimension(npls,time) :: cl1 !KgC/m2 
     real, dimension(npls,time) :: cr1 !KgC/m2
+    real, dimension(npls,time) :: dens1
 
     ! Variables with generic values for testing the logic code
-    real, dimension(npls) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
-    real, dimension(npls) :: spec_leaf !m2/gC
+    real, dimension(npls,time) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
+    real, dimension(npls,time) :: spec_leaf !m2/gC
     real, dimension(npls) :: leaf_inc !kgC/ ind
     real, dimension(npls) :: wood_inc !kgC/ ind
     real, dimension(npls) :: root_inc !kgC/ ind
-    real, dimension(npls) :: diameter !
 
     !variables with initial values
     real, dimension(npls,time) :: cl1_initial
     real, dimension(npls,time) :: cw1_initial
     real, dimension(npls,time) :: cr1_initial
     real, dimension(npls,time) :: npp1_initial
-
-
     real, dimension(npls) :: FPC_pls_initial
+    real, dimension(npls,time) :: dens1_initial
     
 
     !auxiliary variables for outputs
@@ -86,70 +89,20 @@ program self_thinning
     real, dimension (npls,time) :: cw1_aux
     real, dimension (npls,time) :: cr1_aux
     real, dimension (npls,time) :: FPC_pls_1_aux
+    real, dimension (npls,time) :: dens1_aux
 
 
     !creating random numbers for npp increment
     
     real:: x(npls,time)
     
-        
-
-    
-
-    
-    !ARRAYS WITH GENERIC VALUES OF SOME VARIABLES
-    dwood=(/0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/)!,&
-    ! &0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
-    
-    ! dwood=(/0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42,&
-    ! &0.24,0.53,0.39,0.32,0.31,0.44,0.66,0.42,0.74,0.39,0.82,0.40,0.26,0.79,0.39,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
-
-
-    ! cl1_initial=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)!,&
-    ! &.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)
-
-    ! cl1=(/.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8,&
-    ! &.7,1.,0.3,1.6,1.10,1.8,0.3,0.2,0.8,0.84,0.25,1.,0.2,1.7,0.4,.6,.5,.8,0.3,1.8/)
-    
-    spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
-    &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)! !,0.0153,0.0101,0.0107,0.0112,0.012,&
-    ! ! &0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
+            
    
-    ! spec_leaf=(/0.0153,0.0101,0.0107,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,&
-    ! &0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122,0.0153,0.0101,0.0107,0.0112,0.012,&
-    ! &0.0141,0.0137,0.0115,0.0122,0.010,0.012,0.011,0.013,0.014,0.0112,0.012,0.0141,0.0137,0.0115,0.0122/)
     
-    ! cw1_initial=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)!,&
-    !&30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)
-    
-    ! cw1=(/30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4,&
-    ! &30.,22.,34.,28.3,20.2,19.7,27.5,19.5,20.,28.6,24.3,19.3,26.8,22.,18.3,22.,15.,22.6,10.7,21.4/)
-    
-
-
-    ! cr1_initial=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)!,&
-    ! !&0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
-
-    ! cr1=(/0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5,&
-    ! &0.63,0.8,0.9,1.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
-    
-    ! npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)!,&
-    ! &0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
-
-    ! npp1 = (/0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55,&
-    ! &0.5,0.8,1.5,1.2,1.9,1.3,1.7,0.8,0.6,2.0,0.7,1.1,1.9,1.85,1.96,1.77,1.33,1.54,1.62,0.55/)
-    
-    diameter = (/0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)!,&
-    ! !&0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)
-
-    ! diameter = (/0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15,&
-    ! &0.16,0.45,0.17,0.25,0.34,0.4,0.23,0.49,0.37,0.5,0.53,0.12,0.75,0.22,0.63,0.31,0.41,0.63,0.52,0.15/)
-    
-    dens_1 = (/1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)!,&
+    ! dens_1 = (/1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)!,&
     !&1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)
 
-    ! dens_1 = (/1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8,&
-    ! &1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)
+  
 
   
    
@@ -159,26 +112,33 @@ program self_thinning
     ! ==================== ALLOMETRY EQUATIONS =========================!
     !        Increment of carbon on tissues per individual 
 
-   
-
-    ! do k = 1,4 !looping for years
-    !     print*,'k', k
-    !     do j = 1, npls !looping for pls'
-    !         cl2(j) = cl1(j)*3
-    !         print*, 'cl2', cl2(j)
-    !         print*, 'dwood', dwood(j)
-            
-
-    !     enddo
-    !     cl1 = cl2  !updating variable for the next year
-    !     print*, 'cl1_atualizado', cl1
-    ! enddo
 
     
-    
+!!!------------------------------------------------------
 
-    
+! !creating value for initial density
 
+
+    xmin = 1.7
+    xmax = 9.5
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            ! print*,x(j,k),j,k
+        enddo
+    enddo
+
+    do j = 1, npls      
+
+        dens1_initial(j,:) =x(j,:)
+        ! print*, ' dens initial', dens1_initial(j,:)
+
+    enddo
+!________________________________________________________________
 !!!------------------------------------------------------
 
 ! !creating value for initial cleaf
@@ -218,14 +178,14 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            print*, 'x cwood',x(j,k),j,k
+            ! print*, 'x cwood',x(j,k),j,k
         enddo
     enddo
 
     do j = 1, npls      
 
         cw1_initial(j,:) =x(j,:)*1000.
-        print*, ' cw initial', cw1_initial(j,:)/1000.
+        ! print*, ' cw initial', cw1_initial(j,:)/1000.
 
     enddo
 
@@ -241,14 +201,14 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            print*, 'x croot',x(j,k),j,k
+            ! print*, 'x croot',x(j,k),j,k
         enddo
     enddo
 
     do j = 1, npls      
 
         cr1_initial(j,:) =x(j,:)*1000.
-        print*, ' cr initial', cr1_initial(j,:)/1000.
+        ! print*, ' cr initial', cr1_initial(j,:)/1000.
 
     enddo
 
@@ -263,17 +223,68 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            print*, 'x npp',x(j,k),j,k
+            ! print*, 'x npp',x(j,k),j,k
         enddo
     enddo
 
     do j = 1, npls      
 
         npp1_initial(j,:) =x(j,:)*1000.
-        print*, ' npp initial', npp1_initial(j,:)/1000.
+        ! print*, ' npp initial', npp1_initial(j,:)/1000.
 
     enddo
+
+!____________________________________________________
+   !!    creating value for dwood
+    xmin = 0.24
+    xmax = 0.86
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            ! print*, 'x dwood',x(j,k),j,k
+        enddo
+    enddo
+
+    do j = 1, npls      
+
+        dwood(j,:) =x(j,:)
+       
+
+    enddo
+
+!___________________________________________________________
+ 
+!____________________________________________________
+   !!    creating value for spec_leaf
+    xmin = 0.0101
+    xmax = 0.0153
+     
+    x(:,:) = 0.
+    call random_number(x)
+
+    do k = 1, time
+        do j = 1, npls
+            x(j,k) = xmin + (xmax-xmin)*x(j,k)
+            ! print*, 'x dwood',x(j,k),j,k
+        enddo
+    enddo
+
+    do j = 1, npls      
+
+        spec_leaf(j,:) =x(j,:)
+       
+
+    enddo
+
+!___________________________________________________________
    
+   
+  
+  
    
   
 
@@ -302,7 +313,7 @@ program self_thinning
         ! print*,'___________________________________'
         ! print*, 'npp_inc', npp_inc(j,:)/1000.
 
-        annual_npp(j,:) = ((npp1_initial(j,:)/dens_1(j)) + npp_inc(j,:))
+        annual_npp(j,:) = ((npp1_initial(j,:)/dens1_initial(j,:)) + npp_inc(j,:))
 
         ! print*, 'annual npp', annual_npp(j,:)/1000.
 
@@ -357,13 +368,19 @@ program self_thinning
         FPC_inc_cont = 0.
         FPC_dec = 0.
         fpc_dec_prop = 0.
-        dens_2 = 0.
+
+        cleaf_avg_ind(:,k) = 0.
+        cwood_avg_ind(:,k) = 0.
+        croot_avg_ind(:,k) = 0.
+
+
         cl2(:,k) = 0.
         cw2(:,k) = 0.
         cr2(:,k) = 0.
-        lai = 0.
-        crown_area = 0.
-        diam = 0.
+        lai(:,k) = 0.
+        dens2(:,k) = 0.
+        crown_area(:,k) = 0.
+        diam(:,k) = 0.
         annual_npp(:,k) = 0.
         leaf_inc = 0.
         wood_inc = 0.
@@ -374,12 +391,14 @@ program self_thinning
             cw1(:,k) = cw1_initial(:,k)
             cr1(:,k) = cr1_initial(:,k)
             FPC_pls_1(:,k) = FPC_pls_initial(:)
+            dens1(:,k) = dens1_initial(:,k)
             ! print*,'cl previous yr', cl1(:,k)/1000.
         else
 
         cl1(:,k) = cl1_aux(:,k-1)
         cw1(:,k) = cw1_aux(:,k-1)
         cr1(:,k) = cr1_aux(:,k-1)
+        dens1(:,k) = dens1_aux(:,k-1)
         FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
         ! print*, 'cl1 nxt year', cl1(1,k)/1000.
         
@@ -401,37 +420,37 @@ program self_thinning
     
                 cr2(j,k) = 0.                             
                               
-                diam(j) = 0.
+                diam(j,k) = 0.
             
-                crown_area(j) = 0.
+                crown_area(j,k) = 0.
             
-                lai(j) = 0.
+                lai(j,k) = 0.
            
                 FPC_ind(j,k) = 0.
                 
                 FPC_pls_2(j,k) = 0.
 
-                dens_1(j) = 0.
+                dens1(j,k) = 0.
 
-                dens_2(j) = 0.
+                dens2(j,k) = 0.
                
             else
                 ! print*, 'cl1 ne 0'
-                cl2(j,k) = (cl1(j,k)/dens_1(j)) 
+                cl2(j,k) = (cl1(j,k)/dens1(j,k)) 
 
-                cw2(j,k) = (cw1(j,k)/dens_1(j)) 
+                cw2(j,k) = (cw1(j,k)/dens1(j,k)) 
 
-                cr2(j,k) = (cr1(j,k)/dens_1(j)) 
+                cr2(j,k) = (cr1(j,k)/dens1(j,k)) 
 
         
                   !----------------------------------------------------------------------------
                  !Structuring PLSs [diameter, crown area and leaf area index]
 
-                diam(j) = ((4*(cw2(j,k)))/((dwood(j)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
+                diam(j,k) = ((4*(cw2(j,k)))/((dwood(j,k)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
             
-                crown_area(j) = k_allom1*(diam(j)**krp)
+                crown_area(j,k) = k_allom1*(diam(j,k)**krp)
             
-                lai(j) = (cl2(j,k)*spec_leaf(j))/crown_area(j) 
+                lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k) 
 
                 
                 !------------------------------------------------------------------------------
@@ -439,11 +458,11 @@ program self_thinning
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
                 ! and of the grid cell (FPC_total)
 
-                FPC_ind(j,k) = (1-(exp(-0.5*lai(j))))
+                FPC_ind(j,k) = (1-(exp(-0.5*lai(j,k))))
                 ! print*, "FPC_ind", FPC_ind(j)
                 
             
-                FPC_pls_2(j,k) = crown_area(j) * dens_1(j) * FPC_ind(j,k) 
+                FPC_pls_2(j,k) = crown_area(j,k) * dens1(j,k) * FPC_ind(j,k) 
 
                 
             endif
@@ -540,7 +559,7 @@ program self_thinning
                         fpc_dec_prop(j) = (((FPC_pls_2(j,k) - fpc_dec(j))/FPC_pls_2(j,k))) !calculating shade mortality
 
                                       
-                        greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j)) !growth efficiency
+                        greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
 
                         mort_greff(j) = k_mort1/(1+(k_mort2*greff(j))) !mortality by gowth efficiency
 
@@ -578,7 +597,7 @@ program self_thinning
                     ! print*,'cl2 eq 0'
 
                 else    
-                    greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j))
+                    greff(j) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j,k))
 
                     mort_greff(j) = k_mort1/(1+(k_mort2*greff(j)))
                 
@@ -615,7 +634,7 @@ program self_thinning
             if (remaining(j) .le. 0.) then
                 ! print*, 'PLS dead===============================================================',j
                 ! goto 10 
-                dens_2(j) = 0.
+                dens2(j,k) = 0.
                 cl2(j,k) = 0.
                 cw2(j,k) = 0.
                 cr2(j,k) = 0.
@@ -633,7 +652,7 @@ program self_thinning
 
             ! print*, remaining(j) , j
 
-            dens_2(j) = dens_1(j) * remaining(j)
+            dens2(j,k) = dens1(j,k) * remaining(j)
 
             ! print*, 'dens_2 (pos remaining)', dens_2(j), 'dens_1', dens_1(j), remaining(j), mort(j)
             ! print*, '                            '
@@ -684,6 +703,10 @@ program self_thinning
 
         ! print*, 'cr1 atualizado', cr1/1000.
 
+
+        dens1_aux(:,k) = dens2(:,k)
+
+
         !FPCs
 
         FPC_pls_1_aux(:,k) = FPC_pls_2(:,k)
@@ -693,8 +716,6 @@ program self_thinning
 
         FPC_total_accu_1(k)= FPC_total_accu_2(k)
         ! print*, 'FPC_atualizado', FPC_pls_1
-
-        dens_1 = dens_2
 
        
         !-----------------------------------------------------------------------------
@@ -707,7 +728,7 @@ program self_thinning
         do j=1,npls
 
            
-            if(dens_1(j).le.0.) then
+            if(dens1_aux(j,k).le.0.) then
                 npp_inc(j,k) = 0.
             
                 annual_npp(j,k) = 0.
@@ -732,14 +753,14 @@ program self_thinning
             
             
             
-                npp_inc(j,k) = npp_inc(j,k)/dens_1(j)
+                npp_inc(j,k) = npp_inc(j,k)/dens1_aux(j,k)
 
            
 
             !-------------------------------------------------------------------------------
             !Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
         
-                annual_npp(j,k) = ((npp1_initial(j,k)/dens_1(j)) + npp_inc(j,k))
+                annual_npp(j,k) = ((npp1_initial(j,k)/dens1_aux(j,k)) + npp_inc(j,k))
 
             ! print*, 'annual npp', annual_npp(j)/1000.
 
@@ -762,9 +783,21 @@ program self_thinning
                 cw1_aux(j,k) = cw1_aux(j,k) + wood_inc(j)
                 
                 cr1_aux(j,k) = cr1_aux(j,k) + root_inc(j)
+
+                !saving value for avg individual for outputs
+                cleaf_avg_ind(j,k) = cl1_aux(j,k)
+                cwood_avg_ind(j,k) = cw1_aux(j,k)
+                croot_avg_ind(j,k) = cr1_aux(j,k)
+                
             endif
 
-            ! print*, 'cl1 com incremento após aloca', cl1(j)/1000., j
+            ! print*, 'cl1 com incremento após aloca', cl1_aux(j,k)/1000., j
+            print*, 'cl avg ind', cleaf_avg_ind(j,k)/1000.
+            print*, 'cw avg ind', cwood_avg_ind(j,k)/1000.
+            print*, 'cr avg ind', croot_avg_ind(j,k)/1000.
+
+
+
             ! print*, ''
             ! print*, 'cw1 com incremento após aloca', cw1(j)/1000., j
             ! print*, ''
@@ -772,11 +805,14 @@ program self_thinning
 
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
 
-            cl1_aux(j,k) = cl1_aux(j,k) * dens_1(j)
-            cw1_aux(j,k) = cw1_aux(j,k) * dens_1(j)
-            cr1_aux(j,k) = cr1_aux(j,k) * dens_1(j)
+            cl1_aux(j,k) = cl1_aux(j,k) * dens1_aux(j,k)
+            print*, 'cl * dens', cl1_aux(j,k)/1000
+            cw1_aux(j,k) = cw1_aux(j,k) * dens1_aux(j,k)
+            print*, 'cw * dens', cw1_aux(j,k)/1000
+            cr1_aux(j,k) = cr1_aux(j,k) * dens1_aux(j,k)
+            print*, 'cr * dens', cr1_aux(j,k)/1000
 
-            npp_inc(j,k) = npp_inc(j,k) * dens_1(j)
+            npp_inc(j,k) = npp_inc(j,k) * dens1_aux(j,k)
 
             carbon_increment(j) = carbon_increment(j)
 
