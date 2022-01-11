@@ -2,7 +2,7 @@ program self_thinning
 
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls = 5 !40 !20
+    integer, parameter :: npls = 3000 !40 !20
     integer, parameter :: time = 400
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
@@ -19,7 +19,7 @@ program self_thinning
     real, dimension(npls,time) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
     real, dimension(npls,time) :: mort_greff  ! motallity from growth efficiency (Sitch et al 2003)
     real, dimension(npls,time) :: greff  ! motallity from growth efficiency (Sitch et al 2003)
-    real, dimension(npls) :: remaining  !taxa de redução
+    real, dimension(npls,time) :: remaining  !taxa de redução
     real, dimension(npls) :: FPC_inc 
     real, dimension(npls) :: FPC_inc_cont 
     real, dimension(npls) :: carbon_increment  ! used to calculate mort greff (Sitch et al 2003)
@@ -29,6 +29,7 @@ program self_thinning
     real :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
 
     real, dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
+    real, dimension(time) :: dead_pls = 0.0
     
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
@@ -100,15 +101,8 @@ program self_thinning
     !creating random numbers for npp increment
     
     real:: x(npls,time)
-    
-            
    
-    
-    ! dens_1 = (/1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)!,&
-    !&1.,2.,5.,3.3, 1.3, 7., 2.8, 3.,4.5,1.7,3.6,9.,4.,2.45,5.27,4.6,8.2,9.29,3.,4.8/)
-
-  
-
+   
   
    
 
@@ -650,11 +644,11 @@ program self_thinning
             endif
 
             ! print*, 'mort',mort(j)   
-            remaining(j) = 1.0 - mort(j,k)
+            remaining(j,k) = 1.0 - mort(j,k)
            
             ! print*, 'remaining', remaining(j), 'mort', mort(j), j
            
-            if (remaining(j) .le. 0.) then
+            if (remaining(j,k) .le. 0.) then
                 ! print*, 'PLS dead===============================================================',j
                 ! goto 10 
                 dens2(j,k) = 0.
@@ -675,18 +669,18 @@ program self_thinning
 
             ! print*, remaining(j) , j
 
-            dens2(j,k) = dens1(j,k) * remaining(j)
+            dens2(j,k) = dens1(j,k) * remaining(j,k)
 
             ! print*, 'dens_2 (pos remaining)', dens_2(j), 'dens_1', dens_1(j), remaining(j), mort(j)
             ! print*, '                            '
             ! print*, '                            '
             ! print*, '                            '
 
-            cl2(j,k) = cl2(j,k) * remaining(j)         
+            cl2(j,k) = cl2(j,k) * remaining(j,k)         
 
-            cw2(j,k) = cw2(j,k) * remaining(j)
+            cw2(j,k) = cw2(j,k) * remaining(j,k)
 
-            cr2(j,k) = cr2(j,k) * remaining(j)
+            cr2(j,k) = cr2(j,k) * remaining(j,k)
 
 
 
@@ -815,9 +809,9 @@ program self_thinning
             endif
 
             ! print*, 'cl1 com incremento após aloca', cl1_aux(j,k)/1000., j
-            print*, 'cl avg ind', cleaf_avg_ind(j,k)/1000., j
-            print*, 'cw avg ind', cwood_avg_ind(j,k)/1000.
-            print*, 'cr avg ind', croot_avg_ind(j,k)/1000.
+            ! print*, 'cl avg ind', cleaf_avg_ind(j,k)/1000., j
+            ! print*, 'cw avg ind', cwood_avg_ind(j,k)/1000.
+            ! print*, 'cr avg ind', croot_avg_ind(j,k)/1000.
 
 
 
@@ -829,11 +823,11 @@ program self_thinning
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
 
             cl1_aux(j,k) = cl1_aux(j,k) * dens1_aux(j,k)
-            print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k),j
+            ! print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k),j
             cw1_aux(j,k) = cw1_aux(j,k) * dens1_aux(j,k)
-            print*, 'cw * dens', cw1_aux(j,k)/1000
+            ! print*, 'cw * dens', cw1_aux(j,k)/1000, dens1_aux(j,k)
             cr1_aux(j,k) = cr1_aux(j,k) * dens1_aux(j,k)
-            print*, 'cr * dens', cr1_aux(j,k)/1000
+            ! print*, 'cr * dens', cr1_aux(j,k)/1000
 
             npp_inc(j,k) = npp_inc(j,k) * dens1_aux(j,k)
 
@@ -879,6 +873,17 @@ program self_thinning
             enddo
         enddo 
         close(1)
+
+        open(unit=2,file='FPC_total_time_5PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+        enddo    
+
+        close(2)
     endif 
 
     if (npls.eq.20) then
@@ -901,6 +906,27 @@ program self_thinning
             enddo
         enddo 
         close(1)
+
+        open(unit=1,file='density_20PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+
+        open(unit=2,file='FPC_total_time_20PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+        enddo    
+
+        close(2)
     endif
     
     if (npls.eq.50) then
@@ -923,6 +949,27 @@ program self_thinning
             enddo
         enddo 
         close(1)
+
+        open(unit=1,file='density_50PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+
+        open(unit=2,file='FPC_total_time_50PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+        enddo    
+
+        close(2)
 
 
     endif
@@ -947,6 +994,27 @@ program self_thinning
             enddo
         enddo 
         close(1)
+
+        open(unit=1,file='density_100PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+
+        open(unit=2,file='FPC_total_time_100PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+        enddo    
+
+        close(2)
     endif
 
     if (npls.eq.500) then
@@ -969,6 +1037,27 @@ program self_thinning
             enddo
         enddo 
         close(1)
+
+        open(unit=1,file='density_500PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+
+        open(unit=2,file='FPC_total_time_500PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+        enddo    
+
+        close(2)
     endif
     
 
@@ -992,6 +1081,26 @@ program self_thinning
             enddo
         enddo 
         close(1)
+        open(unit=1,file='density_1000PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+
+        open(unit=2,file='FPC_total_time_1000PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+        enddo    
+
+        close(2)
     endif
 
 
@@ -1015,18 +1124,51 @@ program self_thinning
             enddo
         enddo 
         close(1)
-    endif
 
-    open(unit=2,file='FPC_total_time.csv',status='unknown')
-    do k=1, time
+        open(unit=1,file='density_3000PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+
+        open(unit=2,file='FPC_total_time_3000PLS.csv',status='unknown')
+        do k=1, time
         
 
        
-            write(2,*) FPC_total_accu_2(k),',',k !newline
+            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
         
-    enddo    
+        enddo    
 
-    close(2)
+        close(2)
+
+        open(unit=2,file='exc_area_3000PLS.csv',status='unknown')
+        do k=1, time
+        
+
+       
+            write(2,*) exc_area(k),',',k, ',' 
+        
+        enddo    
+
+        close(2)
+
+        open(unit=1,file='mortality_3000PLS.csv',status='unknown')
+        do k=1, time
+            do j = 1,npls
+
+            
+                write(1,*) mort(j,k),',',mort_greff(j,k),',',FPC_dec(j,k),',',remaining(j,k),',','pls',j,',',k !newline
+            enddo
+        enddo 
+        close(1)
+    endif
+
+    
 
 
 end program self_thinning 
