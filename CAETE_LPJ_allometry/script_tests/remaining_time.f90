@@ -1,9 +1,10 @@
 program self_thinning
 
+    use establish
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls = 1000 !40 !20
-    integer, parameter :: time = 500
+    integer, parameter :: npls = 20 !40 !20
+    integer, parameter :: time = 1000
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -33,7 +34,7 @@ program self_thinning
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 600 !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 20 !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     
     real :: fpc_max_tree !95% of grid-cell (in m2)
     real, dimension(time) :: exc_area
@@ -100,6 +101,11 @@ program self_thinning
     !creating random numbers for npp increment
     
     real:: x(npls,time)
+
+    !test variables for module of establishment
+
+    real, dimension (time) :: est
+    real, dimension (npls,time) :: est_pls
    
    
   
@@ -110,8 +116,6 @@ program self_thinning
     ! ==================== ALLOMETRY EQUATIONS =========================!
     !        Increment of carbon on tissues per individual 
 
-
-    
 !!!------------------------------------------------------
 
 ! !creating value for initial density
@@ -507,7 +511,11 @@ program self_thinning
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
-            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k)
+            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k)
+           
+           
+           est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
+            
             ! Excedent area
            
             exc_area(k) = FPC_total_accu_2(k) - fpc_max_tree
@@ -528,7 +536,7 @@ program self_thinning
                     mort(j,k) = 1.
                     mort_greff(j,k) = 0.
                     dead_pls(k) = dead_pls(k)+1.
-                    print*, 'dead PLS fpc pls', j 
+                    ! print*, 'dead PLS fpc pls', j 
                  
                 else
                     ! print*,'CALCULATING EXCEDENT'
@@ -550,7 +558,7 @@ program self_thinning
                         mort(j,k) = 1.
                         mort_greff(j,k) = 0.
                         ! dead_pls(k) = dead_pls(k) + 1
-                        print*, 'dead PLSSSSSSSSSS', j, FPC_pls_2(j,k),FPC_pls_1(j,k), FPC_inc(j,k)
+                        ! print*, 'dead PLSSSSSSSSSS', j, FPC_pls_2(j,k),FPC_pls_1(j,k), FPC_inc(j,k)
                         
                     
                     endif
@@ -608,10 +616,19 @@ program self_thinning
 
             enddo
 
-        else
+        else !total FPC of all PLS is smaller than fpc_max_tree
             print*, 'n ultrapassou', FPC_total_accu_2(k)
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
+
+            do j=1, npls
+
+                call establishment(npls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k))
+                print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
+            
+            enddo
+
+
             do j=1, npls
                 if(cl2(j,k).eq.0.) then
                     greff(j,k) = 0.
@@ -627,7 +644,7 @@ program self_thinning
                     mort(j,k) = mort_greff(j,k)
                     ! print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
                     !print*, 'mort_greff', mort_greff(j), j
-                    print*, 'mort', mort(j,k)
+                    ! print*, 'mort', mort(j,k)
                     !fpc_dec(j) = 0.
                 endif
             enddo
@@ -653,7 +670,7 @@ program self_thinning
             ! print*, 'mort',mort(j)   
             remaining(j,k) = 1.0 - mort(j,k)
            
-            print*, 'remaining', remaining(j,k), 'mort', mort(j,k), j
+            ! print*, 'remaining', remaining(j,k), 'mort', mort(j,k), j
            
             if (remaining(j,k) .le. 0.) then
                 ! print*, 'PLS dead===============================================================',j
@@ -674,11 +691,14 @@ program self_thinning
                 cr1(j,k) = 0.
             endif
 
-            ! print*, 'testing', FPC_total_accu_2(k),j
+            ! print*, 'testing', est_pls(j,k)
 
-            dens2(j,k) = dens1(j,k) * remaining(j,k)
+            dens2(j,k) = (dens1(j,k) * remaining(j,k))
+            print*, 'dens_2 (pos remaining)', dens2(j,k)
 
-            ! print*, 'dens_2 (pos remaining)', dens_2(j), 'dens_1', dens_1(j), remaining(j), mort(j)
+            dens2(j,k) = dens2(j,k) + est_pls(j,k)
+
+            print*, 'dens_2 (pos estab)', dens2(j,k)
             ! print*, '                            '
             ! print*, '                            '
             ! print*, '                            '
@@ -739,7 +759,7 @@ program self_thinning
 
 
         FPC_total_accu_1_aux(k)= FPC_total_accu_2(k)
-        print*, 'FPC_atualizado', FPC_total_accu_1_aux(k),FPC_total_accu_2(k),k
+        ! print*, 'FPC_atualizado', FPC_total_accu_1_aux(k),FPC_total_accu_2(k),k
 
        
         !-----------------------------------------------------------------------------
@@ -1071,7 +1091,7 @@ program self_thinning
     
 
     if (npls.eq.1000) then
-        print*, 'savinggggg'
+        ! print*, 'savinggggg'
         ! open(unit=1,file='carbon_pools_time_1000PLS.csv',status='unknown')
         ! do k=1, time
         !     do j = 1,npls
