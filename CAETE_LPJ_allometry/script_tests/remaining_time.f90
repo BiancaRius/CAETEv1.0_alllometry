@@ -106,7 +106,9 @@ program self_thinning
 
     real, dimension (time) :: est
     real, dimension (npls,time) :: est_pls
-   
+    real, dimension (npls,time) :: cleaf_sapl
+    real, dimension (npls,time) :: csap_sapl
+
    
   
    
@@ -624,8 +626,8 @@ program self_thinning
             do j=1, npls
 
                 call establishment(npls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k))
-                print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
-            
+                ! print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
+                call sapling_allometry(spec_leaf(j,k),dwood(j,k),cleaf_sapl(j,k),cleaf_sapl(j,k))
             enddo
 
 
@@ -694,11 +696,11 @@ program self_thinning
             ! print*, 'testing', est_pls(j,k)
 
             dens2(j,k) = (dens1(j,k) * remaining(j,k))
-            print*, 'dens_2 (pos remaining)', dens2(j,k)
+            ! print*, 'dens_2 (pos remaining)', dens2(j,k)
 
             dens2(j,k) = dens2(j,k) + est_pls(j,k)
 
-            print*, 'dens_2 (pos estab)', dens2(j,k)
+            ! print*, 'dens_2 (pos estab)', dens2(j,k)
             ! print*, '                            '
             ! print*, '                            '
             ! print*, '                            '
