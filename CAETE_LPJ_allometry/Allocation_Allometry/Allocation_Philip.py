@@ -93,7 +93,7 @@ def main():
     #Create a range of bminc from 1.55. to 6.5 kgC/m²
     data = np.zeros((100, 4))
     for i in range(0,100):
-        bminc = np.interp(i, (0, 99), (1.55, 6.5))
+        bminc = np.interp(i, (0, 99), (0.55, 6.5))
         allocation.Distribute(bminc)
         data[i] = bminc, allocation.DeltaL/bminc, allocation.DeltaR/bminc, allocation.DeltaS/bminc
 

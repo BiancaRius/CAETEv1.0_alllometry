@@ -12,7 +12,7 @@ program caete
     integer :: j, k
     real, dimension(npls) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
     real, dimension(npls) :: cw1,cl1,cr1 !KgC/m2 (Cheart + Csap)
-    real, dimension(npls) :: cleaf_init, cheart_init, csap_init, croot_init, SS
+    real(REAL64), dimension(npls) :: cleaf_init, cheart_init, csap_init, croot_init, SS
     real, dimension(npls):: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls) :: nind !number of individuals per PLS (Smith, 2001, thesis)
 
@@ -23,7 +23,7 @@ program caete
 
    
     
-    call initial_c_pool(cl1,cw1,cr1,cleaf_init,cheart_init,csap_init,croot_init)
+    ! call initial_c_pool(cl1,cw1,cr1,cleaf_init,cheart_init,csap_init,croot_init)
     ! print*, cleaf_init,cheart_init,csap_init,croot_init
 
     ! SS = sapwood(csap_init,cleaf_init,croot_init,bminc)

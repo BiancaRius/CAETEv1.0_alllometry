@@ -3,8 +3,8 @@ program self_thinning
     use establish
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls = 20 !40 !20
-    integer, parameter :: time = 1000
+    integer, parameter :: npls = 3000 !40 !20
+    integer, parameter :: time = 200
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -34,7 +34,7 @@ program self_thinning
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 20 !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 1000 !grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     
     real :: fpc_max_tree !95% of grid-cell (in m2)
     real, dimension(time) :: exc_area
@@ -108,6 +108,14 @@ program self_thinning
     real, dimension (npls,time) :: est_pls
     real, dimension (npls,time) :: cleaf_sapl
     real, dimension (npls,time) :: csap_sapl
+    real, dimension (npls,time) :: cheart_sapl
+    real, dimension (npls,time) :: croot_sapl
+    real, dimension (npls,time) :: dens_est
+    real, dimension (npls,time) :: cleaf_new
+    real, dimension (npls,time) :: cwood_new
+    real, dimension (npls,time) :: croot_new
+
+
 
    
   
@@ -338,7 +346,7 @@ program self_thinning
         !Define a general value for FPC in order to initialize and 
         !use to calculate the FPC increments
 
-        FPC_pls_initial(j) = .1
+        FPC_pls_initial(j) = 2.
 
         FPC_total_initial = FPC_total_initial + FPC_pls_initial(j)
         !print*, 'FPC_total_1', FPC_total_initial
@@ -513,7 +521,7 @@ program self_thinning
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
-            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k)
+            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
            
            
            est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
@@ -602,7 +610,13 @@ program self_thinning
                         ! print*, 'mort', mort(j), 'fpc_decprop', fpc_dec_prop(j),'fpc_dec',fpc_dec(j),j
                         ! print*, 'fpc inc',FPC_inc(j),'FPCpls2', FPC_pls_2(j),'mort_greff', mort_greff(j), j
                    
-                    
+                        cleaf_new(j,k) = cl2(j,k)
+
+                        cwood_new(j,k) = cw2(j,k)
+
+                        croot_new(j,k) = cr2(j,k)
+
+                        dens_est(j,k) = dens1(j,k)
 
                 endif    
               
@@ -627,19 +641,28 @@ program self_thinning
 
                 call establishment(npls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k))
                 ! print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
-                call sapling_allometry(spec_leaf(j,k),dwood(j,k),cleaf_sapl(j,k),cleaf_sapl(j,k))
-            enddo
+                call sapling_allometry(npls,cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k))
+                
+                call shrink(cl2(j,k),cw2(j,k),cr2(j,k),est_pls(j,k),dens1(j,k),&
+            &    cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
+            &    dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),croot_new(j,k))
+                
+            
+                cl2(j,k) = cleaf_new(j,k)
+                cw2(j,k) = cwood_new(j,k)
+                cr2(j,k) = croot_new(j,k)
 
 
-            do j=1, npls
-                if(cl2(j,k).eq.0.) then
+                dens1(j,k) = dens_est(j,k)
+
+                if(cleaf_new(j,k).eq.0.) then
                     greff(j,k) = 0.
                     mort_greff(j,k) = 0.
                     mort(j,k) = 1.
                     ! print*,'cl2 eq 0'
 
                 else    
-                    greff(j,k) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j,k))
+                    greff(j,k) = carbon_increment(j)/(cleaf_new(j,k)*spec_leaf(j,k))
 
                     mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k)))
                 
@@ -678,9 +701,9 @@ program self_thinning
                 ! print*, 'PLS dead===============================================================',j
                 ! goto 10 
                 dens2(j,k) = 0.
-                cl2(j,k) = 0.
-                cw2(j,k) = 0.
-                cr2(j,k) = 0.
+                cleaf_new(j,k) = 0.
+                cwood_new(j,k) = 0.
+                croot_new(j,k) = 0.
                 FPC_pls_2(j,k) = 0.
                 ! FPC_total_accu_2(k) = 0. 
                 npp_inc(j,k) = 0
@@ -695,34 +718,37 @@ program self_thinning
 
             ! print*, 'testing', est_pls(j,k)
 
-            dens2(j,k) = (dens1(j,k) * remaining(j,k))
-            ! print*, 'dens_2 (pos remaining)', dens2(j,k)
+            dens2(j,k) = (dens_est(j,k) * remaining(j,k))
+            ! print*, 'dens_2 (pos remaining)', dens2(j,k),j 
 
-            dens2(j,k) = dens2(j,k) + est_pls(j,k)
+            !dens2(j,k) = dens2(j,k) + est_pls(j,k)
+
 
             ! print*, 'dens_2 (pos estab)', dens2(j,k)
             ! print*, '                            '
             ! print*, '                            '
             ! print*, '                            '
 
-            cl2(j,k) = cl2(j,k) * remaining(j,k)         
+            cleaf_new(j,k) = cleaf_new(j,k) * remaining(j,k)
+            ! print*, 'cl', cleaf_new(j,k)    
+            
+            cwood_new(j,k) = cwood_new(j,k) * remaining(j,k)
 
-            cw2(j,k) = cw2(j,k) * remaining(j,k)
+            croot_new(j,k) = croot_new(j,k) * remaining(j,k)
 
-            cr2(j,k) = cr2(j,k) * remaining(j,k)
-
+            
 
 
             !! Loss of carbon through residence time
            
 
-            cl2(j,k) = cl2(j,k) - (cl2(j,k)/res_time_leaf)
+            cleaf_new(j,k) = cleaf_new(j,k) - (cleaf_new(j,k)/res_time_leaf)
             ! print*, 'cl2 after restime', cl2(j)/1000., (cl1(j)/res_time)/1000.
             ! print*, ''
 
-            cw2(j,k) = cw2(j,k) - (cw2(j,k)/res_time_wood)
+            cwood_new(j,k) = cwood_new(j,k) - (cwood_new(j,k)/res_time_wood)
 
-            cr2(j,k) = cr2(j,k) - (cr2(j,k)/res_time_root)
+            croot_new(j,k) = croot_new(j,k) - (croot_new(j,k)/res_time_root)
 
 
             !!carbon to litter
@@ -731,21 +757,23 @@ program self_thinning
             !add litter of previous time step
             !the litter when pls dies is equal to cl, cw, cr
             !print*,'inside',FPC_total_accu_2(k)
+
+            
         enddo
 
 
          !----------------------------------------------------------------------------
         !updating the variables for the next year
 
-        cl1_aux(:,k) = cl2(:,k)
+        cl1_aux(:,k) = cleaf_new(:,k)!cl2(:,k)
         
         ! print*, 'cl1_aux', cl1_aux(:,k)/1000.
 
-        cw1_aux(:,k) = cw2(:,k)
+        cw1_aux(:,k) = cwood_new(:,k)
 
         ! print*, 'cw1 atualizado', cw1/1000.
         
-        cr1_aux(:,k) = cr2(:,k)
+        cr1_aux(:,k) = croot_new(:,k)
 
         ! print*, 'cr1 atualizado', cr1/1000.
 
@@ -873,356 +901,357 @@ program self_thinning
 
 
     enddo
+end program self_thinning
 
-    if (npls.eq.5) then
-        open(unit=1,file='carbon_pools_time_5PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!     if (npls.eq.5) then
+!         open(unit=1,file='carbon_pools_time_5PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
         
-        open(unit=1,file='carbon_pools_time_5PLS_avgind.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='carbon_pools_time_5PLS_avgind.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
         
-        open(unit=1,file='density_5PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='density_5PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        open(unit=2,file='FPC_total_time_5PLS.csv',status='unknown')
-        do k=1, time
+!         open(unit=2,file='FPC_total_time_5PLS.csv',status='unknown')
+!         do k=1, time
         
 
        
-            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
         
-        enddo    
+!         enddo    
 
-        close(2)
-    endif 
+!         close(2)
+!     endif 
 
-    if (npls.eq.20) then
-        open(unit=1,file='carbon_pools_time_20PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!     if (npls.eq.20) then
+!         open(unit=1,file='carbon_pools_time_20PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
        
-                write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo
-        close(1)
+!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo
+!         close(1)
 
-        open(unit=1,file='carbon_pools_time_20PLS_avgind.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
-
-            
-                write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
-
-        open(unit=1,file='density_20PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='carbon_pools_time_20PLS_avgind.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        open(unit=2,file='FPC_total_time_20PLS.csv',status='unknown')
-        do k=1, time
+!         open(unit=1,file='density_20PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
+
+            
+!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
+
+!         open(unit=2,file='FPC_total_time_20PLS.csv',status='unknown')
+!         do k=1, time
         
 
        
-            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
         
-        enddo    
+!         enddo    
 
-        close(2)
-    endif
+!         close(2)
+!     endif
     
-    if (npls.eq.50) then
-        open(unit=1,file='carbon_pools_time_50PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!     if (npls.eq.50) then
+!         open(unit=1,file='carbon_pools_time_50PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
        
-                write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo
-        close(1)
+!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo
+!         close(1)
         
-        open(unit=1,file='carbon_pools_time_50PLS_avgind.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='carbon_pools_time_50PLS_avgind.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        open(unit=1,file='density_50PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
-
-            
-                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
-
-        open(unit=2,file='FPC_total_time_50PLS.csv',status='unknown')
-        do k=1, time
-        
-
-       
-            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-        enddo    
-
-        close(2)
-
-
-    endif
-
-    if (npls.eq.100) then
-        open(unit=1,file='carbon_pools_time_100PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
-
-       
-                write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo
-        close(1)
-
-        open(unit=1,file='carbon_pools_time_100PLS_avgind.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='density_50PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        open(unit=1,file='density_100PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
-
-            
-                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
-
-        open(unit=2,file='FPC_total_time_100PLS.csv',status='unknown')
-        do k=1, time
+!         open(unit=2,file='FPC_total_time_50PLS.csv',status='unknown')
+!         do k=1, time
         
 
        
-            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
         
-        enddo    
+!         enddo    
 
-        close(2)
-    endif
+!         close(2)
 
-    if (npls.eq.500) then
-        open(unit=1,file='carbon_pools_time_500PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+
+!     endif
+
+!     if (npls.eq.100) then
+!         open(unit=1,file='carbon_pools_time_100PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
        
-                write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo
-        close(1)
+!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo
+!         close(1)
 
-        open(unit=1,file='carbon_pools_time_500PLS_avgind.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
-
-            
-                write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
-
-        open(unit=1,file='density_500PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='carbon_pools_time_100PLS_avgind.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        open(unit=2,file='FPC_total_time_500PLS.csv',status='unknown')
-        do k=1, time
+!         open(unit=1,file='density_100PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
+
+            
+!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
+
+!         open(unit=2,file='FPC_total_time_100PLS.csv',status='unknown')
+!         do k=1, time
         
 
        
-            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
         
-        enddo    
+!         enddo    
 
-        close(2)
-    endif
+!         close(2)
+!     endif
+
+!     if (npls.eq.500) then
+!         open(unit=1,file='carbon_pools_time_500PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
+
+       
+!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo
+!         close(1)
+
+!         open(unit=1,file='carbon_pools_time_500PLS_avgind.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
+
+            
+!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
+
+!         open(unit=1,file='density_500PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
+
+            
+!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
+
+!         open(unit=2,file='FPC_total_time_500PLS.csv',status='unknown')
+!         do k=1, time
+        
+
+       
+!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
+        
+!         enddo    
+
+!         close(2)
+!     endif
     
 
-    if (npls.eq.1000) then
-        ! print*, 'savinggggg'
-        ! open(unit=1,file='carbon_pools_time_1000PLS.csv',status='unknown')
-        ! do k=1, time
-        !     do j = 1,npls
+!     if (npls.eq.1000) then
+!         ! print*, 'savinggggg'
+!         ! open(unit=1,file='carbon_pools_time_1000PLS.csv',status='unknown')
+!         ! do k=1, time
+!         !     do j = 1,npls
 
        
-        !         write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-        !     enddo
-        ! enddo
-        ! close(1)
+!         !         write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!         !     enddo
+!         ! enddo
+!         ! close(1)
 
-        ! open(unit=1,file='carbon_pools_time_1000PLS_avgind.csv',status='unknown')
-        ! do k=1, time
-        !     do j = 1,npls
-
-            
-        !         write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-        !     enddo
-        ! enddo 
-        ! close(1)
-        ! open(unit=1,file='density_1000PLS.csv',status='unknown')
-        ! do k=1, time
-        !     do j = 1,npls
+!         ! open(unit=1,file='carbon_pools_time_1000PLS_avgind.csv',status='unknown')
+!         ! do k=1, time
+!         !     do j = 1,npls
 
             
-        !         write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-        !     enddo
-        ! enddo 
-        ! close(1)
+!         !         write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!         !     enddo
+!         ! enddo 
+!         ! close(1)
+!         ! open(unit=1,file='density_1000PLS.csv',status='unknown')
+!         ! do k=1, time
+!         !     do j = 1,npls
 
-        open(unit=1,file='FPC_total_time_1000PLS.csv',status='unknown')
-        do k=1, time
+            
+!         !         write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!         !     enddo
+!         ! enddo 
+!         ! close(1)
+
+!         open(unit=1,file='FPC_total_time_1000PLS.csv',status='unknown')
+!         do k=1, time
               
-            write(1,*) FPC_total_accu_1_aux(k),',',k, ',' , gc_area !newline
+!             write(1,*) FPC_total_accu_1_aux(k),',',k, ',' , gc_area !newline
         
-        enddo    
+!         enddo    
 
-        close(1)
-    endif
+!         close(1)
+!     endif
 
 
-    if (npls.eq.3000) then
-        open(unit=1,file='carbon_pools_time_3000PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!     if (npls.eq.3000) then
+!         open(unit=1,file='carbon_pools_time_3000PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
        
-                write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo
-        close(1)
+!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo
+!         close(1)
 
-        open(unit=1,file='carbon_pools_time_3000PLS_avgind.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
-
-            
-                write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
-
-        open(unit=1,file='density_3000PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=1,file='carbon_pools_time_3000PLS_avgind.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
+!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        open(unit=2,file='FPC_total_time_3000PLS.csv',status='unknown')
-        do k=1, time
-        
+!         open(unit=1,file='density_3000PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
-       
-            write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-        enddo    
+            
+!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
 
-        close(2)
-
-        open(unit=2,file='exc_area_3000PLS.csv',status='unknown')
-        do k=1, time
+!         open(unit=2,file='FPC_total_time_3000PLS.csv',status='unknown')
+!         do k=1, time
         
 
        
-            write(2,*) exc_area(k),',',k, ',' 
+!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
         
-        enddo    
+!         enddo    
 
-        close(2)
+!         close(2)
 
-        open(unit=1,file='mortality_3000PLS.csv',status='unknown')
-        do k=1, time
-            do j = 1,npls
+!         open(unit=2,file='exc_area_3000PLS.csv',status='unknown')
+!         do k=1, time
+        
+
+       
+!             write(2,*) exc_area(k),',',k, ',' 
+        
+!         enddo    
+
+!         close(2)
+
+!         open(unit=1,file='mortality_3000PLS.csv',status='unknown')
+!         do k=1, time
+!             do j = 1,npls
 
             
-                write(1,*) mort(j,k),',',mort_greff(j,k),',',FPC_dec(j,k),',',remaining(j,k),',','pls',j,',',k !newline
-            enddo
-        enddo 
-        close(1)
-    endif
+!                 write(1,*) mort(j,k),',',mort_greff(j,k),',',FPC_dec(j,k),',',remaining(j,k),',','pls',j,',',k !newline
+!             enddo
+!         enddo 
+!         close(1)
+!     endif
 
     
 
 
-end program self_thinning 
+! end program self_thinning 
   
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
   
-!   do k = 1, 3 !Loop dos anos
-!         if (k .eq. 1) then !*usando o time step t1 - INITIAL ALLOMETRY*
+! !   do k = 1, 3 !Loop dos anos
+! !         if (k .eq. 1) then !*usando o time step t1 - INITIAL ALLOMETRY*
 
-!             !Carbon on tissues (wood and leaf) per average-individual (this considers the individual density [dens])
-!             cw1 = (cw1/dens)*1000. !*1000 transforma de kgC para gC - carbono
+! !             !Carbon on tissues (wood and leaf) per average-individual (this considers the individual density [dens])
+! !             cw1 = (cw1/dens)*1000. !*1000 transforma de kgC para gC - carbono
             
-!             cl1 = (cl1/dens)*1000.  !*1000 transforma de kgC para gC - carbono
+! !             cl1 = (cl1/dens)*1000.  !*1000 transforma de kgC para gC - carbono
            
-!             cr1 = (cr1/dens)*1000. !*1000 transforma de kgC para gC - carbono
+! !             cr1 = (cr1/dens)*1000. !*1000 transforma de kgC para gC - carbono
 
-!             !PLS structure [diam, crown area and leaf area index]
-!             diam = ((4*(cw1))/((dwood*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-!             crown_area = k_allom1*(diam**krp)
-!             lai = (cl1*spec_leaf)/crown_area 
+! !             !PLS structure [diam, crown area and leaf area index]
+! !             diam = ((4*(cw1))/((dwood*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
+! !             crown_area = k_allom1*(diam**krp)
+! !             lai = (cl1*spec_leaf)/crown_area 
             
-!             !print*, crown_area, lai
-!             !Net Primary Productive logic (may be per average-individual). NPP ano atual - NPP ano anterior
-!             ! #1 NPP increment to each average-individual. Cada individuo médio de cada PLS vai ter um incremento
+! !             !print*, crown_area, lai
+! !             !Net Primary Productive logic (may be per average-individual). NPP ano atual - NPP ano anterior
+! !             ! #1 NPP increment to each average-individual. Cada individuo médio de cada PLS vai ter um incremento
 !             npp_inc = 0.15/dens !this increment is fixed in 0.15kgC/yr (valor generalizado)
 
 !             ! #2 Annual NPP disponible to alloc 

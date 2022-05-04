@@ -24,9 +24,15 @@ module allocation
     ! real(REAL64) :: R = 0.88026193814051623 !ROOT BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
 
     real(REAL64) :: H = 108.91909828977032 !in kgC/m2 --> /densindiv (numindv/m2) !HEARTWOOD - SOMENTE PARA TESTES (Valores: Cod. Phillip)
-    real(REAL64) :: L = 1.2279169651518438 !LEAF BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    real(REAL64) :: L = 2.2279169651518438 !LEAF BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
     real(REAL64) :: S = 29.790591253578555 !SAPWOOD - SOMENTE PARA TESTES (Valores: Cod. Philipe)
-    real(REAL64) :: R = 0.88026193814051623 !ROOT BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    real(REAL64) :: R = 1.88026193814051623 !ROOT BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    
+
+    ! real(REAL64) :: H = 108.91909828977032 !in kgC/m2 --> /densindiv (numindv/m2) !HEARTWOOD - SOMENTE PARA TESTES (Valores: Cod. Phillip)
+    ! real(REAL64) :: L = 9.82 !LEAF BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe * densidade de ind = 8)
+    ! real(REAL64) :: S = 29.790591253578555 !SAPWOOD - SOMENTE PARA TESTES (Valores: Cod. Philipe)
+    ! real(REAL64) :: R = 6.4 !ROOT BIOMASS - SOMENTE PARA TESTES (Valores: Cod. Philipe * densidade de ind = 8)
     
     
     real(REAL64) :: stem = 0.0   !stem (heartwood + sapwood) pool update 
@@ -72,7 +78,7 @@ module allocation
     subroutine leaf_increment(delta_leaf)
         real(REAL64) :: delta_leaf
 
-        delta_leaf = bisection_method(0.0, 10.0)
+        delta_leaf = bisection_method(0.0, 3.0)
         
         return
     end subroutine leaf_increment
@@ -82,9 +88,11 @@ module allocation
     subroutine root_increment(delta_leaf, delta_root)
         real(REAL64) :: delta_leaf
         real(REAL64) :: delta_root
+        real(REAL64) :: cleaf_init
         
         delta_root = (delta_leaf + L) / ltor - R
         
+
         return
     end subroutine root_increment
 
@@ -165,17 +173,17 @@ module allocation
         return
     end subroutine updating_pool_stem
 
-    subroutine initial_c_pool (cl1,cw1,cr1,cleaf_init,cheart_init,csap_init,croot_init)
-        real,dimension(npls),intent(in):: cl1,cw1,cr1
+    ! subroutine initial_c_pool (cl1,cw1,cr1,cleaf_init,cheart_init,csap_init,croot_init)
+    !     real,dimension(npls),intent(in):: cl1,cw1,cr1
     
-        real,dimension(npls),intent(out):: cleaf_init,cheart_init,csap_init,croot_init
+    !     real,dimension(npls),intent(out):: cleaf_init,cheart_init,csap_init,croot_init
       
-        cleaf_init = cl1
-        cheart_init = cw1*0.95
-        csap_init = cw1*0.05
-        croot_init = cr1
+    !     cleaf_init = cl1
+    !     cheart_init = cw1*0.95
+    !     csap_init = cw1*0.05
+    !     croot_init = cr1
 
-    end subroutine initial_c_pool
+    ! end subroutine initial_c_pool
 
 
 	!==============================!
