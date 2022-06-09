@@ -15,8 +15,8 @@ module constants
     real(REAL64), parameter :: k_allom2 = 36.0
     real(REAL64), parameter :: k_allom3 = 0.22
     real(REAL64), parameter :: spec_leaf = 15.365607091853349 
-    real(REAL64), parameter :: bminc = 2.33 !3.5 (valor medio de NPP)/12 (p/ calcular NPP mensal) * 8(densidade de individuos )
-    real(REAL64), parameter :: dens = 1.
+    real(REAL64), parameter :: bminc = 3.5!kgCm2 !2.33 !3.5 (valor medio de NPP)/12 (p/ calcular NPP mensal) * 8(densidade de individuos )
+    real(REAL64), parameter :: dens = 8.
     real(REAL64), parameter :: tol = 0.0000001
     real(REAL64), parameter :: pi = 3.1415926536
     real(REAL64), parameter :: krp = 1.6 !allometric constant (Table 3; Sitch et al., 2003)
