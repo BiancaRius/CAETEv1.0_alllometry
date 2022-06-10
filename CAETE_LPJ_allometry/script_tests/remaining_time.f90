@@ -275,15 +275,7 @@ program self_thinning
     xmin = 0.0101
     xmax = 0.0153
      
-    x(:,:) = 0.
-    call random_number(x)
-
-    do k = 1, time
-        do j = 1, npls
-            x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*, 'x dwood',x(j,k),j,k
-        enddo
-    enddo
+    x(:,:) = 0.! 
 
     do j = 1, npls      
 
@@ -412,7 +404,7 @@ program self_thinning
             dens1(:,k) = dens1_aux(:,k-1)
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
             FPC_total_accu_1(k) = FPC_total_accu_1_aux(k-1)
-        ! print*, 'cl1 nxt year', cl1(1,k)/1000.
+            print*, 'cl1 nxt year', cl1(1,k)/1000.
             npp_inc(:,k)=0. !reinitializing for a new sampling
         
             xmin = 0.1
@@ -517,7 +509,7 @@ program self_thinning
         fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
                 
         ! print*, 'fpc_max_tree', fpc_max_tree
-        
+    
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
@@ -532,58 +524,59 @@ program self_thinning
 
             ! print*, exc_area(k), k, FPC_total_accu_2, fpc_max_tree
 
+        
             !------------------------------------------------------------
-
+        else    
        
-            do j = 1, npls
-                if (FPC_pls_2(j,k).eq.0.)
+!             do j = 1, npls
+!                 if (FPC_pls_2(j,k).eq.0.)
 
-!                 ! print*, 'FPC_pls2', FPC_pls_2(j)
-!                 if(FPC_pls_2(j,k).eq.0.)then
-!                     FPC_inc(j,k) = 0.
-!                     FPC_inc_cont(j,k) = 0.
-!                     FPC_dec(j,k) = 0.                   
-!                     FPC_dec_prop(j,k) = 0.               
-!                     greff(j,k) = 0.
-!                     mort(j,k) = 1.
-!                     mort_greff(j,k) = 0.
-!                     dead_pls(k) = dead_pls(k)+1.
-!                     ! print*, 'dead PLS fpc pls', j 
+! !                 ! print*, 'FPC_pls2', FPC_pls_2(j)
+! !                 if(FPC_pls_2(j,k).eq.0.)then
+! !                     FPC_inc(j,k) = 0.
+! !                     FPC_inc_cont(j,k) = 0.
+! !                     FPC_dec(j,k) = 0.                   
+! !                     FPC_dec_prop(j,k) = 0.               
+! !                     greff(j,k) = 0.
+! !                     mort(j,k) = 1.
+! !                     mort_greff(j,k) = 0.
+! !                     dead_pls(k) = dead_pls(k)+1.
+! !                     ! print*, 'dead PLS fpc pls', j 
                  
-!                 else
-!                     ! print*,'CALCULATING EXCEDENT'
-!                     !Calculating the increment of PLS from a year to the next
-!                     if (FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
-!                         print*, 'OOOOOOOOOOOOOOOOOOOOOOOOOIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII'
-!                     endif
+! !                 else
+! !                     ! print*,'CALCULATING EXCEDENT'
+! !                     !Calculating the increment of PLS from a year to the next
+! !                     if (FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
+! !                         print*, 'OOOOOOOOOOOOOOOOOOOOOOOOOIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII'
+! !                     endif
                 
 
-!                     FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
-!                     ! print*, FPC_inc(j,K)
+! !                     FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
+! !                     ! print*, FPC_inc(j,K)
                     
-!                     if(FPC_inc(j,k).lt.0.) then !.or.FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
-!                         FPC_inc(j,k) = FPC_pls_2(j,k)
-!                         FPC_inc_cont(j,k) = 0.
-!                         FPC_dec(j,k) = 0.                   
-!                         FPC_dec_prop(j,k) = 0.               
-!                         greff(j,k) = 0.
-!                         mort(j,k) = 1.
-!                         mort_greff(j,k) = 0.
-!                         ! dead_pls(k) = dead_pls(k) + 1
-!                         ! print*, 'dead PLSSSSSSSSSS', j, FPC_pls_2(j,k),FPC_pls_1(j,k), FPC_inc(j,k)
+! !                     if(FPC_inc(j,k).lt.0.) then !.or.FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
+! !                         FPC_inc(j,k) = FPC_pls_2(j,k)
+! !                         FPC_inc_cont(j,k) = 0.
+! !                         FPC_dec(j,k) = 0.                   
+! !                         FPC_dec_prop(j,k) = 0.               
+! !                         greff(j,k) = 0.
+! !                         mort(j,k) = 1.
+! !                         mort_greff(j,k) = 0.
+! !                         ! dead_pls(k) = dead_pls(k) + 1
+! !                         ! print*, 'dead PLSSSSSSSSSS', j, FPC_pls_2(j,k),FPC_pls_1(j,k), FPC_inc(j,k)
                         
                     
-!                     endif
-!                         !Calculating the relative contribution to total increment considering all PLSs
+! !                     endif
+! !                         !Calculating the relative contribution to total increment considering all PLSs
 
-!                         FPC_inc_cont(j,k) = (FPC_inc(j,k)/(FPC_total_accu_2(k)-FPC_total_accu_1(k)))
-!                         ! print*, 'inc_cont', FPC_inc_cont(j), j
-!                         ! print*,''
-!                         ! print*, 'FPC inc',FPC_inc(j,k),j, FPC_inc_cont(j,k)
-!                         ! print*,''
-!                         ! print*, 'fpc total accu 2', FPC_total_accu_2
-!                         ! print*,''
-!                         ! print*, 'fpc total accu 1', FPC_total_accu_1
+! !                         FPC_inc_cont(j,k) = (FPC_inc(j,k)/(FPC_total_accu_2(k)-FPC_total_accu_1(k)))
+! !                         ! print*, 'inc_cont', FPC_inc_cont(j), j
+! !                         ! print*,''
+! !                         ! print*, 'FPC inc',FPC_inc(j,k),j, FPC_inc_cont(j,k)
+! !                         ! print*,''
+! !                         ! print*, 'fpc total accu 2', FPC_total_accu_2
+! !                         ! print*,''
+! !                         ! print*, 'fpc total accu 1', FPC_total_accu_1
                
 !                         !    Calculating the percentage of FPC reduction of each PLS in relation to the area excedent
 

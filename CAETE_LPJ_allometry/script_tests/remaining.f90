@@ -239,9 +239,9 @@ program self_thinning
    
     do k = 1, 500
 
-        print*, '**********************************************************'
-        print*, '                                                           '
-        print*, 'year',k
+        ! print*, '**********************************************************'
+        ! print*, '                                                           '
+        ! print*, 'year',k
        
 
         
@@ -312,7 +312,7 @@ program self_thinning
                  !Structuring PLSs [diameter, crown area and leaf area index]
 
                 diam(j) = ((4*(cw2(j)))/((dwood(j)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-            
+                print*, 'diam', diam(j)
                 crown_area(j) = k_allom1*(diam(j)**krp)
             
                 lai(j) = (cl2(j)*spec_leaf(j))/crown_area(j) 
@@ -662,11 +662,11 @@ program self_thinning
                 cr1(j) = cr1(j) + root_inc(j)
             endif
 
-            print*, 'cl1 com incremento após aloca', cl1(j)/1000., j
-            print*, ''
-            print*, 'cw1 com incremento após aloca', cw1(j)/1000., j
-            print*, ''
-            print*, 'cr1 com incremento após aloca', cr1(j)/1000., j
+            ! print*, 'cl1 com incremento após aloca', cl1(j)/1000., j
+            ! print*, ''
+            ! print*, 'cw1 com incremento após aloca', cw1(j)/1000., j
+            ! print*, ''
+            ! print*, 'cr1 com incremento após aloca', cr1(j)/1000., j
 
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
 

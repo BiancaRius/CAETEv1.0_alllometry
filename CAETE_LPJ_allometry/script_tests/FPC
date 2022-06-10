@@ -23,7 +23,7 @@
 !factor that decrease the number of individuals per PLS
 !Most of the equations are based on LPJ population mode (as described in Smith et al 2001) 
 !and can be found in Sitch et al., 2003 and Smith et al., 2001.
-!However, the code follows as reference the code found in 
+!However, the code follows as reference the code found in https://github.com/ARVE-Research/LPJ-LMfire
 !In this mode, each PLS is represented by a population of average individuals.
 !All individuals of a PLS present the same features and the population is defined by
 !the density of individuals per m2.
