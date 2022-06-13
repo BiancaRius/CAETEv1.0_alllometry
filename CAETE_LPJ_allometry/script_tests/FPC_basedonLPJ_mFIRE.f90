@@ -175,17 +175,23 @@ if(fpc_tree_total.gt.fpc_tree_max) then !reduce tree cover
       
             !Reduce individual density (and thereby gridcell-level biomass) so that total tree FPC reduced to 'fpc_tree_max'
       
-            nind_kill(j) = nind_1(j) * pls_excess(j) / fpc_grid(j)
-            print*, 'nind_kill', nind_kill
+            nind_kill(j) = nind_1(j) * (pls_excess(j) / fpc_grid(j))
+            print*, nind_1(j), (pls_excess(j) / fpc_grid(j)), pls_excess(j), fpc_grid(j), nind_kill(j)
+           
       
             nind_2(j) = nind_1(j) - nind_kill(j)
-
-            print*, 'nind_2', nind_2(j)
+            ! print*,cl_2_ind(j)- (nind_kill(j)*cl_2_ind(j))
+            
 
         endif
 
     enddo
+else 
     
+    do j = 1,npls
+        
+    enddo
+
 endif
 
 
