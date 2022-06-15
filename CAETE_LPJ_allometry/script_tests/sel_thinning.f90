@@ -4,7 +4,7 @@ program self_thinning
     use establish
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls = 500 !40 !20
+    integer, parameter :: npls = 10 !40 !20
     integer, parameter :: time = 200
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
@@ -30,12 +30,12 @@ program self_thinning
     real :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
 
     real, dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
-    real, dimension(time) :: dead_pls = 0.0
+    real :: dead_pls, alive_pls
     
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 80!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 15!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     
     real :: fpc_max_tree !95% of grid-cell (in m2)
     real, dimension(time) :: exc_area
@@ -51,9 +51,9 @@ program self_thinning
     real :: root_allocation = 0.3 !% of NPP allocated to roots
     real :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
     real :: k_mort2 = 0.3
-    real :: res_time_leaf = 2 !general residence time value for testing purpose
-    real :: res_time_root = 2
-    real :: res_time_wood = 30 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real :: res_time_leaf = 3 !general residence time value for testing purpose
+    real :: res_time_root = 3
+    real :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
 
     !Variables to allocation prototype
     real, dimension(npls,time) :: npp_inc  !incremento anual de C para cada PLS
@@ -133,7 +133,7 @@ program self_thinning
 
 
     xmin = 1.7
-    xmax = 9.5
+    xmax = 15.
      
     x(:,:) = 0.
     call random_number(x)
@@ -347,21 +347,22 @@ program self_thinning
         !Define a general value for FPC in order to initialize and 
         !use to calculate the FPC increments
 
-        FPC_pls_initial(j) = 2.
+        FPC_pls_initial(j) = 100.
 
         FPC_total_initial = FPC_total_initial + FPC_pls_initial(j)
         !print*, 'FPC_total_1', FPC_total_initial
        
         if (j.eq.npls) then
             FPC_total_accu_initial = FPC_total_initial
-            print*, 'FPC_total_accu_1', FPC_total_accu_initial
+            ! print*, 'FPC_total_accu_1', FPC_total_accu_initial
         endif
 
     enddo
 
-   
+    dead_pls = 0.
+    alive_pls = 0. 
     do k = 1, time
-                                                   
+                                                  
         print*, 'year',k
        
         ! print*, 'entrada loop', npp_inc(j,:)/1000.
@@ -404,6 +405,7 @@ program self_thinning
             dens1(:,k) = dens1_initial(:,k)
             FPC_total_accu_1(k) = FPC_total_accu_initial
             npp_inc(:,k) = npp_inc_init(:,k)
+            FPC_inc_grid(k) = 0.
             ! print*,'cl previous yr', cl1(:,k)/1000.
         else
 
@@ -516,13 +518,46 @@ program self_thinning
         !Verifying if FPCs together occupy more than 95% of the plot area
                
         fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
-                
-        ! print*, 'fpc_max_tree', fpc_max_tree
         
+        if (k.eq.1) then
+            FPC_inc_grid(k) = 0.1
+            ! print*, 'FPC_inc_grid', FPC_inc_grid(k), FPC_total_accu_2(k), FPC_total_accu_1(k)
+        else
+            FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
+            ! print*, 'FPC_inc_grid', FPC_inc_grid(k), FPC_total_accu_2(k), FPC_total_accu_1(k)
+        endif
+        ! print*, 'fpc_max_tree', fpc_max_tree
+        do j=1, npls
+            if (FPC_pls_2(j,k).le.0.) then
+                dead_pls = dead_pls +1
+                ! print*, 'DEEEEEEEEEEEEEEAD 11111111111', dead_pls, j
+                
+            endif
+            if (j.eq.npls) then
+                dead_pls = dead_pls
+
+                alive_pls = npls - dead_pls
+                ! print*, 'DEEAD', 'dead pls', dead_pls, 'alive', alive_pls
+            endif
+        enddo
+
+        if(FPC_pls_2(j,k).le.0.)then
+            FPC_inc(j,k) = 0.
+            FPC_inc_cont(j,k) = 0.
+            FPC_dec(j,k) = 0.                   
+            FPC_dec_prop(j,k) = 0.               
+            greff(j,k) = 0.
+            mort(j,k) = 1.
+            mort_greff(j,k) = 0.
+            ! dead_pls(k) = dead_pls(k)+1.
+            
+            
+        endif
+
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
-            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
+            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
            
            
            est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
@@ -534,19 +569,18 @@ program self_thinning
             ! print*, exc_area(k), k, FPC_total_accu_2, fpc_max_tree
 
             !------------------------------------------------------------
-            FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
-            print*, 'FPC_inc_grid', FPC_inc_grid(k)
             
-            if (FPC_inc_grid(k).gt.0) then
-                print*, 'POSITIVE INC'
-            else 
-                print*, 'NEGAAAAAAAAAAATIVE inv'
-            endif
+
+            ! if (FPC_inc_grid(k).gt.0) then
+            !     print*, 'POSITIVE INC'
+            ! else 
+            !     print*, 'NEGAAAAAAAAAAATIVE inv'
+            ! endif
 
             do j = 1, npls
                
                 
-                if(FPC_pls_2(j,k).eq.0.)then
+                if(FPC_pls_2(j,k).le.0.)then
                     FPC_inc(j,k) = 0.
                     FPC_inc_cont(j,k) = 0.
                     FPC_dec(j,k) = 0.                   
@@ -554,8 +588,8 @@ program self_thinning
                     greff(j,k) = 0.
                     mort(j,k) = 1.
                     mort_greff(j,k) = 0.
-                    dead_pls(k) = dead_pls(k)+1.
-                    ! print*, 'dead PLS fpc pls', j 
+                    ! dead_pls(k) = dead_pls(k)+1.
+                    ! print*, 'dead PLS fpc pls', j , k, dead_pls(k)
                  
                 else
                     ! print*,'CALCULATING EXCEDENT'
@@ -566,7 +600,7 @@ program self_thinning
                 
 
                     FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
-                    ! print*, FPC_inc(j,K)
+                    print*, 'FPC_inc',FPC_inc(j,K), j
 
                     
                     
@@ -595,8 +629,18 @@ program self_thinning
                         ! print*, 'fpc total accu 1', FPC_total_accu_1
                
                         !    Calculating the percentage of FPC reduction of each PLS in relation to the area excedent
-
-                        FPC_dec(j,k) = min(FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k)))
+                        ! if (FPC_inc_grid(k).le.0) then
+                        !     print*, 'NEGATIVE', FPC_inc_grid(k)!'POSITIVE', FPC_inc_grid(k)
+                        ! ! else 
+                        !     ! print*, 'NEGATIVE', FPC_inc_grid(k)
+                        ! endif
+                        if (FPC_inc_grid(k).gt.0) then
+                            FPC_dec(j,k) = min(FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k)))
+                            ! print*, 'positive'
+                        else 
+                            FPC_dec(j,k) = min(FPC_pls_2(j,k), (exc_area(k)/alive_pls))
+                            ! print*, 'negative'
+                        endif
                         ! print*, 'fpc_dec', FPC_dec(j,k),j,k
 
                         ! FPC_pls_2(j,k) = FPC_pls_2(j,k) - FPC_dec(j,k)
@@ -644,20 +688,20 @@ program self_thinning
             enddo
 
         else !total FPC of all PLS is smaller than fpc_max_tree
-            print*, 'n ultrapassou', FPC_total_accu_2(k)
+            
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
 
             do j=1, npls
-
+                print*, 'n ultrapassou', FPC_total_accu_2(k), FPC_inc(j,k)
                 call establishment(npls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k))
                 ! print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
                 call sapling_allometry(npls,cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k))
-                
+                ! PRINT*, 'bs',cl2(j,k)/1000
                 call shrink(cl2(j,k),cw2(j,k),cr2(j,k),est_pls(j,k),dens1(j,k),&
             &    cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
             &    dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),croot_new(j,k))
-                
+                ! PRINT*, 'as', cleaf_new(j,k)/1000
             
                 cl2(j,k) = cleaf_new(j,k)
                 cw2(j,k) = cwood_new(j,k)
@@ -741,7 +785,7 @@ program self_thinning
             ! print*, '                            '
 
             cleaf_new(j,k) = cleaf_new(j,k) * remaining(j,k)
-            ! print*, 'cl', cleaf_new(j,k)    
+            ! print*, 'cl', cleaf_new(j,k)/1000  
             
             cwood_new(j,k) = cwood_new(j,k) * remaining(j,k)
 
@@ -871,11 +915,14 @@ program self_thinning
 
                 !saving value for avg individual for outputs
                 cleaf_avg_ind(j,k) = cl1_aux(j,k)
+                
                 cwood_avg_ind(j,k) = cw1_aux(j,k)
                 croot_avg_ind(j,k) = cr1_aux(j,k)
+
+                print*, 'cleaf avg ind', cleaf_avg_ind(j,k)/1000
                 
             endif
-
+           
             ! print*, 'cl1 com incremento após aloca', cl1_aux(j,k)/1000., j
             ! print*, 'cl avg ind', cleaf_avg_ind(j,k)/1000., j
             ! print*, 'cw avg ind', cwood_avg_ind(j,k)/1000.
@@ -891,9 +938,9 @@ program self_thinning
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
 
             cl1_aux(j,k) = cl1_aux(j,k) * dens1_aux(j,k)
-            ! if(cl1_aux(j,k).ne.0.) then
-            !     print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k)
-            ! endif
+            if(cl1_aux(j,k).ne.0.) then
+                print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k)
+            endif
             cw1_aux(j,k) = cw1_aux(j,k) * dens1_aux(j,k)
             ! print*, 'cw * dens', cw1_aux(j,k)/1000, dens1_aux(j,k)
             cr1_aux(j,k) = cr1_aux(j,k) * dens1_aux(j,k)
