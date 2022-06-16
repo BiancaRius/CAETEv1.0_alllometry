@@ -5,7 +5,7 @@ program self_thinning
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
     integer, parameter :: npls = 10 !40 !20
-    integer, parameter :: time = 200
+    integer, parameter :: time = 100
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -228,7 +228,7 @@ program self_thinning
 !____________________________________________________
    !!    creating value for initial npp
     xmin = 0.5
-    xmax = 2.
+    xmax = 5.
      
     x(:,:) = 0.
     call random_number(x)
@@ -301,8 +301,8 @@ program self_thinning
 !!!!creating value for initial npp_inc_init
 !__________________________________________
 
-    xmin = 0.1
-    xmax = 4.5
+    xmin = 1.0
+    xmax = 5.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -314,22 +314,21 @@ program self_thinning
         enddo
     enddo  
 
+!____________________________
+    !!calculates annual npp to be allocated
 
 
-!Annual NPP available to allocation (??????? é essa NPP ou a NPP inc?)
     do j = 1, npls
         npp_inc_init(j,:) = (x(j,:)*1000)
-        ! print*,'___________________________________'
-        ! print*, 'npp_inc_inicial', npp_inc_init(j,:)/1000.
-
+        
         annual_npp(j,:) = (npp1_initial(j,:)/dens1_initial(j,:)) + (npp_inc_init(j,:)/dens1_initial(j,:))
 
         ! print*, 'annual npp', annual_npp(j,:)/1000.
 
-         !-------------------------------------------------------------------------------
-         ! !Increments to each compartments per individual. Here, the NPP proportions allocated
-         ! to each compartment is being used for testing purpose. The actual values will be calculated
-         ! in allocation routine.
+!-------------------------------------------------------------------------------
+    ! !Increments to each compartments per individual. Here, the NPP proportions allocated
+    ! to each compartment is being used for testing purpose. The actual values will be calculated
+    ! in allocation routine.
 
         leaf_inc(j) = leaf_allocation * annual_npp(j,k)
 
@@ -557,7 +556,7 @@ program self_thinning
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
-            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
+            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
            
            
            est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
@@ -590,7 +589,7 @@ program self_thinning
                     mort_greff(j,k) = 0.
                     ! dead_pls(k) = dead_pls(k)+1.
                     ! print*, 'dead PLS fpc pls', j , k, dead_pls(k)
-                 
+                    print*, 'no inc'
                 else
                     ! print*,'CALCULATING EXCEDENT'
                     !Calculating the increment of PLS from a year to the next
@@ -691,9 +690,13 @@ program self_thinning
             
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
-
+            print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
-                print*, 'n ultrapassou', FPC_total_accu_2(k), FPC_inc(j,k)
+                FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
+                ! print*, 'FPC inc n ultrapassou', FPC_inc(j,k)
+                ! if(FPC_inc(j,k).lt.0.) then
+                print*,'bs', cl2(j,k)/1000.,cw2(j,k)/1000.,cr2(j,k)/1000., j
+                ! endif
                 call establishment(npls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k))
                 ! print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
                 call sapling_allometry(npls,cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k))
@@ -701,7 +704,9 @@ program self_thinning
                 call shrink(cl2(j,k),cw2(j,k),cr2(j,k),est_pls(j,k),dens1(j,k),&
             &    cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
             &    dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),croot_new(j,k))
-                ! PRINT*, 'as', cleaf_new(j,k)/1000
+                ! if(FPC_inc(j,k).lt.0.) then
+                print*, 'as', cleaf_new(j,k)/1000.,cwood_new(j,k)/1000.,croot_new(j,k)/1000., j
+                ! endif
             
                 cl2(j,k) = cleaf_new(j,k)
                 cw2(j,k) = cwood_new(j,k)
@@ -919,7 +924,7 @@ program self_thinning
                 cwood_avg_ind(j,k) = cw1_aux(j,k)
                 croot_avg_ind(j,k) = cr1_aux(j,k)
 
-                print*, 'cleaf avg ind', cleaf_avg_ind(j,k)/1000
+                ! print*, 'cleaf avg ind', cleaf_avg_ind(j,k)/1000
                 
             endif
            
@@ -938,9 +943,9 @@ program self_thinning
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
 
             cl1_aux(j,k) = cl1_aux(j,k) * dens1_aux(j,k)
-            if(cl1_aux(j,k).ne.0.) then
-                print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k)
-            endif
+            ! if(cl1_aux(j,k).ne.0.) then
+            !     print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k)
+            ! endif
             cw1_aux(j,k) = cw1_aux(j,k) * dens1_aux(j,k)
             ! print*, 'cw * dens', cw1_aux(j,k)/1000, dens1_aux(j,k)
             cr1_aux(j,k) = cr1_aux(j,k) * dens1_aux(j,k)
