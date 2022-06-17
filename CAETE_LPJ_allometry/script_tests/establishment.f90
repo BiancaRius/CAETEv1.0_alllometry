@@ -39,21 +39,26 @@ module establish
 
     contains
 
-    subroutine establishment (npls, FPC_total_accu_2, gc_area, est, est_pls)
+    subroutine establishment(gc_available,npls, FPC_total_accu_2, gc_area, est, est_pls)
     
     !input variables
-    integer, intent(in) :: npls
+    real, intent(in) :: npls
     real, intent(in) :: FPC_total_accu_2
     real, intent(in) :: gc_area
-  
+    real, intent(in) :: gc_available
+    
+
     !output variables
     real, intent(out):: est
     real, intent(out):: est_pls
     
     !internal variables
-    real :: est_max = 2. !individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
+    real :: est_max  !2 individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
     real :: FPC_total_perc
-       
+    ! print*, 'alive pls in est', npls
+    
+    est_max = 1*(gc_available)
+
     FPC_total_perc = FPC_total_accu_2/gc_area
         
         ! print*, 'fpc perc', FPC_total_perc
@@ -71,7 +76,7 @@ module establish
 
         est_pls = est/npls
 
-        ! print*, 'estab', est, est_pls
+        ! print*, 'estab', est, est_pls, npls
     
     end subroutine
 
@@ -105,6 +110,9 @@ module establish
         
         dens_new = dens_old + est_pls
 
+
+        ! print*, dens_new, dens_old 
+
         ! print*, 'dens_new', dens_new, 'dens_old', dens_old
 
         cleaf_new = ((cl_old*dens_old)+(cleaf_sapl_npls*est_pls))/dens_new
@@ -125,7 +133,7 @@ module establish
     subroutine sapling_allometry(npls,cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls,croot_sapl_npls)
     
         !input variables
-        integer, intent(in) :: npls
+        real, intent(in) :: npls
         
         ! !output variables
         real, intent(out) :: cleaf_sapl_npls     
