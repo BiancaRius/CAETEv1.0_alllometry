@@ -5,7 +5,7 @@ program self_thinning
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
     integer, parameter :: npls = 3000!40 !20
-    integer, parameter :: time = 800
+    integer, parameter :: time = 200
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -134,7 +134,7 @@ program self_thinning
 
 
     xmin = 1.7
-    xmax = 1.
+    xmax = 10.
      
     x(:,:) = 0.
     call random_number(x)
@@ -611,7 +611,7 @@ program self_thinning
                     
                     
                     if(FPC_inc(j,k).lt.0.) then !.or.FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
-                        FPC_inc(j,k) = 0.1
+                        FPC_inc(j,k) = 0.05
                         FPC_inc_cont(j,k) = 0.
                         FPC_dec(j,k) = 0.                   
                         FPC_dec_prop(j,k) = 0.               
