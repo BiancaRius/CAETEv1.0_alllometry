@@ -9,6 +9,7 @@ program self_thinning
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
+    real, dimension(npls,time) :: height !Tree crown area (m2) (Sitch et al., 2003)
 
     
     ! real, dimension(npls) :: est_pls !establishment for a specific PLS
@@ -44,6 +45,8 @@ program self_thinning
 
     !Parameters and constants
     real :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
+    real :: k_allom2 = 40.0
+    real :: k_allom3 = 0.85
     real :: krp = 1.6 !allometric constant (Table 3; Sitch et al., 2003)
     real :: ltor = 0.77302587552347657
     real :: k_est = 0.06 !establishment constant !Smith et al 2001 - Table A1
@@ -121,7 +124,7 @@ program self_thinning
 
    
   
-   
+    
 
     ! ================= END VARIABLES DECLARATION ===================== !
 
@@ -134,7 +137,7 @@ program self_thinning
 
 
     xmin = 1.7
-    xmax = 10.
+    xmax = 5.
      
     x(:,:) = 0.
     call random_number(x)
@@ -159,7 +162,7 @@ program self_thinning
 
 
     xmin = 0.2
-    xmax = 1.
+    xmax = 3.
      
     x(:,:) = 0.
     call random_number(x)
@@ -229,7 +232,7 @@ program self_thinning
 !____________________________________________________
    !!    creating value for initial npp
     xmin = 0.5
-    xmax = 20.
+    xmax = 4.
      
     x(:,:) = 0.
     call random_number(x)
@@ -302,7 +305,7 @@ program self_thinning
 !!!!creating value for initial npp_inc_init
 !__________________________________________
 
-    xmin = 1.0
+    xmin = 0.5
     xmax = 5.5
      
     x(:,:) = 0.
@@ -363,7 +366,7 @@ program self_thinning
     alive_pls = 0. 
     do k = 1, time
                                                   
-        print*, 'year',k
+        ! print*, 'year',k
        
         ! print*, 'entrada loop', npp_inc(j,:)/1000.
         
@@ -475,13 +478,14 @@ program self_thinning
                   !----------------------------------------------------------------------------
                  !Structuring PLSs [diameter, crown area and leaf area index]
 
-                diam(j,k) = ((4*(cw2(j,k)))/((dwood(j,k)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-            
-                crown_area(j,k) = k_allom1*(diam(j,k)**krp)
-            
-                lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k) 
-
+                diam(j,k) = ((4*(cw2(j,k)))/((dwood(j,k)*1000000.)*3.14*k_allom2))**(1/(2+k_allom3)) !nessa equação dwood deve estar em *g/m3*
                 
+                crown_area(j,k) = k_allom1*(diam(j,k)**krp)
+                
+                lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
+                print*,'LAI', lai(j,k)
+                height(j,k) = k_allom2*(diam(j,k)**(k_allom3))
+                print*, 'height', height(j,k), diam(j,k)
                 !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
@@ -495,9 +499,10 @@ program self_thinning
                 ! print*,'FPC', FPC_pls_2(j,k),'CA', crown_area(j,k),'de', dens1(j,k), FPC_pls_1(j,k),j
                 
             endif
-
             
-                ! print*,cl2(j), j
+            !checking if variables are entering with the correct value
+       
+            
             
             
             ! print*, 'FPC_pls_2', FPC_pls_2(j),j
@@ -537,7 +542,7 @@ program self_thinning
                 dead_pls = dead_pls
 
                 alive_pls = npls - dead_pls
-                print*, 'DEEAD', 'dead pls', dead_pls, 'alive', alive_pls
+                ! print*, 'DEEAD', 'dead pls', dead_pls, 'alive', alive_pls
             endif
 
             FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
@@ -873,7 +878,13 @@ program self_thinning
         
         do j=1,npls
 
-           
+            !!     
+            ! print*, 'cl2 before alloc', cl1_aux(j,k), cw1_aux(j,k), cr1_aux(j,k),&
+                ! &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k)
+            call allocation(gc_area, cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
+                &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k), height(j,k))
+
+
             if(dens1_aux(j,k).le.0.) then
                 npp_inc(j,k) = 0.
             
