@@ -483,9 +483,9 @@ program self_thinning
                 crown_area(j,k) = k_allom1*(diam(j,k)**krp)
                 
                 lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
-                print*,'LAI', lai(j,k)
+                ! print*,'LAI', lai(j,k)
                 height(j,k) = k_allom2*(diam(j,k)**(k_allom3))
-                print*, 'height', height(j,k), diam(j,k)
+                ! print*, 'height', height(j,k), diam(j,k)
                 !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
@@ -616,23 +616,28 @@ program self_thinning
                     
                     
                     if(FPC_inc(j,k).lt.0.) then !.or.FPC_total_accu_1(k).gt.FPC_total_accu_2(k))then
-                        FPC_inc(j,k) = 0.05
+                        ! print*, FPC_inc(j,k)
+                        FPC_inc(j,k) = 0.0
                         FPC_inc_cont(j,k) = 0.
                         FPC_dec(j,k) = 0.                   
                         FPC_dec_prop(j,k) = 0.               
-                        greff(j,k) = 0.
+                        ! greff(j,k) = 0.
                         mort(j,k) = 1.
-                        mort_greff(j,k) = 0.
-                        ! print*,j
+                        ! mort_greff(j,k) = 0.
+                        ! print*, FPC_inc(j,k)
+                        ! print*, FPC_inc_cont(j,k),j,k
                         ! dead_pls(k) = dead_pls(k) + 1
                         ! print*, 'dead PLSSSSSSSSSS', j, FPC_pls_2(j,k),FPC_pls_1(j,k), FPC_inc(j,k)
                         
                     endif
                    
                         !Calculating the relative contribution to total increment considering all PLSs
-
-                        FPC_inc_cont(j,k) = (FPC_inc(j,k)/FPC_inc_grid(k))
-                        ! print*, 'inc_cont', FPC_inc_cont(j,k), j, FPC_inc(j,k)
+                    ! if (FPC_inc(j,k).le.0.) then
+                    !     print*,'allllllllllllo', FPC_inc_cont(j,k)
+                    ! endif
+                    FPC_inc_cont(j,k) = (FPC_inc(j,k)/FPC_inc_grid(k))
+                    
+                    ! print*, 'inc_cont', FPC_inc_cont(j,k), FPC_inc(j,k),j,k
                         ! print*,''
                         ! print*, 'FPC inc',FPC_inc(j,k),j, FPC_inc_cont(j,k)
                         ! print*,''
@@ -646,13 +651,13 @@ program self_thinning
                         ! ! else 
                         !     ! print*, 'NEGATIVE', FPC_inc_grid(k)
                         ! endif
-                        if (FPC_inc_grid(k).gt.0) then
-                            FPC_dec(j,k) = min(FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k)))
-                            ! print*, 'positive'
-                        else 
-                            FPC_dec(j,k) = min(FPC_pls_2(j,k), (exc_area(k)/alive_pls))
-                            ! print*, 'negative'
-                        endif
+                    if (FPC_inc_grid(k).gt.0) then
+                        FPC_dec(j,k) = min(FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k)))
+                    
+                    else 
+                        FPC_dec(j,k) = min(FPC_pls_2(j,k), (exc_area(k)/alive_pls))
+                            
+                    endif
                         ! print*, 'fpc_dec', FPC_dec(j,k),j,k
 
                         ! FPC_pls_2(j,k) = FPC_pls_2(j,k) - FPC_dec(j,k)
@@ -660,16 +665,20 @@ program self_thinning
                         !!!ATENTION: include the other mortality sources
 
                
-                        FPC_dec_prop(j,k) = (((FPC_pls_2(j,k) - FPC_dec(j,k))/FPC_pls_2(j,k))) !calculating shade mortality
-                        ! print*, 'fpc_dec_prop', FPC_dec_prop(j,k),FPC_dec(j,k),j,k
-                                      
-                        greff(j,k) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
+                    FPC_dec_prop(j,k) = (((FPC_pls_2(j,k) - FPC_dec(j,k))/FPC_pls_2(j,k))) !calculating shade mortality
+                    if (FPC_inc(j,k).le.0) then
+                        FPC_dec_prop(j,k)= 0
+                    endif
+                    ! endif
+                                 
+                    greff(j,k) = carbon_increment(j)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
+                   
 
-                        mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
+                    mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
 
                         ! print*, 'mort_greff', mort_greff(j), j
 
-                        mort(j,k) = 1 - (FPC_dec_prop(j,k) + mort_greff(j,k)) !sum of all mortality
+                    mort(j,k) = 1 - (FPC_dec_prop(j,k) + mort_greff(j,k)) !sum of all mortality
 
                         !mort(j,k) = (FPC_dec(j,k)+mort_greff(j,k)) !sum of all mortality
 
@@ -677,13 +686,26 @@ program self_thinning
                         ! print*, 'mort', mort(j), 'fpc_decprop', fpc_dec_prop(j),'fpc_dec',fpc_dec(j),j
                         ! print*, 'fpc inc',FPC_inc(j),'FPCpls2', FPC_pls_2(j),'mort_greff', mort_greff(j), j
                    
-                        cleaf_new(j,k) = cl2(j,k)
+                    cleaf_new(j,k) = cl2(j,k)
 
-                        cwood_new(j,k) = cw2(j,k)
+                    cwood_new(j,k) = cw2(j,k)
 
-                        croot_new(j,k) = cr2(j,k)
+                    croot_new(j,k) = cr2(j,k)
 
-                        dens_est(j,k) = dens1(j,k)
+                    dens_est(j,k) = dens1(j,k)
+
+                    ! if (FPC_inc(j,k).le.0.) then
+                    !     print*, ' NAO tem FPc_incccccccccc' 
+                    !     print*, 'greff',greff(j,k)
+                    !     print*, 'mort_greff',mort_greff(j,k)
+                    !     print*, 'mort', mort(j,k)
+                    !     print*, 'fpc_dec_prop',FPC_dec_prop(j,k)
+                    ! else 
+                    !     print*, 'tem FPc_incccccccccc'
+                    !     print*, 'greff',greff(j,k)
+                    !     print*, 'mort_greff',mort_greff(j,k)
+                    !     print*, 'mort', mort(j,k)
+                    ! endif
 
                 endif    
               

@@ -57,8 +57,8 @@ module establish
     real :: FPC_total_perc
     ! print*, 'alive pls in est', npls
     
-    est_max = 1*(gc_available)
-
+    est_max = 2*(gc_available)
+    ! est_max = 1*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
         
         ! print*, 'fpc perc', FPC_total_perc
