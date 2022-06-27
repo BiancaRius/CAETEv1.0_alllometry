@@ -7,8 +7,8 @@ program self_thinning
     logical :: grass
     
     
-    integer, parameter :: npls = 30!40 !20
-    integer, parameter :: time = 10
+    integer, parameter :: npls = 3000!40 !20
+    integer, parameter :: time = 200
 
     integer, parameter :: grassess = 0.1*npls
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
@@ -185,7 +185,7 @@ program self_thinning
     do j = 1, npls      
 
         cl1_initial(j,:) =x(j,:)*1000.
-        ! print*, 'initial', cl1_initial(j,:)/1000.
+       
 
     enddo
 
@@ -200,14 +200,14 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*, 'x cwood',x(j,k),j,k
+
         enddo
     enddo
 
     do j = 1, npls      
 
         cw1_initial(j,:) =x(j,:)*1000.
-        ! print*, ' cw initial', cw1_initial(j,:)/1000.
+        
 
     enddo
 
@@ -223,14 +223,14 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*, 'x croot',x(j,k),j,k
+            
         enddo
     enddo
 
     do j = 1, npls      
 
         cr1_initial(j,:) =x(j,:)*1000.
-        ! print*, ' cr initial', cr1_initial(j,:)/1000.
+        
 
     enddo
 
@@ -245,14 +245,14 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*, 'x npp',x(j,k),j,k
+           
         enddo
     enddo
 
     do j = 1, npls      
 
         npp1_initial(j,:) =x(j,:)*1000.
-        ! print*, ' npp initial', npp1_initial(j,:)/1000.
+        
 
     enddo
 
@@ -267,7 +267,7 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*, 'x dwood',x(j,k),j,k
+            
         enddo
     enddo
 
@@ -291,7 +291,7 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*, 'x dwood',x(j,k),j,k
+            
         enddo
     enddo
 
@@ -319,7 +319,7 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*,x(j,k),j,k
+            
         enddo
     enddo  
 
@@ -332,7 +332,7 @@ program self_thinning
         
         annual_npp(j,:) = (npp1_initial(j,:)/dens1_initial(j,:)) + (npp_inc_init(j,:)/dens1_initial(j,:))
 
-        ! print*, 'annual npp', annual_npp(j,:)/1000.
+       
 
 !-------------------------------------------------------------------------------
     ! !Increments to each compartments per individual. Here, the NPP proportions allocated
@@ -346,7 +346,7 @@ program self_thinning
         wood_inc(j) = wood_allocation * annual_npp(j,k)  
 
         carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
-        ! print*, '1st year', carbon_increment(j)/1000.,j
+        
 
 !!---------------------------------------------------
         
@@ -358,11 +358,11 @@ program self_thinning
         FPC_pls_initial(j,k) = 1000.
 
         FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
-        !print*, 'FPC_total_1', FPC_total_initial
+        
        
         if (j.eq.npls) then
             FPC_total_accu_initial(k) = FPC_total_initial(k)
-            ! print*, 'FPC_total_accu_1', FPC_total_accu_initial
+            
         endif
 
     enddo
@@ -373,7 +373,7 @@ program self_thinning
                                                   
         ! print*, 'year',k
        
-        ! print*, 'entrada loop', npp_inc(j,:)/1000.
+        
         
         
         FPC_ind(:,k) = 0.
@@ -413,8 +413,7 @@ program self_thinning
             dens1(:,k) = dens1_initial(:,k)
             FPC_total_accu_1(k) = FPC_total_accu_initial(k)
             npp_inc(:,k) = npp_inc_init(:,k)
-            ! FPC_inc_grid(k) = FPC_total_accu_1(k)*3
-            ! print*,FPC_total_accu_1(k)
+           
         else
 
             cl1(:,k) = cl1_aux(:,k-1)
@@ -423,7 +422,7 @@ program self_thinning
             dens1(:,k) = dens1_aux(:,k-1)
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
             FPC_total_accu_1(k) = FPC_total_accu_1_aux(k-1)
-        ! print*, 'cl1 nxt year', cl1(1,k)/1000.
+        
             npp_inc(:,k)=0. !reinitializing for a new sampling
         
             xmin = 0.1
@@ -435,28 +434,28 @@ program self_thinning
            
             do j = 1, npls
                 x(j,k) = xmin + (xmax-xmin)*x(j,k)
-                ! print*,x(j,k),j,k
+                
             enddo
             npp_inc(:,k) = x(:,k)
         
         endif
 
-        do j = 1, grassess
-            cw1(j,k) = 0.
-            cl1(j,k) = cl1(j,k)
-            cr1(j,k) = cr1(j,k)
-        enddo
+        ! do j = 1, grassess
+        !     cw1(j,k) = 0.
+        !     cl1(j,k) = cl1(j,k)
+        !     cr1(j,k) = cr1(j,k)
+        ! enddo
 
         
 
         do j = 1, npls
-            if(cw1(j,k).eq.0.) then
-                grass = .true.
-            else 
-                grass = .false.
-            endif 
+        !     if(cw1(j,k).eq.0.) then
+        !         grass = .true.
+        !     else 
+        !         grass = .false.
+        !     endif 
             
-            print*, cw1(j,k), grass, j 
+            ! print*, cw1(j,k), grass, j 
                 
                 !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
@@ -472,7 +471,7 @@ program self_thinning
             ! print*, grass
             ! print*, '1st cl', cl1(j)/1000.
             if(cl1(j,k).eq.0) then
-                ! print*, 'cl1 eq 0'
+               
                 cl2(j,k) = 0.
 
                 cw2(j,k) =0.
@@ -494,7 +493,7 @@ program self_thinning
                 dens2(j,k) = 0.
                
             else
-                ! print*, 'cl1 ne 0'
+               
                 cl2(j,k) = (cl1(j,k)/dens1(j,k)) 
 
                 cw2(j,k) = (cw1(j,k)/dens1(j,k)) 
@@ -527,13 +526,7 @@ program self_thinning
                 
             endif
             
-            !checking if variables are entering with the correct value
-       
-            
-            
-            
-            ! print*, 'FPC_pls_2', FPC_pls_2(j),j
-
+           
             FPC_total_2(k) = FPC_total_2(k) + (FPC_pls_2(j,k)) !accumulate the values in the variable FPC_total.
                                                         !the actual value will only be obtained when j = npls
 
@@ -560,11 +553,15 @@ program self_thinning
         endif
         ! print*, 'fpc_max_tree', fpc_max_tree
         do j=1, npls
-            if (FPC_pls_2(j,k).le.0.) then
+            if (FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-10) then
                 dead_pls = dead_pls +1
                 ! print*, 'DEEEEEEEEEEEEEEAD 11111111111', dead_pls, j
+                ! print*,FPC_pls_2(j,k), dens1(j,k)
+                ! print*,'carbons', cl2(j,k),cw2(j,k),cr2(j,k)
                 
             endif
+
+            
             if (j.eq.npls) then
                 dead_pls = dead_pls
 
@@ -577,28 +574,34 @@ program self_thinning
 
             ! if (FPC_inc.le.0.) then
             !     FPC_inc(j,k)
+
+            if(FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-10)then
+                FPC_inc(j,k) = 0.
+                FPC_inc_cont(j,k) = 0.
+                FPC_dec(j,k) = 0.                   
+                FPC_dec_prop(j,k) = 0.               
+                greff(j,k) = 0.
+                mort(j,k) = 1.
+                mort_greff(j,k) = 0.
+                ! print*, j
+                
+                
+            endif
         enddo
 
-        if(FPC_pls_2(j,k).le.0.)then
-            FPC_inc(j,k) = 0.
-            FPC_inc_cont(j,k) = 0.
-            FPC_dec(j,k) = 0.                   
-            FPC_dec_prop(j,k) = 0.               
-            greff(j,k) = 0.
-            mort(j,k) = 1.
-            mort_greff(j,k) = 0.
-            ! dead_pls(k) = dead_pls(k)+1.
-            
-            
-        endif
+        
 
-        ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
+        ! if (FPC_total_accu_2(k) .gt. gc_area) then
+        !     print*, 'MORE THAN 100%', FPC_total_accu_2(k)
+        ! endif    
+            
+            ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
-            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
+            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
            
            
-           est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
+            est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
             
             ! Excedent area
            
@@ -755,7 +758,7 @@ program self_thinning
 
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
-            ! print*, 'n ultrapassou', FPC_total_accu_2(k)
+            print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
                 FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
                 ! print*, 'FPC inc n ultrapassou', FPC_inc(j,k)
@@ -763,7 +766,8 @@ program self_thinning
                 ! print*,'bs', cl2(j,k)/1000.,cw2(j,k)/1000.,cr2(j,k)/1000., j, dens1(j,k)
                 ! endif
                 ! print*,'alivepls out est', alive_pls
-                call establishment(gc_available,alive_pls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k))
+                call establishment(j,gc_available,alive_pls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k),&
+            &    dens1(j,k))
                 ! print*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
                 call sapling_allometry(alive_pls,cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k))
                 ! PRINT*, 'bs',cl2(j,k)/1000
@@ -773,7 +777,8 @@ program self_thinning
                 ! if(FPC_inc(j,k).gt.0.) then
                 ! print*, 'as', cleaf_new(j,k)/1000.,cwood_new(j,k)/1000.,croot_new(j,k)/1000., j, dens_est(j,k)
                 ! endif
-            
+                
+                
                 cl2(j,k) = cleaf_new(j,k)
                 cw2(j,k) = cwood_new(j,k)
                 cr2(j,k) = croot_new(j,k)

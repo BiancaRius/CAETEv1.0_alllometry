@@ -39,13 +39,15 @@ module establish
 
     contains
 
-    subroutine establishment(gc_available,npls, FPC_total_accu_2, gc_area, est, est_pls)
+    subroutine establishment(j,gc_available,npls_alive, FPC_total_accu_2, gc_area, est, est_pls,dens)
     
     !input variables
-    real, intent(in) :: npls
+    integer, intent(in) :: j
+    real, intent(in) :: npls_alive
     real, intent(in) :: FPC_total_accu_2
     real, intent(in) :: gc_area
     real, intent(in) :: gc_available
+    real, intent(in) :: dens
     
 
     !output variables
@@ -56,7 +58,13 @@ module establish
     real :: est_max  !2 individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
     real :: FPC_total_perc
     ! print*, 'alive pls in est', npls
+    real, parameter :: dens_min = 1.e-10      !minimum individual density for persistence of PFT (indiv/m2)
     
+    
+    
+
+    ! print*, j
+
     est_max = 2*(gc_available)
     ! est_max = 1*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
@@ -74,10 +82,14 @@ module establish
 
     endif
 
-        est_pls = est/npls
-
-        ! print*, 'estab', est, est_pls, npls
+        est_pls = est/npls_alive
+    if (dens.le.dens_min) then
+        est_pls = 0.0
+    endif
     
+    ! if (dens.le.dens_min) then
+    !     print*, 'est dens min', est_pls, dens, j
+    ! endif
     end subroutine
 
     subroutine shrink(cl_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
@@ -130,10 +142,10 @@ module establish
 
     end subroutine shrink
 
-    subroutine sapling_allometry(npls,cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls,croot_sapl_npls)
+    subroutine sapling_allometry(npls_alive,cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls,croot_sapl_npls)
     
         !input variables
-        real, intent(in) :: npls
+        real, intent(in) :: npls_alive
         
         ! !output variables
         real, intent(out) :: cleaf_sapl_npls     
@@ -273,10 +285,10 @@ module establish
 
         !update to gC and to distribution to the pls's
 
-        cleaf_sapl_npls = (cleaf_sapl*1000)/npls
-        csap_sapl_npls = (csap_sapl*1000)/npls
-        cheart_sapl_npls = (cheart_sapl*1000)/npls
-        croot_sapl_npls = (croot_sapl*1000)/npls
+        cleaf_sapl_npls = (cleaf_sapl*1000)/npls_alive
+        csap_sapl_npls = (csap_sapl*1000)/npls_alive
+        cheart_sapl_npls = (cheart_sapl*1000)/npls_alive
+        croot_sapl_npls = (croot_sapl*1000)/npls_alive
 
 
         ! print*, cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls, croot_sapl_npls
