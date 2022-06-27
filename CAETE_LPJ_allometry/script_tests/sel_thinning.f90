@@ -4,8 +4,13 @@ program self_thinning
     use establish
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     integer :: j,k
-    integer, parameter :: npls = 3000!40 !20
-    integer, parameter :: time = 200
+    logical :: grass
+    
+    
+    integer, parameter :: npls = 30!40 !20
+    integer, parameter :: time = 10
+
+    integer, parameter :: grassess = 0.1*npls
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
@@ -436,13 +441,35 @@ program self_thinning
         
         endif
 
-        do j = 1, npls
+        do j = 1, grassess
+            cw1(j,k) = 0.
+            cl1(j,k) = cl1(j,k)
+            cr1(j,k) = cr1(j,k)
+        enddo
+
         
-        !--------------------------------------------------------------------------
+
+        do j = 1, npls
+            if(cw1(j,k).eq.0.) then
+                grass = .true.
+            else 
+                grass = .false.
+            endif 
+            
+            print*, cw1(j,k), grass, j 
+                
+                !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
             
-           
+           !testing logical variable for grasses
+            ! if (cw1(j,k).eq.0..and.cl1(j,k).ne.0..and.cr1(j,k).ne.0.) then
+            !     grass = .true.
+            ! else 
+            !     grass = .false.
+            ! endif
+
+            ! print*, grass
             ! print*, '1st cl', cl1(j)/1000.
             if(cl1(j,k).eq.0) then
                 ! print*, 'cl1 eq 0'
@@ -568,7 +595,7 @@ program self_thinning
         ! print*, 'FPC_total_accu_2', FPC_total_accu_2, 'FPC_pls_2', FPC_pls_2
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
                     
-            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
+            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
            
            
            est_pls(j,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
@@ -728,7 +755,7 @@ program self_thinning
 
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
-            print*, 'n ultrapassou', FPC_total_accu_2(k)
+            ! print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
                 FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
                 ! print*, 'FPC inc n ultrapassou', FPC_inc(j,k)
