@@ -11,18 +11,18 @@ module types
 end module types
 
 ! program allocation !module to test allocation logic module of LPJmL-Fire
-subroutine allocation(gc_area,lm_test, cw_test, cr_test, dwood_test, sla_test, nind_test,&
+subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, nind_test,&
     &bminc_test, height_test)    
     use types
     use iso_fortran_env, only : output_unit
 
     !VARIABLES [INPUT] - Determinadas arbitrariamente
     real(r_8), intent(in) :: gc_area
-    real, intent(in) :: lm_test, cw_test, cr_test, dwood_test
+    real, intent(in) :: lm_test, cw_test, rm_test, dwood_test
     real, intent(in) :: sla_test, nind_test, bminc_test, height_test
 
 
-    integer(i_4),parameter :: npls = 20
+    integer(i_4),parameter :: npls = 3000
     integer(i_4),parameter :: nseg = 20 ! segment number to bisection loop
     integer(i_4), parameter :: time = 1000
     real(r_8),parameter :: pi   =  3.14159265
@@ -111,21 +111,21 @@ subroutine allocation(gc_area,lm_test, cw_test, cr_test, dwood_test, sla_test, n
     ! print*, 'cl2 inside alloc', lm_test, cw_test, cr_test, dwood_test,&
         ! &sla_test, nind_test, bminc_test
     !Arrays with values to some variables (generic values)
-    dwood =(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,&
-    &0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
-    bminc=(/2.15,2.,2.18,2.6,2.5,1.8,2.3,2.,1.8,2.84,2.25,3.,2.2,1.7,&
-    &1.18,2.6,3.5,2.8,3.3,2./)
-    sla=(/0.002,0.018,0.009,0.023,0.013,0.039,0.040,0.0028,0.0025,&
-    &0.027,0.032,0.007,0.013,0.025,0.002,0.008,0.004,0.016,0.023,0.015/)
-    nind=(/1.,2.,8.,6.,5.,9.,3.,4.,7.,1.,2.,8.,5.,3.,6.,4.,5.,8.,9.,3./)
-    height=(/5.,9.,15.,10.9,11.5,18.9,12.6,2.5,14.9,22.5,28.7,23.6,&
-    &28.8,19.6,13.3,27.6,29.5,21.6,30.,2./)
-    lm_ind=(/2.15,2.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,&
-    &1.18,1.6,1.5,1.8,0.3,2./)
-    cw_ind=(/7.,12.,7.2,8.3,8.8,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,&
-    &5.3,9.2,15.,12.6,10.7,11.4/)
-    rm_ind=(/0.63,0.8,0.9,0.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,&
-    &0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
+    dwood = dwood_test !(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,&
+    ! &0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
+    bminc = bminc_test !(/2.15,2.,2.18,2.6,2.5,1.8,2.3,2.,1.8,2.84,2.25,3.,2.2,1.7,&
+    !&1.18,2.6,3.5,2.8,3.3,2./)
+    sla = sla_test! (/0.002,0.018,0.009,0.023,0.013,0.039,0.040,0.0028,0.0025,&
+    ! &0.027,0.032,0.007,0.013,0.025,0.002,0.008,0.004,0.016,0.023,0.015/)
+    nind = nind_test !(/1.,2.,8.,6.,5.,9.,3.,4.,7.,1.,2.,8.,5.,3.,6.,4.,5.,8.,9.,3./)
+    height= height_test !(/5.,9.,15.,10.9,11.5,18.9,12.6,2.5,14.9,22.5,28.7,23.6,&
+    ! &28.8,19.6,13.3,27.6,29.5,21.6,30.,2./)
+    lm_ind= lm_test!(/2.15,2.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,&
+    ! &1.18,1.6,1.5,1.8,0.3,2./)
+    cw_ind = cw_test !(/7.,12.,7.2,8.3,8.8,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,&
+    ! &5.3,9.2,15.,12.6,10.7,11.4/)
+    rm_ind= rm_test !(/0.63,0.8,0.9,0.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,&
+    ! &0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
 
     !-----------------------------------------------------------------
 

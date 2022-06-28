@@ -3,11 +3,12 @@ program self_thinning
 
     use establish
     ! ================= VARIABLES TO USE DECLARATION ===================== !
+    
     integer :: j,k
     logical :: grass
     
     
-    integer, parameter :: npls = 3000!40 !20
+    integer, parameter :: npls = 3000
     integer, parameter :: time = 200
 
     integer, parameter :: grassess = 0.1*npls
@@ -150,15 +151,11 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*,x(j,k),j,k
         enddo
     enddo
 
     do j = 1, npls      
-
         dens1_initial(j,:) =x(j,:)
-        ! print*, ' dens initial', dens1_initial(j,:)
-
     enddo
 !________________________________________________________________
 !!!------------------------------------------------------
@@ -175,7 +172,6 @@ program self_thinning
     do k = 1, time
         do j = 1, npls
             x(j,k) = xmin + (xmax-xmin)*x(j,k)
-            ! print*,x(j,k),j,k
         enddo
     enddo
 
@@ -186,7 +182,6 @@ program self_thinning
 
         cl1_initial(j,:) =x(j,:)*1000.
        
-
     enddo
 
 !_______________________________________________
@@ -208,7 +203,6 @@ program self_thinning
 
         cw1_initial(j,:) =x(j,:)*1000.
         
-
     enddo
 
 !____________________________________________________
@@ -231,7 +225,6 @@ program self_thinning
 
         cr1_initial(j,:) =x(j,:)*1000.
         
-
     enddo
 
 !____________________________________________________
@@ -253,7 +246,6 @@ program self_thinning
 
         npp1_initial(j,:) =x(j,:)*1000.
         
-
     enddo
 
 !____________________________________________________
@@ -311,7 +303,7 @@ program self_thinning
 !__________________________________________
 
     xmin = 0.5
-    xmax = 5.5
+    xmax = 3.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -450,7 +442,7 @@ program self_thinning
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
             
             if(cl1(j,k).le.0) then
-               
+                ! print*, 'cl1 0'
                 cl2(j,k) = 0.
 
                 cw2(j,k) =0.
@@ -462,6 +454,8 @@ program self_thinning
                 crown_area(j,k) = 0.
             
                 lai(j,k) = 0.
+
+                height = 0.
            
                 FPC_ind(j,k) = 0.
                 
@@ -491,7 +485,12 @@ program self_thinning
                 lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
                 
                 height(j,k) = k_allom2*(diam(j,k)**(k_allom3))
-                
+                ! if(diam(j,k).le.0.)then
+                !     print*, 'diam', diam(j,k)
+                !     print*, 'crown_area', crown_area(j,k)
+                !     print*, 'lai', lai(j,k)
+                !     print*, 'height', height(j,k),j
+                ! endif
                 !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
@@ -512,9 +511,10 @@ program self_thinning
             if (j.eq.npls) then   !take the value accumulated until the last pls
               
                 FPC_total_accu_2(k) = FPC_total_2(k)
-                ! print*, 'FPC_total_accu_2', FPC_total_accu_2(1)
-
-            endif  
+               
+            endif
+            
+           
             
         enddo
 
@@ -542,11 +542,11 @@ program self_thinning
             
             if (j.eq.npls) then
                 dead_pls = dead_pls
-                print*,'d lt 0', dead_pls
+                ! print*,'d lt 0', dead_pls
                 alive_pls = npls - dead_pls
-                PRINT*,'dead',  dead_pls, alive_pls
+               
                 
-                ! PRINT*,'dead2', alive_pls, dead_pls
+                PRINT*,'dead2', alive_pls, dead_pls
             endif
 
             FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
@@ -691,7 +691,7 @@ program self_thinning
                 call shrink(cl2(j,k),cw2(j,k),cr2(j,k),est_pls(j,k),dens1(j,k),&
             &      cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
             &      dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),croot_new(j,k))
-                PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k)
+                ! PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k)
             
                 cl2(j,k) = cleaf_new(j,k)
                 cw2(j,k) = cwood_new(j,k)
@@ -709,7 +709,7 @@ program self_thinning
                 
                 if(j.eq.npls)then
                     count_pls = count_pls
-                    print*,'count_pls', count_pls
+                    ! print*,'count_pls', count_pls
                 endif
             
                 if(cleaf_new(j,k).le.0..or.cl2(j,k).eq.0.) then
@@ -742,9 +742,10 @@ program self_thinning
         
         
         do j=1,npls
-
-            if(mort(j,k).gt.1.) then !maximum mortality is equal to 1
+            
+            if(mort(j,k).ge.1.) then !maximum mortality is equal to 1
                 mort(j,k) = 1.
+                
             else
                 mort(j,k) = mort(j,k)
             endif
