@@ -36,7 +36,7 @@ program self_thinning
     real, dimension(time) :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
 
     real, dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
-    real :: dead_pls, alive_pls
+    real :: dead_pls, alive_pls, count_pls
     
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
@@ -141,8 +141,8 @@ program self_thinning
 ! !creating value for initial density
 
 
-    xmin = 1.7
-    xmax = 15.
+    xmin = 0.5
+    xmax = 4.
      
     x(:,:) = 0.
     call random_number(x)
@@ -167,7 +167,7 @@ program self_thinning
 
 
     xmin = 0.2
-    xmax = 4.5
+    xmax = 2.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -192,7 +192,7 @@ program self_thinning
 !_______________________________________________
 !!    creating value for initial cwood
     xmin = 10.
-    xmax = 45.
+    xmax = 30.
      
     x(:,:) = 0.
     call random_number(x)
@@ -215,7 +215,7 @@ program self_thinning
 
 !!    creating value for initial croot
     xmin = 0.2
-    xmax = 4.5
+    xmax = 2.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -369,6 +369,7 @@ program self_thinning
 
     dead_pls = 0.
     alive_pls = 0. 
+    count_pls = 0.
     do k = 1, time
                                                   
         print*, 'year',k
@@ -673,6 +674,7 @@ program self_thinning
 
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
+            count_pls = 0.
             print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
 
@@ -689,7 +691,7 @@ program self_thinning
                 call shrink(cl2(j,k),cw2(j,k),cr2(j,k),est_pls(j,k),dens1(j,k),&
             &      cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
             &      dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),croot_new(j,k))
-            
+                PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k)
             
                 cl2(j,k) = cleaf_new(j,k)
                 cw2(j,k) = cwood_new(j,k)
@@ -697,12 +699,17 @@ program self_thinning
                 dens1(j,k) = dens_est(j,k)
                 
                 if(FPC_pls_2(j,k).le.0.) then
-                    print*, 'LT 0  ', FPC_pls_2(j,k),j
+                    ! print*, 'LT 0  ', FPC_pls_2(j,k),j
                     cleaf_new(j,k) = 0.
                     cwood_new(j,k) = 0.
                     croot_new(j,k) = 0.
                     dens_est(j,k) = 0.
-                    
+                    count_pls = count_pls+1
+                endif
+                
+                if(j.eq.npls)then
+                    count_pls = count_pls
+                    print*,'count_pls', count_pls
                 endif
             
                 if(cleaf_new(j,k).le.0..or.cl2(j,k).eq.0.) then
