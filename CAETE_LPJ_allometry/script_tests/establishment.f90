@@ -61,12 +61,12 @@ module establish
     real, parameter :: dens_min = 1.e-10      !minimum individual density for persistence of PFT (indiv/m2)
     
     
-    
-
-    ! print*, j
+    ! if (dens.le.dens_min) then
+    !     print*, 'DENS MIN', dens, j
+    ! endif
 
     est_max = 2*(gc_available)
-    ! est_max = 1*(gc_area)
+    ! est_max = 2*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
         
         ! print*, 'fpc perc', FPC_total_perc
@@ -83,13 +83,9 @@ module establish
     endif
 
         est_pls = est/npls_alive
-    if (dens.le.dens_min) then
-        est_pls = 0.0
-    endif
+
+        ! print*, 'estab', est, est_pls, npls
     
-    ! if (dens.le.dens_min) then
-    !     print*, 'est dens min', est_pls, dens, j
-    ! endif
     end subroutine
 
     subroutine shrink(cl_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
