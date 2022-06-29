@@ -148,8 +148,8 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
 
         ! ! lm1  = 1000.0  !valor arbitrario colocado para rever a unidade do dwood
 
-        ! lminc_ind_min  = lm  - lm1   !eqn (27)
-        ! ! print*, 'LM MIN', lminc_ind_min , pls
+        lminc_ind_min  = lm  - lm1   !eqn (27)
+        ! print*, 'LM MIN', lminc_ind_min , pls
 
         ! ! lminc_ind_min  = 0.6
     

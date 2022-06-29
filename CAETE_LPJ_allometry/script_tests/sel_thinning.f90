@@ -549,7 +549,7 @@ program self_thinning
                 alive_pls = npls - dead_pls
                
                 
-                PRINT*,'dead2',dead_pls,'alive', alive_pls
+                ! PRINT*,'dead2',dead_pls,'alive', alive_pls
             endif
 
             FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
