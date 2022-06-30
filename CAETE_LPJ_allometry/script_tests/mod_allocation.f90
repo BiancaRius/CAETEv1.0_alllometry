@@ -141,273 +141,285 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
         !checking entering values
         ! print*, 'LM=', lm ,'SM',sm ,'HM', hm ,'RM', rm, 'BMINC', bminc_ind 
 
-        ! ! ====== TREE ALLOCATION ======
+        ! ====== TREE ALLOCATION ======
 
-        ! lm1  = (latosa*sm /(dwood *1000)*height *sla )  !allometric leaf mass requirement *****ATENÇÃO*****
-        ! ! print*, 'LM1', lm1 
+        lm1  = (latosa*sm /(dwood *1000)*height *sla )  !allometric leaf mass requirement *****ATENÇÃO*****
+        ! print*, 'LM1', lm1 
 
-        ! ! lm1  = 1000.0  !valor arbitrario colocado para rever a unidade do dwood
+        ! lm1  = 1000.0  !valor arbitrario colocado para rever a unidade do dwood
 
         lminc_ind_min  = lm  - lm1   !eqn (27)
         ! print*, 'LM MIN', lminc_ind_min , pls
 
-        ! ! lminc_ind_min  = 0.6
+        ! lminc_ind_min  = 0.6
     
-        ! !calculate minimum root production to support this leaf mass (i.e. lm_ind + lminc_ind_min)
-        ! !May be negative following a reduction in soil water limitation (increase in lm2rm) relative to last year.
+        !calculate minimum root production to support this leaf mass (i.e. lm_ind + lminc_ind_min)
+        !May be negative following a reduction in soil water limitation (increase in lm2rm) relative to last year.
 
-        ! rminc_ind_min  = lm1  / ltor - rm       !eqn (30)
-        ! ! print*, 'RM MIN', rminc_ind_min 
+        rminc_ind_min  = lm1  / ltor - rm       !eqn (30)
+        ! print*, 'RM MIN', rminc_ind_min 
 
-        ! rminc_ind_min  = (latosa*sm /(dwood *1000)*height *sla *ltor) - rm       !eqn (30)
-        ! ! print*, 'RM MIN teste', rminc_ind_min 
+        rminc_ind_min  = (latosa*sm /(dwood *1000)*height *sla *ltor) - rm       !eqn (30)
+        ! print*, 'RM MIN teste', rminc_ind_min 
 
 
-        ! if (rminc_ind_min  .gt. 0. .and. lminc_ind_min  .gt. 0. .and. &
-        !     &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
+        if (rminc_ind_min  .gt. 0. .and. lminc_ind_min  .gt. 0. .and. &
+            &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
 
-        !     !Normal allocation (positive increment to all living C compartments)
-        !     print*, 'normal'
-        !     normal = .true.
+            !Normal allocation (positive increment to all living C compartments)
+            print*, 'normal'
+            normal = .true.
 
-        !     !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
-        !     !Since this is normal allocation, we set the lower bound for the leafmass allocation (x1)
-        !     !to its allometric minimum, because it should be able to be fulfilled, i.e.:
+            !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
+            !Since this is normal allocation, we set the lower bound for the leafmass allocation (x1)
+            !to its allometric minimum, because it should be able to be fulfilled, i.e.:
 
-        !     !Start to find root procedure (relate to bisection method)
+            !Start to find root procedure (relate to bisection method)
 
-        !     x1  = lminc_ind_min 
-        !     x2  = (bminc_ind  - (lm  / ltor - rm )) / (1. + 1. / ltor)
+            x1  = lminc_ind_min 
+            x2  = (bminc_ind  - (lm  / ltor - rm )) / (1. + 1. / ltor)
             
-        !     dx  = x2  - x1 
+            dx  = x2  - x1 
 
-        !     if (dx  < 0.01) then
+            if (dx  < 0.01) then
 
-        !         !there seems to be rare cases where lminc_ind_min (x1) is almost equal to x2. In this case,
-        !         !assume that the leafmass increment is equal to the midpoint between the values and skip 
-        !         !the root finding procedure
+                !there seems to be rare cases where lminc_ind_min (x1) is almost equal to x2. In this case,
+                !assume that the leafmass increment is equal to the midpoint between the values and skip 
+                !the root finding procedure
 
-        !         lminc_ind  = x1  + 0.5 * dx 
+                lminc_ind  = x1  + 0.5 * dx 
 
-        !     else
-        !         !Find a root for non-negative lminc_ind, rminc_ind and sminc_ind using Bisection Method (Press et al 1986, p 346)
-        !         !There should be exactly one solution (no proof presented, but Steve has managed one).
+            else
+                !Find a root for non-negative lminc_ind, rminc_ind and sminc_ind using Bisection Method (Press et al 1986, p 346)
+                !There should be exactly one solution (no proof presented, but Steve has managed one).
                     
-        !         dx  = dx /nseg
+                dx  = dx /nseg
 
-        !         !! ===== FIND ROOT FUNCTION ===== [**must be a function**]
+                !! ===== FIND ROOT FUNCTION ===== [**must be a function**]
 
-        !         pi4 = pi/4
-        !         a1 = 2./allom3
-        !         a2 = 1. + a1
-        !         a3 = allom2**a1
+                pi4 = pi/4
+                a1 = 2./allom3
+                a2 = 1. + a1
+                a3 = allom2**a1
 
 
-        !         root1  = a3*((sm +bminc_ind -x1 -((lm +x1 )/ltor)+&
-        !                 &rm +hm )/dwood )/pi4-((sm +bminc_ind -x1 -&
-        !                 &((lm +x1 )/ltor)+rm )/((lm +x1 )*sla *&
-        !                 &(dwood )/latosa))**a2
+                root1  = a3*((sm +bminc_ind -x1 -((lm +x1 )/ltor)+&
+                        &rm +hm )/dwood )/pi4-((sm +bminc_ind -x1 -&
+                        &((lm +x1 )/ltor)+rm )/((lm +x1 )*sla *&
+                        &(dwood )/latosa))**a2
 
-        !         ! ======================================================
+                ! ======================================================
 
-        !         !evaluate f(x1) = LHS of eqn (22) at x1
+                !evaluate f(x1) = LHS of eqn (22) at x1
 
-        !         fx1  = root1 
+                fx1  = root1 
 
-        !         !Find approximate location of leftmost root on the interval (x1,x2).
-        !         !Subdivide (x1,x2) into nseg equal segments seeking change in sign of f(xmid) relative to f(x1).
+                !Find approximate location of leftmost root on the interval (x1,x2).
+                !Subdivide (x1,x2) into nseg equal segments seeking change in sign of f(xmid) relative to f(x1).
 
-        !         fmid  = fx1 
-        !         xmid  = x1 
+                fmid  = fx1 
+                xmid  = x1 
 
+                i = 1
+
+                do           
+
+                    xmid  = xmid  + dx 
+
+                    ! root2  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
+                    ! &rm +hm )/wooddens)/pi4-((sm +bminc_ind -xmid -&
+                    ! &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
+                    ! &(wooddens)/latosa))**a2
+
+                    root2  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
+                    &rm +hm )/dwood*1D7)/pi4-((sm +bminc_ind -xmid -&
+                    &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
+                    &(dwood*1D7)/latosa))**a2
+
+                    fmid  = root2 
+
+                    if ((fmid *fx1 ) .le. 0. .or. xmid  .ge. x2 ) exit  !sign has changed or we are over the upper bound
+
+                    if (i > 20) write(stdout,*)'first alloc loop flag',i,pls,fmid *fx1 ,&
+                         &xmid ,x1 ,x2 ,dx ,bminc_ind 
+
+                    if (i > 50) stop 'Too many iterations allocmod'
+
+                    i = i + 1
+
+                enddo
+
+                !the interval that brackets zero in f(x) becomes the new bounds for the root search
+
+                x1  = xmid  - dx 
+                x2  = xmid 
+
+                !Apply bisection method to find root on the new interval (x1,x2)
+
+                fx1  = root1 
+
+                if (fx1  .ge. 0.) then
+                    sign  = -1.
+                else
+                    sign  =  1.
+                end if
+
+                rtbis  = x1 
+                dx     = x2  - x1 
+
+                !Bisection loop: search iterates on value of xmid until xmid lies within xacc of the root,
+                !i.e. until |xmid-x| < xacc where f(x) = 0. the final value of xmid with be the leafmass increment
+
+                i = 1
+
+                do               
+
+                    dx    = 0.5 * dx 
+                    xmid  = rtbis  + dx 
+
+                    !calculate fmid = f(xmid) [eqn (22)]
+
+                    ! root3  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
+                    ! &rm +hm )/wooddens)/pi4-((sm +bminc_ind -xmid -&
+                    ! &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
+                    ! &wooddens/latosa))**a2
+
+                    root3  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
+                    &rm +hm )/dwood*1D7)/pi4-((sm +bminc_ind -xmid -&
+                    &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
+                    &dwood*1D7/latosa))**a2
+
+                    fmid  = root3 
+
+                    if (fmid  * sign  .le. 0.) rtbis  = xmid 
+
+                    if (dx  < xacc .or. abs(fmid ) <= yacc) exit
+
+                    if (i > 20) write(stdout,*)'second alloc loop flag',i,pls,dx ,abs(fmid )
+                    if (i > 50) stop 'Too many iterations allocmod'
+
+                    i = i + 1
+                enddo
               
 
-               
+                !Now rtbis contains numerical solution for lminc_ind given eqn (22)
 
-        !             xmid  = xmid  + dx 
+                lminc_ind  = rtbis
+                print*, 'lminc', lminc_ind 
 
-        !             root2  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
-        !             &rm +hm )/wooddens)/pi4-((sm +bminc_ind -xmid -&
-        !             &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
-        !             &(wooddens)/latosa))**a2
+            endif
 
-        !             fmid  = root2 
+            !Calculate increments in other compartments using allometry relationships
 
-        !             if ((fmid *fx1 ) .le. 0. .or. xmid  .ge. x2 ) exit  !sign has changed or we are over the upper bound
+            rminc_ind  = (lm  + lminc_ind ) / ltor - rm        !eqn (9)
 
-        !             if (i > 20) write(stdout,*)'first alloc loop flag',i,pls,fmid *fx1 ,&
-        !                  &xmid ,x1 ,x2 ,dx ,bminc_ind 
+            sminc_ind  = bminc_ind  - rminc_ind  - lminc_ind   !eqn (1)
 
-        !             if (i > 50) stop 'Too many iterations allocmod'
+            ! print*, 'LEAF_INC (gC/ind)', (lminc_ind /1.D3), 'ROOT_INC (gC/ind)', (rminc_ind /1.D3),&
+            ! & 'SAP_INC(gC/ind)', (sminc_ind /1.D3), pls, 'NORMAL'
 
-        !             i = i + 1
+        else 
 
-               
-
-        !         !the interval that brackets zero in f(x) becomes the new bounds for the root search
-
-        !         x1  = xmid  - dx 
-        !         x2  = xmid 
-
-        !         !Apply bisection method to find root on the new interval (x1,x2)
-
-        !         fx1  = root1 
-
-        !         if (fx1  .ge. 0.) then
-        !             sign  = -1.
-        !         else
-        !             sign  =  1.
-        !         end if
-
-        !         rtbis  = x1 
-        !         dx     = x2  - x1 
-
-        !         !Bisection loop: search iterates on value of xmid until xmid lies within xacc of the root,
-        !         !i.e. until |xmid-x| < xacc where f(x) = 0. the final value of xmid with be the leafmass increment
-
-             
-
-               
-
-        !             dx    = 0.5 * dx 
-        !             xmid  = rtbis  + dx 
-
-        !             !calculate fmid = f(xmid) [eqn (22)]
-
-        !             root3  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
-        !             &rm +hm )/wooddens)/pi4-((sm +bminc_ind -xmid -&
-        !             &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
-        !             &wooddens/latosa))**a2
-
-        !             fmid  = root3 
-
-        !             if (fmid  * sign  .le. 0.) rtbis  = xmid 
-
-        !             if (dx  < xacc .or. abs(fmid ) <= yacc) exit
-
-        !             if (i > 20) write(stdout,*)'second alloc loop flag',i,pls,dx ,abs(fmid )
-        !             if (i > 50) stop 'Too many iterations allocmod'
-
-        !             i = i + 1
-
-              
-
-        !         !Now rtbis contains numerical solution for lminc_ind given eqn (22)
-
-        !         lminc_ind  = rtbis 
-
-        !     endif
-
-        !     !Calculate increments in other compartments using allometry relationships
-
-        !     rminc_ind  = (lm  + lminc_ind ) / ltor - rm        !eqn (9)
-
-        !     sminc_ind  = bminc_ind  - rminc_ind  - lminc_ind   !eqn (1)
-
-        !     ! print*, 'LEAF_INC (gC/ind)', (lminc_ind /1.D3), 'ROOT_INC (gC/ind)', (rminc_ind /1.D3),&
-        !     ! & 'SAP_INC(gC/ind)', (sminc_ind /1.D3), pls, 'NORMAL'
-
-        ! else 
-
-        !     !Abnormal allocation: reduction in some C compartment(s) to satisfy allometry
+            !Abnormal allocation: reduction in some C compartment(s) to satisfy allometry
             
-        !     normal = .false.
+            normal = .false.
 
-        !     !Attempt to distribute this year's production among leaves and roots only
+            !Attempt to distribute this year's production among leaves and roots only
 
-        !     lminc_ind  = (bminc_ind -lm /ltor+rm )/(1.+1./ltor)  !eqn (33)
+            lminc_ind  = (bminc_ind -lm /ltor+rm )/(1.+1./ltor)  !eqn (33)
+            print*,'anormal', lminc_ind
 
+            if (lminc_ind  > 0.) then
 
-        !     if (lminc_ind  > 0.) then
+                !Positive allocation to leafmass
 
-        !         !Positive allocation to leafmass
-
-        !         rminc_ind  = bminc_ind  - lminc_ind   !eqn (31)
+                rminc_ind  = bminc_ind  - lminc_ind   !eqn (31)
                 
-        !         !Add killed roots (if any) to below-ground litter
+                !Add killed roots (if any) to below-ground litter
 
-        !         if (rminc_ind  < 0.) then
+                if (rminc_ind  < 0.) then
 
-        !             lminc_ind  = bminc_ind 
-        !             rminc_ind  = (lm  + lminc_ind ) / ltor - rm 
+                    lminc_ind  = bminc_ind 
+                    rminc_ind  = (lm  + lminc_ind ) / ltor - rm 
 
-        !             litter_bg  = litter_bg  + abs(rminc_ind ) * nind 
+                    litter_bg  = litter_bg  + abs(rminc_ind ) * nind 
 
-        !         end if
+                end if
                 
-        !         i = 1
+                i = 1
 
-        !     else
+            else
 
-        !         !Negative allocation to leaf mass
+                !Negative allocation to leaf mass
 
-        !         rminc_ind  = bminc_ind 
-        !         lminc_ind  = (rm  + rminc_ind ) * ltor - lm   !from eqn (9)
+                rminc_ind  = bminc_ind 
+                lminc_ind  = (rm  + rminc_ind ) * ltor - lm   !from eqn (9)
 
-        !         !Add killed leaves to litter
+                !Add killed leaves to litter
 
-        !         litter_ag_fast  = litter_ag_fast  + abs(lminc_ind ) * nind 
+                litter_ag_fast  = litter_ag_fast  + abs(lminc_ind ) * nind 
                 
-        !         i = 2
+                i = 2
 
-        !     endif
+            endif
 
-        !     !Calculate sminc_ind (must be negative)
+            !Calculate sminc_ind (must be negative)
       
-        !     sminc_ind  = (lm  + lminc_ind ) * sla  /&
-        !     & latosa * 2.e5 * height  - sm   !eqn (35)
+            sminc_ind  = (lm  + lminc_ind ) * sla  /&
+            & latosa * 2.e5 * height  - sm   !eqn (35)
 
-        !     !Convert killed sapwood to heartwood
+            !Convert killed sapwood to heartwood
 
-        !     hm  = hm  + abs(sminc_ind )
+            hm  = hm  + abs(sminc_ind )
 
-        !     print*, pls, 'ANNORMAL'
+            ! print*, pls, 'ANNORMAL'
 
 
-        ! endif !normal/abnormal allocation
+        endif !normal/abnormal allocation
 
-        ! !Increment C compartments - OUTPUT FINAL (kgC/m²)
+        !Increment C compartments - OUTPUT FINAL (kgC/m²)
 
-        ! lm_ind  = ((lm  + lminc_ind )*nind )/1.D3
-        ! rm_ind  = ((rm  + rminc_ind )*nind )/1.D3 
-        ! sm_ind  = ((sm  + sminc_ind )*nind )/1.D3
-        ! hm_ind  = (hm *nind )/1.D3
-        ! cwood  = sm_ind +hm_ind 
-        ! ! print*, 'leaf carbon',lm_ind 
-        ! ! print*, 'LMINC', lminc_ind , pls
-        ! !print*, 'LM', lm_ind , 'RM', rm_ind , 'SM', sm_ind , 'HM', hm_ind , 'CWOOD', cwood , pls
+        lm_ind  = ((lm  + lminc_ind )*nind )/1.D3
+        rm_ind  = ((rm  + rminc_ind )*nind )/1.D3 
+        sm_ind  = ((sm  + sminc_ind )*nind )/1.D3
+        hm_ind  = (hm *nind )/1.D3
+        cwood  = sm_ind +hm_ind 
+        ! print*, 'leaf carbon',lm_ind 
+        ! print*, 'LMINC', lminc_ind , pls
+        !print*, 'LM', lm_ind , 'RM', rm_ind , 'SM', sm_ind , 'HM', hm_ind , 'CWOOD', cwood , pls
 
-        ! !ALLOMETRY EQUATIONS
+        !ALLOMETRY EQUATIONS
 
-        ! !DIAMETER (m)
-        ! diameter  = (4*(cwood *1.0D3)/(dwood *1D7)*pi*allom2)&
-        ! &**(1/(2+allom3))
+        !DIAMETER (m)
+        diameter  = (4*(cwood *1.0D3)/(dwood *1D7)*pi*allom2)&
+        &**(1/(2+allom3))
         
-        ! !CROWN AREA (m2)
-        ! crown_area  = allom1*(diameter **1.6)
-        ! crown_area_ind  = (crown_area /nind )
+        !CROWN AREA (m2)
+        crown_area  = allom1*(diameter **1.6)
+        crown_area_ind  = (crown_area /nind )
 
-        ! !LAI (m2/m2)
-        ! lai_ind =(((lm_ind /nind )*sla )/crown_area_ind )
+        !LAI (m2/m2)
+        lai_ind =(((lm_ind /nind )*sla )/crown_area_ind )
         
-        ! !ALTURA (m)
-        ! ! height  = allom2*(diameter **allom3)
+        !ALTURA (m)
+        ! height  = allom2*(diameter **allom3)
 
         
-        ! fpc_ind  = 1. - exp(-0.5 * 8.)
-        ! fpc_grid  = crown_area  * nind  * fpc_ind 
-        ! fpc_grid_old  = fpc_grid 
-        ! fpc_inc  = max(fpc_grid  - fpc_grid_old ,0.)
+        fpc_ind  = 1. - exp(-0.5 * 8.)
+        fpc_grid  = crown_area  * nind  * fpc_ind 
+        fpc_grid_old  = fpc_grid 
+        fpc_inc  = max(fpc_grid  - fpc_grid_old ,0.)
 
-        ! !SELF-THINNING LOGIC 
-        ! fpc_tree_max = grid_area*0.95
+        !SELF-THINNING LOGIC 
+        fpc_tree_max = grid_area*0.95
 
         ! fpc_inc_tree    = sum(fpc_inc(:))
-        ! ! fpc_tree_total  = sum(fpc_grid, mask = present .and. tree)
+        fpc_inc_tree    = fpc_inc            
+        ! fpc_tree_total  = sum(fpc_grid, mask = present .and. tree)
 
 
 
-        ! ! print*, 'FPC_IND', fpc_ind , 'FPC GRID', fpc_grid 
+        ! print*, 'FPC_IND', fpc_ind , 'FPC GRID', fpc_grid 
    
 end subroutine allocation
 
