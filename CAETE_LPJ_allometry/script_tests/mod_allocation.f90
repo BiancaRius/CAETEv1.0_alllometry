@@ -12,15 +12,22 @@ end module types
 
 ! program allocation !module to test allocation logic module of LPJmL-Fire
 subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, nind_test,&
-    &bminc_test, height_test)    
+    &bminc_test, height_test, cl_inc,cw_inc, cr_inc) !, cr_inc,  cs_inc, ch_inc, ctotal_inc)    
     use types
     use iso_fortran_env, only : output_unit
 
-    !VARIABLES [INPUT] - Determinadas arbitrariamente
+    !VARIABLES [INPUT] - vem do módulo de estabelecimento/FP
     real(r_8), intent(in) :: gc_area
     real, intent(in) :: lm_test, cw_test, rm_test, dwood_test
     real, intent(in) :: sla_test, nind_test, bminc_test, height_test
 
+    !VARIABLES [OUTPUT] - o incremento de cada compartimento de carbono neste ano
+    real(r_8), intent(out) :: cl_inc !leaf increment (gC)
+    real(r_8), intent(out) :: cw_inc !wood increment (gC)
+    ! real(r_8), intent(out) :: cr_inc !root increment (gC)
+    ! real(r_8), intent(out) :: cs_inc !sapwood increment (gC)
+    ! real(r_8), intent(out) :: ch_inc !heartwood increment (gC)
+    ! real(r_8), intent(out) :: ctotal_inc !total carbon increment (gC)
 
     integer(i_4),parameter :: npls = 3000
     integer(i_4),parameter :: nseg = 20 ! segment number to bisection loop
@@ -377,13 +384,19 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
 
         endif !normal/abnormal allocation
 
-        !Increment C compartments - OUTPUT FINAL (kgC/m²)
+        !Increment on C compartments - OUTPUT FINAL (gC)
+        cl_inc = lminc_ind
+        cr_inc = rminc_ind
+        cs_inc = sminc_ind
+        ch_inc = hm 
+        cw_inc = cs_inc + ch_inc
+        ctotal_inc = cl_inc + cr_inc + cs_inc + ch_inc 
 
-        lm_ind  = ((lm  + lminc_ind )*nind )/1.D3
-        rm_ind  = ((rm  + rminc_ind )*nind )/1.D3 
-        sm_ind  = ((sm  + sminc_ind )*nind )/1.D3
-        hm_ind  = (hm *nind )/1.D3
-        cwood  = sm_ind +hm_ind 
+        ! lm_ind  = ((lm  + lminc_ind )*nind )/1.D3
+        ! rm_ind  = ((rm  + rminc_ind )*nind )/1.D3 
+        ! sm_ind  = ((sm  + sminc_ind )*nind )/1.D3
+        ! hm_ind  = (hm *nind )/1.D3
+        ! cwood  = sm_ind +hm_ind 
         ! print*, 'leaf carbon',lm_ind 
         ! print*, 'LMINC', lminc_ind , pls
         !print*, 'LM', lm_ind , 'RM', rm_ind , 'SM', sm_ind , 'HM', hm_ind , 'CWOOD', cwood , pls

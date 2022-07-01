@@ -113,7 +113,7 @@ program self_thinning
     
     real:: x(npls,time)
 
-    !test variables for module of establishment
+    !variables for module of establishment
 
     real, dimension (time) :: est
     real, dimension (npls,time) :: est_pls
@@ -126,7 +126,12 @@ program self_thinning
     real, dimension (npls,time) :: cwood_new
     real, dimension (npls,time) :: croot_new
 
-
+     !variables for module allocation
+    real, dimension (npls,time) :: cl_inc !leaf increment from allocation (gC, average_in)
+    real, dimension (npls,time) :: cr_inc !root increment from allocation (gC, average_in)
+    real, dimension (npls,time) :: cw_inc !wood increment from allocation (gC, average_in)
+    real, dimension (npls,time) :: ch_inc !heart increment from allocation (gC, average_in)
+    real, dimension (npls,time) :: cs_inc !sap increment from allocation (gC, average_in)
 
    
   
@@ -867,7 +872,8 @@ program self_thinning
             ! print*, 'cl2 before alloc', cl1_aux(j,k), cw1_aux(j,k), cr1_aux(j,k),&
                 ! &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k)
             call allocation(gc_area, cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
-                &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k), height(j,k))
+                &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k), height(j,k),&
+                &cl_inc(j,k), cw_inc(j,k), cr_inc(j,k))
 
 
             if(dens1_aux(j,k).le.0.) then
