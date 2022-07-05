@@ -12,7 +12,7 @@ end module types
 
 ! program allocation !module to test allocation logic module of LPJmL-Fire
 ! all the variables correspond to values for average individuals (it is divided by density in the main program)
-subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, nind,&
+subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood_input, sla, nind,&
     &bminc, height, cl_inc,cw_inc, cr_inc, cs_inc, ch_inc, ctotal_inc,&
     &cl_updt,cw_updt, cr_updt, cs_updt, ch_updt, ctotal_updt)    
     use types
@@ -21,7 +21,7 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
     !VARIABLES [INPUT] - vem do módulo de estabelecimento/FP
     real(r_8), intent(in) :: gc_area
     real, intent(in) :: lm_prevday, cw_prevday, rm_prevday
-    real, intent(in) :: sla, nind, bminc, height, dwood
+    real, intent(in) :: sla, nind, bminc, height, dwood_input
 
     !VARIABLES [OUTPUT] - o incremento de cada compartimento de carbono neste ano
     real(r_8), intent(out) :: cl_inc !leaf increment (gC)
@@ -87,6 +87,7 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
     real(r_8)  :: rm_kill          !reduction in grass PFT root mass to reduce grass cover to permitted maximum (gC)  
     real(r_8)  :: lm_kill          !reduction in grass PFT leaf mass to reduce grass cover to permitted maximum (gC)
     real(r_8)  :: lm_old
+    real(r_8)  :: dwood
 
     real(r_8)  :: lm !leaf mass
     real(r_8)  :: sm !sapwood mass
@@ -129,7 +130,7 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
     ! &5.3,9.2,15.,12.6,10.7,11.4/)
     rm_ind = rm_prevday !(/0.63,0.8,0.9,0.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,&
     ! &0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
-
+    dwood = dwood_input *1000000.
     !-----------------------------------------------------------------
 
 
@@ -146,7 +147,7 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
 
         ! ====== TREE ALLOCATION ======
 
-        lm1  = (latosa*sm /(dwood *1000)*height *sla )  !allometric leaf mass requirement *****ATENÇÃO*****
+        lm1  = (latosa*sm /(dwood)*height *sla )  !allometric leaf mass requirement *****ATENÇÃO*****
         ! print*, 'LM1', lm1 
 
         ! lm1  = 1000.0  !valor arbitrario colocado para rever a unidade do dwood
@@ -162,7 +163,7 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
         rminc_ind_min  = lm1  / ltor - rm       !eqn (30)
         ! print*, 'RM MIN', rminc_ind_min 
 
-        rminc_ind_min  = (latosa*sm /(dwood *1000)*height *sla *ltor) - rm       !eqn (30)
+        rminc_ind_min  = (latosa*sm /(dwood)*height *sla *ltor) - rm       !eqn (30)
         ! print*, 'RM MIN teste', rminc_ind_min 
 
 
@@ -170,7 +171,7 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
             &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
 
             !Normal allocation (positive increment to all living C compartments)
-            ! print*, 'normal'
+            print*, 'normal'
             normal = .true.
 
             !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
@@ -235,9 +236,9 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
                     ! &(wooddens)/latosa))**a2
 
                     root2  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
-                    &rm +hm )/dwood*1D7)/pi4-((sm +bminc_ind -xmid -&
+                    &rm +hm )/dwood)/pi4-((sm +bminc_ind -xmid -&
                     &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
-                    &(dwood*1D7)/latosa))**a2
+                    &(dwood)/latosa))**a2
 
                     fmid  = root2 
 
@@ -288,9 +289,9 @@ subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, ni
                     ! &wooddens/latosa))**a2
 
                     root3  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
-                    &rm +hm )/dwood*1D7)/pi4-((sm +bminc_ind -xmid -&
+                    &rm +hm )/dwood)/pi4-((sm +bminc_ind -xmid -&
                     &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
-                    &dwood*1D7/latosa))**a2
+                    &dwood/latosa))**a2
 
                     fmid  = root3 
 

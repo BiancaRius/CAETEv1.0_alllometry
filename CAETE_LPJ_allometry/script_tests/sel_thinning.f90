@@ -140,6 +140,7 @@ program self_thinning
     real, dimension (npls,time) :: cs_updt !sap updated after allocation (gC, average_in)
     real, dimension (npls,time) :: ctotal_updt !total updated after allocation (gC, average_in)
     
+    
 
    
   !!########################### deciduous case???????!!!!
@@ -278,7 +279,7 @@ program self_thinning
 
     do j = 1, npls      
 
-        dwood(j,:) =x(j,:)
+        dwood(j,:) =x(j,:) 
        
 
     enddo
@@ -335,7 +336,7 @@ program self_thinning
         
         ! annual_npp(j,:) = (npp1_initial(j,:)/dens1_initial(j,:)) + (npp_inc_init(j,:)/dens1_initial(j,:))
 
-       
+
 
 !-------------------------------------------------------------------------------
     ! !Increments to each compartments per individual. Here, the NPP proportions allocated
@@ -417,7 +418,7 @@ program self_thinning
             FPC_pls_1(:,k) = FPC_pls_initial(:,k)
             dens1(:,k) = dens1_initial(:,k)
             FPC_total_accu_1(k) = FPC_total_accu_initial(k)
-            npp_inc(:,k) = npp_inc_init(:,k)
+            npp_inc(:,k) = npp_inc_init(:,k)/dens1(:,k)
            
         else
 
@@ -430,8 +431,8 @@ program self_thinning
          !reinitializing for a new sampling
             npp_inc(:,k)=0.
         
-            xmin = 0.1
-            xmax = 3.5
+            xmin = 1.1
+            xmax = 4.5
      
             x(:,:) = 0.
             call random_number(x)
@@ -445,7 +446,7 @@ program self_thinning
         
         endif
 
-           
+        
 
         do j = 1, npls
                 
@@ -492,7 +493,7 @@ program self_thinning
                 
                 height(j,k) = 20 !!!!#################JUST FOR TEST!!!!!!!!#########
 
-
+           
             call allocation(gc_area, cl2(j,k), cw2(j,k),cr2(j,k),&
                 &dwood(j,k), spec_leaf(j,k), dens1(j,k), npp_inc2(j,k), height(j,k),&
                 &cl_inc(j,k), cw_inc(j,k), cr_inc(j,k), cs_inc(j,k), ch_inc(j,k), ctotal_inc(j,k),&
@@ -590,7 +591,7 @@ program self_thinning
 
         
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
-            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
+            !print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
             
            
             est_pls(:,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
@@ -698,7 +699,7 @@ program self_thinning
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
             count_pls = 0.
-            print*, 'n ultrapassou', FPC_total_accu_2(k)
+            !print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
 
                 
