@@ -109,7 +109,7 @@ program self_thinning
     real, dimension (time) :: FPC_total_accu_1_aux
 
 
-    !creating random numbers for initial variables
+    !creating random numbers for npp increment
     
     real:: x(npls,time)
 
@@ -132,18 +132,9 @@ program self_thinning
     real, dimension (npls,time) :: cw_inc !wood increment from allocation (gC, average_in)
     real, dimension (npls,time) :: ch_inc !heart increment from allocation (gC, average_in)
     real, dimension (npls,time) :: cs_inc !sap increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: ctotal_inc !total increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: cl_updt !leaf updated after allocation (gC, average_in)
-    real, dimension (npls,time) :: cr_updt !root updated after allocation (gC, average_in)
-    real, dimension (npls,time) :: cw_updt !wood updated after allocation (gC, average_in)
-    real, dimension (npls,time) :: ch_updt !heart updated after allocation (gC, average_in)
-    real, dimension (npls,time) :: cs_updt !sap updated after allocation (gC, average_in)
-    real, dimension (npls,time) :: ctotal_updt !total updated after allocation (gC, average_in)
-    
-    
 
    
-  !!########################### deciduous case???????!!!!
+  
     
 
     ! ================= END VARIABLES DECLARATION ===================== !
@@ -279,7 +270,7 @@ program self_thinning
 
     do j = 1, npls      
 
-        dwood(j,:) =x(j,:) 
+        dwood(j,:) =x(j,:)
        
 
     enddo
@@ -336,7 +327,7 @@ program self_thinning
         
         ! annual_npp(j,:) = (npp1_initial(j,:)/dens1_initial(j,:)) + (npp_inc_init(j,:)/dens1_initial(j,:))
 
-
+       
 
 !-------------------------------------------------------------------------------
     ! !Increments to each compartments per individual. Here, the NPP proportions allocated
@@ -378,8 +369,9 @@ program self_thinning
     do k = 1, time
                                                   
         ! print*, 'year',k
-  
-     
+       
+        
+        
         
         FPC_ind(:,k) = 0.
         FPC_pls_2(:,k) = 0.
@@ -418,7 +410,7 @@ program self_thinning
             FPC_pls_1(:,k) = FPC_pls_initial(:,k)
             dens1(:,k) = dens1_initial(:,k)
             FPC_total_accu_1(k) = FPC_total_accu_initial(k)
-            npp_inc(:,k) = npp_inc_init(:,k)/dens1(:,k)
+            npp_inc(:,k) = npp_inc_init(:,k)
            
         else
 
@@ -428,11 +420,11 @@ program self_thinning
             dens1(:,k) = dens1_aux(:,k-1)
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
             FPC_total_accu_1(k) = FPC_total_accu_1_aux(k-1)
-         !reinitializing for a new sampling
-            npp_inc(:,k)=0.
         
-            xmin = 1.1
-            xmax = 4.5
+            npp_inc(:,k)=0. !reinitializing for a new sampling
+        
+            xmin = 0.1
+            xmax = 3.5
      
             x(:,:) = 0.
             call random_number(x)
@@ -446,7 +438,7 @@ program self_thinning
         
         endif
 
-        
+           
 
         do j = 1, npls
                 
@@ -481,7 +473,7 @@ program self_thinning
                 npp_inc2(j,k) = 0.
                 
                
-            else !to be done with only the alive pls
+            else
                
                 cl2(j,k) = (cl1(j,k)/dens1(j,k)) 
 
@@ -490,18 +482,10 @@ program self_thinning
                 cr2(j,k) = (cr1(j,k)/dens1(j,k)) 
 
                 npp_inc2(j,k) = (npp_inc(j,k)/dens1(j,k)) 
-                
-                height(j,k) = 20 !!!!#################JUST FOR TEST!!!!!!!!#########
-
-           
-            call allocation(gc_area, cl2(j,k), cw2(j,k),cr2(j,k),&
-                &dwood(j,k), spec_leaf(j,k), dens1(j,k), npp_inc2(j,k), height(j,k),&
-                &cl_inc(j,k), cw_inc(j,k), cr_inc(j,k), cs_inc(j,k), ch_inc(j,k), ctotal_inc(j,k),&
-                &cl_updt(j,k), cw_updt(j,k), cr_updt(j,k), cs_updt(j,k), ch_updt(j,k), ctotal_updt(j,k))
-            endif
-                !----------------------------------------------------------------------------
+        
+                  !----------------------------------------------------------------------------
                  !Structuring PLSs [diameter, crown area and leaf area index]
-            if(cl2(j,k).gt.0.) then
+
                 diam(j,k) = ((4*(cw2(j,k)))/((dwood(j,k)*1000000.)*3.14*k_allom2))**(1/(2+k_allom3)) !nessa equação dwood deve estar em *g/m3*
                 
                 crown_area(j,k) = k_allom1*(diam(j,k)**krp)
@@ -591,7 +575,7 @@ program self_thinning
 
         
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
-            !print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
+            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k), fpc_max_tree
             
            
             est_pls(:,k) = 0.0 !if the total FPC (considering all PLS) is grater than fpc_max_tree there is no new establishment
@@ -699,7 +683,7 @@ program self_thinning
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
             count_pls = 0.
-            !print*, 'n ultrapassou', FPC_total_accu_2(k)
+            print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
 
                 
@@ -887,7 +871,10 @@ program self_thinning
             !!     
             ! print*, 'cl2 before alloc', cl1_aux(j,k), cw1_aux(j,k), cr1_aux(j,k),&
                 ! &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k)
-            
+            call allocation(gc_area, cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
+                &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k), height(j,k),&
+                &cl_inc(j,k), cw_inc(j,k), cr_inc(j,k))
+
 
             if(dens1_aux(j,k).le.0.) then
                 npp_inc(j,k) = 0.
@@ -1511,4 +1498,3 @@ end program self_thinning
 !     !update of biomass compartments with establishment
 !     !veja no vídeo do Philip no minuto 45:06
 !     !inserir quantidade de carbono que vai pra liteira
-
