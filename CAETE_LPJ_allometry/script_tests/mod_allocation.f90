@@ -11,25 +11,33 @@ module types
 end module types
 
 ! program allocation !module to test allocation logic module of LPJmL-Fire
-subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, nind_test,&
-    &bminc_test, height_test, cl_inc,cw_inc, cr_inc) !, cr_inc,  cs_inc, ch_inc, ctotal_inc)    
+! all the variables correspond to values for average individuals (it is divided by density in the main program)
+subroutine allocation(gc_area,lm_prevday, cw_prevday, rm_prevday, dwood, sla, nind,&
+    &bminc, height, cl_inc,cw_inc, cr_inc, cs_inc, ch_inc, ctotal_inc,&
+    &cl_updt,cw_updt, cr_updt, cs_updt, ch_updt, ctotal_updt)    
     use types
     use iso_fortran_env, only : output_unit
 
     !VARIABLES [INPUT] - vem do módulo de estabelecimento/FP
     real(r_8), intent(in) :: gc_area
-    real, intent(in) :: lm_test, cw_test, rm_test, dwood_test
-    real, intent(in) :: sla_test, nind_test, bminc_test, height_test
+    real, intent(in) :: lm_prevday, cw_prevday, rm_prevday
+    real, intent(in) :: sla, nind, bminc, height, dwood
 
     !VARIABLES [OUTPUT] - o incremento de cada compartimento de carbono neste ano
     real(r_8), intent(out) :: cl_inc !leaf increment (gC)
     real(r_8), intent(out) :: cw_inc !wood increment (gC)
-    ! real(r_8), intent(out) :: cr_inc !root increment (gC)
-    ! real(r_8), intent(out) :: cs_inc !sapwood increment (gC)
-    ! real(r_8), intent(out) :: ch_inc !heartwood increment (gC)
-    ! real(r_8), intent(out) :: ctotal_inc !total carbon increment (gC)
+    real(r_8), intent(out) :: cr_inc !root increment (gC)
+    real(r_8), intent(out) :: cs_inc !sapwood increment (gC)
+    real(r_8), intent(out) :: ch_inc !heartwood increment (gC)
+    real(r_8), intent(out) :: ctotal_inc !total carbon increment (gC)
+    real(r_8), intent(out) :: cl_updt !leaf updated after allocation (gC)
+    real(r_8), intent(out) :: cw_updt !wood updated after allocation (gC)
+    real(r_8), intent(out) :: cr_updt !root updated after allocation (gC)
+    real(r_8), intent(out) :: cs_updt !sapwood updated after allocation (gC)
+    real(r_8), intent(out) :: ch_updt !heartwood updated after allocation (gC)
+    real(r_8), intent(out) :: ctotal_updt !total carbon updated after allocation (gC)
 
-    integer(i_4),parameter :: npls = 3000
+    
     integer(i_4),parameter :: nseg = 20 ! segment number to bisection loop
     integer(i_4), parameter :: time = 1000
     real(r_8),parameter :: pi   =  3.14159265
@@ -47,11 +55,7 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
     real(r_8) :: latosa = 6000.0
     real(r_8) :: reinickerp = 1.6
     real(r_8) :: ltor = 0.77302587552347657 !leaf:root from Philip
-    real(r_8) :: grid_area = 1000 !m2
-    real(r_8)  :: dwood   !in g/cm3 but must be in g/m2
-    real(r_8)  :: sla !m2/g
-    real(r_8)  :: nind !m2
-    real(r_8)  :: bminc !kgC/m2 - !total biomass increment this year for area
+   
     
 
     real(r_8)  :: lm_ind !in kgC/m2 but use in gC/ind [transformation below]
@@ -63,15 +67,7 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
     real(r_8)  :: litter_ag_fast
     real(r_8)  :: litter_ag_slow
     real(r_8)  :: litter_bg
-    real(r_8)  :: lai_ind
-    real(r_8)  :: crown_area
-    real(r_8)  :: crown_area_ind
-    real(r_8)  :: diameter
-    real(r_4)  :: height
-    real(r_8)  :: fpc_grid
-    real(r_8)  :: fpc_ind
-    real(r_8)  :: fpc_inc
-    real(r_8)  :: fpc_grid_old
+    
 
 
     !Local Variables
@@ -115,23 +111,23 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
 
     integer :: i
 
-    ! print*, 'cl2 inside alloc', lm_test, cw_test, cr_test, dwood_test,&
+    ! print*, 'cl2 inside alloc', lm_prevday, cw_test, cr_test, dwood_test,&
      ! &sla_test, nind_test, bminc_test
     !Arrays with values to some variables (generic values)
-    dwood = dwood_test !(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,&
+    !dwood = dwood !(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,&
     ! &0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
-    bminc = bminc_test !(/2.15,2.,2.18,2.6,2.5,1.8,2.3,2.,1.8,2.84,2.25,3.,2.2,1.7,&
+    !bminc = bminc !(/2.15,2.,2.18,2.6,2.5,1.8,2.3,2.,1.8,2.84,2.25,3.,2.2,1.7,&
     !&1.18,2.6,3.5,2.8,3.3,2./)
-    sla = sla_test! (/0.002,0.018,0.009,0.023,0.013,0.039,0.040,0.0028,0.0025,&
+    !sla = sla! (/0.002,0.018,0.009,0.023,0.013,0.039,0.040,0.0028,0.0025,&
     ! &0.027,0.032,0.007,0.013,0.025,0.002,0.008,0.004,0.016,0.023,0.015/)
-    nind = nind_test !(/1.,2.,8.,6.,5.,9.,3.,4.,7.,1.,2.,8.,5.,3.,6.,4.,5.,8.,9.,3./)
-    height = height_test !(/5.,9.,15.,10.9,11.5,18.9,12.6,2.5,14.9,22.5,28.7,23.6,&
+    !nind = nind !(/1.,2.,8.,6.,5.,9.,3.,4.,7.,1.,2.,8.,5.,3.,6.,4.,5.,8.,9.,3./)
+    !height = height!(/5.,9.,15.,10.9,11.5,18.9,12.6,2.5,14.9,22.5,28.7,23.6,&
     ! &28.8,19.6,13.3,27.6,29.5,21.6,30.,2./)
-    lm_ind = lm_test!(/2.15,2.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,&
+    lm_ind = lm_prevday!(/2.15,2.,1.18,1.6,1.5,1.8,0.3,2.,0.8,.84,0.25,1.,0.2,1.7,&
     ! &1.18,1.6,1.5,1.8,0.3,2./)
-    cw_ind = cw_test !(/7.,12.,7.2,8.3,8.8,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,&
+    cw_ind = cw_prevday !(/7.,12.,7.2,8.3,8.8,9.7,7.5,11.5,10.,8.6,7.3,10.3,6.8,9.9,&
     ! &5.3,9.2,15.,12.6,10.7,11.4/)
-    rm_ind = rm_test !(/0.63,0.8,0.9,0.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,&
+    rm_ind = rm_prevday !(/0.63,0.8,0.9,0.5,1.3,0.9,0.4,1.0,0.56,0.87,0.33,0.97,0.31,&
     ! &0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
 
     !-----------------------------------------------------------------
@@ -174,7 +170,7 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
             &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
 
             !Normal allocation (positive increment to all living C compartments)
-            print*, 'normal'
+            ! print*, 'normal'
             normal = .true.
 
             !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
@@ -310,17 +306,22 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
               
 
                 !Now rtbis contains numerical solution for lminc_ind given eqn (22)
+                !Here, lminc_ind is always positive
 
                 lminc_ind  = rtbis
-                print*, 'lminc', lminc_ind 
+                ! print*, 'lminc', lminc_ind
+            
 
             endif
 
             !Calculate increments in other compartments using allometry relationships
 
             rminc_ind  = (lm  + lminc_ind ) / ltor - rm        !eqn (9)
+            
 
             sminc_ind  = bminc_ind  - rminc_ind  - lminc_ind   !eqn (1)
+            
+            !THERE IS NEGATIVE VALUES FOR SAPWOOD.. WHAT TO DO?
 
             ! print*, 'LEAF_INC (gC/ind)', (lminc_ind /1.D3), 'ROOT_INC (gC/ind)', (rminc_ind /1.D3),&
             ! & 'SAP_INC(gC/ind)', (sminc_ind /1.D3), pls, 'NORMAL'
@@ -334,7 +335,7 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
             !Attempt to distribute this year's production among leaves and roots only
 
             lminc_ind  = (bminc_ind -lm /ltor+rm )/(1.+1./ltor)  !eqn (33)
-            print*,'anormal', lminc_ind
+            ! print*,'anormal', lminc_ind
 
             if (lminc_ind  > 0.) then
 
@@ -361,6 +362,7 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
 
                 rminc_ind  = bminc_ind 
                 lminc_ind  = (rm  + rminc_ind ) * ltor - lm   !from eqn (9)
+                ! print*, 'leaf negative allocation', lminc_ind
 
                 !Add killed leaves to litter
 
@@ -373,7 +375,7 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
             !Calculate sminc_ind (must be negative)
       
             sminc_ind  = (lm  + lminc_ind ) * sla  /&
-            & latosa * 2.e5 * height  - sm   !eqn (35)
+            & latosa * dwood * height  - sm   !eqn (35)
 
             !Convert killed sapwood to heartwood
 
@@ -392,47 +394,11 @@ subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, n
         cw_inc = cs_inc + ch_inc
         ctotal_inc = cl_inc + cr_inc + cs_inc + ch_inc 
 
-        ! lm_ind  = ((lm  + lminc_ind )*nind )/1.D3
-        ! rm_ind  = ((rm  + rminc_ind )*nind )/1.D3 
-        ! sm_ind  = ((sm  + sminc_ind )*nind )/1.D3
-        ! hm_ind  = (hm *nind )/1.D3
-        ! cwood  = sm_ind +hm_ind 
-        ! print*, 'leaf carbon',lm_ind 
-        ! print*, 'LMINC', lminc_ind , pls
-        !print*, 'LM', lm_ind , 'RM', rm_ind , 'SM', sm_ind , 'HM', hm_ind , 'CWOOD', cwood , pls
+   
 
-        !ALLOMETRY EQUATIONS
-
-        !DIAMETER (m)
-        diameter  = (4*(cwood *1.0D3)/(dwood *1D7)*pi*allom2)&
-        &**(1/(2+allom3))
-        
-        !CROWN AREA (m2)
-        crown_area  = allom1*(diameter **1.6)
-        crown_area_ind  = (crown_area /nind )
-
-        !LAI (m2/m2)
-        lai_ind =(((lm_ind /nind )*sla )/crown_area_ind )
-        
-        !ALTURA (m)
-        ! height  = allom2*(diameter **allom3)
 
         
-        fpc_ind  = 1. - exp(-0.5 * 8.)
-        fpc_grid  = crown_area  * nind  * fpc_ind 
-        fpc_grid_old  = fpc_grid 
-        fpc_inc  = max(fpc_grid  - fpc_grid_old ,0.)
-
-        !SELF-THINNING LOGIC 
-        fpc_tree_max = grid_area*0.95
-
-        ! fpc_inc_tree    = sum(fpc_inc(:))
-        fpc_inc_tree    = fpc_inc            
-        ! fpc_tree_total  = sum(fpc_grid, mask = present .and. tree)
-
-
-
-        ! print*, 'FPC_IND', fpc_ind , 'FPC GRID', fpc_grid 
+      
    
 end subroutine allocation
 
