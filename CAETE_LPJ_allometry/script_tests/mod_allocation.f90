@@ -118,7 +118,7 @@ module types
      ! print*, 'cl2 inside alloc', lm_test, cw_test, cr_test, dwood_test,&
       ! &sla_test, nind_test, bminc_test
      !Arrays with values to some variables (generic values)
-     dwood = dwood_test !(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,&
+     dwood = dwood_test*1000000 !(/0.74,0.73,0.59,0.52,0.41,0.44,0.86,0.42,0.64,0.69,0.92,&
      ! &0.60,0.36,0.99,0.59,0.52,0.41,0.44,0.86,0.42/) !atenção para a unidade
      bminc = bminc_test !(/2.15,2.,2.18,2.6,2.5,1.8,2.3,2.,1.8,2.84,2.25,3.,2.2,1.7,&
      !&1.18,2.6,3.5,2.8,3.3,2./)
@@ -135,7 +135,7 @@ module types
      ! &0.55,0.2,0.8,0.4,0.66,0.23,1.5/)
  
      !-----------------------------------------------------------------
- 
+    ! print*,'inside', height
  
     
  
@@ -143,19 +143,19 @@ module types
          sm  = (cw_ind *0.05) !/nind )*1.D3
          hm  = (cw_ind *0.95)!/nind )*1.D3
          rm  = rm_ind !/nind )*1.D3
-         bminc_ind  = bminc ! /nind )*1.D3
+         bminc_ind  = bminc ! bminc ! /nind )*1.D3
          
          !checking entering values
          ! print*, 'LM=', lm ,'SM',sm ,'HM', hm ,'RM', rm, 'BMINC', bminc_ind 
  
          ! ====== TREE ALLOCATION ======
  
-         lm1  = (latosa*sm /(dwood *1000)*height *sla )  !allometric leaf mass requirement *****ATENÇÃO*****
-         ! print*, 'LM1', lm1 
+         lm1  = (latosa*sm /(dwood)*height *sla )  !allometric leaf mass requirement *****ATENÇÃO*****
+         !print*, 'LM1', lm1, latosa, sm, dwood, height, sla, lm 
  
          ! lm1  = 1000.0  !valor arbitrario colocado para rever a unidade do dwood
  
-         lminc_ind_min  = lm  - lm1   !eqn (27)
+         lminc_ind_min  = lm1  - lm   !eqn (27)
          ! print*, 'LM MIN', lminc_ind_min , pls
  
          ! lminc_ind_min  = 0.6
@@ -166,7 +166,7 @@ module types
          rminc_ind_min  = lm1  / ltor - rm       !eqn (30)
          ! print*, 'RM MIN', rminc_ind_min 
  
-         rminc_ind_min  = (latosa*sm /(dwood *1000)*height *sla *ltor) - rm       !eqn (30)
+         rminc_ind_min  = (latosa*sm /(dwood)*height *sla *ltor) - rm       !eqn (30)
          ! print*, 'RM MIN teste', rminc_ind_min 
  
  
@@ -174,7 +174,7 @@ module types
              &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
  
              !Normal allocation (positive increment to all living C compartments)
-             print*, 'normal'
+            !  print*, 'normal'
              normal = .true.
  
              !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
@@ -239,9 +239,9 @@ module types
                      ! &(wooddens)/latosa))**a2
  
                      root2  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
-                     &rm +hm )/dwood*1D7)/pi4-((sm +bminc_ind -xmid -&
+                     &rm +hm )/dwood)/pi4-((sm +bminc_ind -xmid -&
                      &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
-                     &(dwood*1D7)/latosa))**a2
+                     &(dwood)/latosa))**a2
  
                      fmid  = root2 
  
@@ -292,9 +292,9 @@ module types
                      ! &wooddens/latosa))**a2
  
                      root3  = a3*((sm +bminc_ind -xmid -((lm +xmid )/ltor)+&
-                     &rm +hm )/dwood*1D7)/pi4-((sm +bminc_ind -xmid -&
+                     &rm +hm )/dwood)/pi4-((sm +bminc_ind -xmid -&
                      &((lm +xmid )/ltor)+rm )/((lm +xmid )*sla *&
-                     &dwood*1D7/latosa))**a2
+                     &dwood/latosa))**a2
  
                      fmid  = root3 
  
@@ -312,7 +312,7 @@ module types
                  !Now rtbis contains numerical solution for lminc_ind given eqn (22)
  
                  lminc_ind  = rtbis
-                 print*, 'lminc', lminc_ind 
+                !  print*, 'lminc', lminc_ind 
  
              endif
  
@@ -836,3 +836,4 @@ module types
  !         ! print*, 'FPC_IND', fpc_ind(pls), 'FPC GRID', fpc_grid(pls)
  !     enddo
  ! end subroutine allocation
+

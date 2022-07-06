@@ -20,7 +20,7 @@
 !-------------------------------------------------------------------------------------------------
     !Module defining functions related to the establishment of average individuals in
     !a PLS if the area of occupation of all PLSs is greater than 95% of the considered area
-    !It informs the both the new density of individuals and the "shrink" process (see section 
+    !It informs both the new density of individuals and the "shrink" process (see section 
     !4.6.1.Establishment in Smith et al. 2001)
     !Most of the equations are based on LPJ population mode (as described in Smith et al 2001) 
     !and can be found in Sitch et al., 2003 and Smith et al., 2001.
@@ -77,7 +77,7 @@ module establish
         ! print*, 'lt 0.9'
     else
 
-        est = (1 - exp(-5. * (1 - FPC_total_perc)))*(1 - FPC_total_perc)
+        est = est_max*(1 - exp(-5. * (1 - FPC_total_perc)))*(1 - FPC_total_perc)
         ! print*, 'gt 0.9'
 
     endif

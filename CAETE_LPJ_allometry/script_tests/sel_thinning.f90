@@ -493,12 +493,8 @@ program self_thinning
                 lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
                 
                 height(j,k) = k_allom2*(diam(j,k)**(k_allom3))
-                ! if(diam(j,k).le.0.)then
-                !     print*, 'diam', diam(j,k)
-                !     print*, 'crown_area', crown_area(j,k)
-                !     print*, 'lai', lai(j,k)
-                !     print*, 'height', height(j,k),j
-                ! endif
+                
+                
                 !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
@@ -686,7 +682,7 @@ program self_thinning
             print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
 
-                
+                ! print*, height(j,k), cl2(j,k), cw2(j,k), cr2(j,k), FPC_pls_2(j,k), diam(j,k)
                 
                 
                 FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
@@ -871,8 +867,9 @@ program self_thinning
             !!     
             ! print*, 'cl2 before alloc', cl1_aux(j,k), cw1_aux(j,k), cr1_aux(j,k),&
                 ! &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k)
+            ! print*,'bf', height(j,k)
             call allocation(gc_area, cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
-                &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k), height(j,k),&
+                &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc2(j,k), height(j,k),&
                 &cl_inc(j,k), cw_inc(j,k), cr_inc(j,k))
 
 
