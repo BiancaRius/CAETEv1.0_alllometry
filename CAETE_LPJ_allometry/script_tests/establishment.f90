@@ -70,19 +70,40 @@ module establish
     FPC_total_perc = FPC_total_accu_2/gc_area
         
         ! print*, 'fpc perc', FPC_total_perc
+    !lpjmlfire
+    est = est_max * (1. - exp(5. * (FPC_total_perc- 1.))) / npls_alive
+    ! print*, 'testing lpjfire est',est
 
-    if(FPC_total_perc.lt.0.9) then
 
-        est = est_max*(1 - FPC_total_perc)
-        ! print*, 'lt 0.9'
-    else
+    ! if(FPC_total_perc.lt.0.9) then
+    !     !smith
+    !     est = 0.06*(1-FPC_total_perc)
 
-        est = est_max*(1 - exp(-5. * (1 - FPC_total_perc)))*(1 - FPC_total_perc)
-        ! print*, 'gt 0.9'
 
-    endif
 
-        est_pls = est/npls_alive
+    ! !     est = est_max*(1 - FPC_total_perc)
+    ! !     ! print*, 'lt 0.9'
+    ! else
+    !     !smith
+    !     est = 0.06*(1-exp(-5*(1-FPC_total_perc)))*(1-FPC_total_perc)
+
+    ! !     est = est_max*(1 - exp(-5. * (1 - FPC_total_perc)))*(1 - FPC_total_perc)
+    ! !     ! print*, 'gt 0.9'
+
+    ! endif
+    ! ! print*, 'testing current est',est
+     
+    !lpjmlfire
+    est_pls = max(est * (1. - FPC_total_perc),0.)
+        ! ! print*, 'testing lpjfire est pls',est_pls
+
+
+    !smith
+    ! est_pls = est*(est_max/est_max*npls_alive)*FPC_total_perc*(1-FPC_total_perc)
+
+    ! est_pls = est/npls_alive
+        ! print*, 'testing cuurent est pls',est_pls
+        
 
         ! print*, 'estab', est, est_pls, npls
     
@@ -161,6 +182,7 @@ module establish
 
         real :: aux5, aux6, aux7, aux8, aux9, aux10, dwood ! auxiliary variables to calculate cleaf_sapl
 
+        real :: sla_sapl, diam_sapl, lai_sapl, height_sapl,dwood_sapl
 
         real :: klatosa_sapl = 8000.
 
@@ -170,20 +192,40 @@ module establish
 
         real :: sapl_hw = 0.2
 
-        real :: lai_sapl = 1.5
-
         real :: k_allom1_sapl = 100.
 
         real :: k_allom2_sapl = 40.
 
         real :: k_allom3_sapl = 0.5
 
+        real :: x_sapl = 3. !from lpjlmfire (pftparametersmod.f90)
+
+        real :: reinickerp = 1.6
         
 
         sla = 20 !m2/kgC
-        lai_sapl = 1.5 !m2/m2
+        !lai_sapl = 1.5 !m2/m2
+        sla_sapl = 0.021 !from lpjlmfire (pftparametersmod.f90, line 229) m2/gC
+        lai_sapl = 4 !lpjmlfire (pft parameter)
         dwood = 200 !kgC/m3
-        
+        dwood_sapl = 2e5
+
+        cleaf_sapl = (lai_sapl * k_allom1_sapl * x_sapl**reinickerp * (4. *sla_sapl / pi / klatosa_sapl)**(reinickerp * 0.5) / & 
+                      sla_sapl)**(1. - 1. / reinickerp)  
+        !print*, 'cleafsapl, lpjmlfire', cleaf_sapl
+
+        diam_sapl = x_sapl * (4. * cleaf_sapl * sla_sapl / pi / klatosa_sapl)**0.5
+
+        !print*, 'diamsapl, lpjmlfire', diam_sapl*100
+
+        height_sapl = k_allom2_sapl*diam_sapl**k_allom3_sapl
+        !print*, 'height, lpjmlfire', height_sapl
+
+        csap_sapl = dwood_sapl * height_sapl * cleaf_sapl * sla_sapl / klatosa_sapl
+        !print*, 'csapl, lpjmlfire', csap_sapl
+
+        cheart_sapl = (x_sapl - 1.) * csap_sapl
+        print*, 'cheart, lpjmlfire', cheart_sapl
         
         ! sla_sapl2 = (2*(0.0001))*((exp(6.15)/((12.*2.)**0.46)))
         ! print*, 'sla_sapl', sla_sapl, sla_sapl2
@@ -262,7 +304,7 @@ module establish
         aux2 = 2./(2.-k_rp)
         aux = aux1**aux2
         cleaf_sapl = aux !*1000
-        
+        print*!, 'cleaf sapl, anterior', cleaf_sapl
         
         ! print*,'cleaf', cleaf_sapl
         
