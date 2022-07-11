@@ -170,10 +170,10 @@ module establish
         real, intent(out) :: cheart_sapl_npls
         real, intent(out) :: croot_sapl_npls
 
-        real :: cleaf_sapl 
-        real :: csap_sapl
-        real :: cheart_sapl
-        real :: croot_sapl
+        real :: cleaf_sapl !gC
+        real :: csap_sapl  !gC
+        real :: cheart_sapl !gC
+        real :: croot_sapl   !gC
 
 
         !internal variables
@@ -203,12 +203,10 @@ module establish
         real :: reinickerp = 1.6
         
 
-        sla = 20 !m2/kgC
-        !lai_sapl = 1.5 !m2/m2
+       
         sla_sapl = 0.021 !from lpjlmfire (pftparametersmod.f90, line 229) m2/gC
         lai_sapl = 4 !lpjmlfire (pft parameter)
-        dwood = 200 !kgC/m3
-        dwood_sapl = 2e5
+        dwood_sapl = 2e5 !gc/m3
 
         cleaf_sapl = (lai_sapl * k_allom1_sapl * x_sapl**reinickerp * (4. *sla_sapl / pi / klatosa_sapl)**(reinickerp * 0.5) / & 
                       sla_sapl)**(1. - 1. / reinickerp)  
@@ -225,108 +223,21 @@ module establish
         !print*, 'csapl, lpjmlfire', csap_sapl
 
         cheart_sapl = (x_sapl - 1.) * csap_sapl
-        print*, 'cheart, lpjmlfire', cheart_sapl
-        
-        ! sla_sapl2 = (2*(0.0001))*((exp(6.15)/((12.*2.)**0.46)))
-        ! print*, 'sla_sapl', sla_sapl, sla_sapl2
-
-        ! sla = sla_sapl/1000. !transforms from m2/gC to m2/KgC
-       
-        ! dwood = dwood_sapl*1000 !transforms from gC/cm3 to KgC/m3
-        
-
-        ! aux4 = (4*sla)/(pi/klatosa_sapl)
-  
-
-        ! ! aux3 = ((4*sla_sapl)/(klatosa_sapl*pi))**(k_rp*0.5)
-        ! aux3 = (aux4)**(k_rp*0.5)
-        
-        ! aux2 = (1.0 + sapl_hw)**k_rp
-
-        ! aux1 = lai_sapl*k_allom1_sapl
-
-        ! aux = aux1 * aux2 * aux3
-              
-       
-        ! ! cleaf_sapl = (aux/(sla**(2.0/(2.0-k_rp))))
-        ! cleaf_sapl = (aux/sla)**(2.0/(2.0-k_rp))
-
-        ! ! print*,'cleaf_sapl',cleaf_sapl
-
-        ! ! aux5 = dwood * k_allom2_sapl
-
-        ! ! aux6 = (1. + sapl_hw)
-
-        ! ! aux7 = (4*cleaf_sapl*sla)/(pi)
-
-        ! ! aux8 = sqrt(aux7/klatosa_sapl)
-
-        ! ! aux9 = (cleaf_sapl*sla)/klatosa_sapl
-
-        ! ! aux10 = (aux6*aux8)**k_allom3_sapl
-
-        ! ! csap_sapl = aux5 * aux10 * aux9
-
-        ! ! ! csap_sapl = (dwood*(1+sapl_hw)*cleaf_sapl*sla)/klatosa_sapl
-
-        ! ! print*, 'csap_sapl', csap_sapl*1000
-
-        ! ! cheart_sapl = (1+sapl_hw) * csap_sapl
-
-        ! ! print*, 'cheart_sapl', cheart_sapl*1000. + csap_sapl*1000
-        
-        ! aux1 = 4*sla_sapl
-! 
-        ! aux2 = pi*klatosa_sapl
-
-        ! aux3 = aux1/aux2
-
-        ! aux4 = aux3**(0.5*k_rp)
-! 
-        ! ! ! aux5 = 1.2**k_rp
-! 
-        ! ! ! aux6 = 1.5*k_allom1_sapl
-! 
-        ! ! aux7 = 2./(2-k_rp)
-! 
-        ! ! aux8 = sla_sapl**aux7
-! 
-        ! aux9 = aux6*aux5*aux4
-        
-        ! cleaf_sapl = aux9/aux8
-        
-        aux3=lai_sapl*k_allom1_sapl
-        aux4=(1.+sapl_hw)**k_rp
-        aux7=((4*sla)/pi)/klatosa_sapl
-        aux6=k_rp*0.5
-        aux5 = aux7**aux6
-        aux1 = (aux3*aux4*aux5)/sla
-        aux2 = 2./(2.-k_rp)
-        aux = aux1**aux2
-        cleaf_sapl = aux !*1000
-        print*!, 'cleaf sapl, anterior', cleaf_sapl
-        
-        ! print*,'cleaf', cleaf_sapl
-        
-        aux10 = (cleaf_sapl*sla)/klatosa_sapl
-        aux9 = (1+sapl_hw)*sqrt(((4*cleaf_sapl*sla)/pi)/klatosa_sapl)
-        aux8 = dwood*k_allom2_sapl
-        csap_sapl = (aux8 * (aux9**k_allom3_sapl)*aux10) !*1000.
-        ! print*, csap_sapl
-
-        cheart_sapl = (sapl_hw*csap_sapl)!*1000.
-        ! print*, cheart_sapl
-
-        croot_sapl = (1./1.*cleaf_sapl)!*1000.
-
+        ! print*, 'cheart, lpjmlfire', cheart_sapl
         
 
         !update to gC and to distribution to the pls's
 
-        cleaf_sapl_npls = (cleaf_sapl*1000)/npls_alive
-        csap_sapl_npls = (csap_sapl*1000)/npls_alive
-        cheart_sapl_npls = (cheart_sapl*1000)/npls_alive
-        croot_sapl_npls = (croot_sapl*1000)/npls_alive
+        !cleaf_sapl_npls = (cleaf_sapl*1000)/npls_alive
+        !csap_sapl_npls = (csap_sapl*1000)/npls_alive
+        !cheart_sapl_npls = (cheart_sapl*1000)/npls_alive
+        !croot_sapl_npls = (croot_sapl*1000)/npls_alive
+
+        cleaf_sapl_npls = cleaf_sapl
+        csap_sapl_npls = csap_sapl
+        cheart_sapl_npls = cheart_sapl
+        croot_sapl_npls = croot_sapl
+
 
 
         ! print*, cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls, croot_sapl_npls
