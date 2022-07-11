@@ -12,7 +12,7 @@ module types
  
  ! program allocation !module to test allocation logic module of LPJmL-Fire
  subroutine allocation(gc_area,lm_test, cw_test, rm_test, dwood_test, sla_test, nind_test,&
-     &bminc_test, height_test, cl_inc,cw_inc, cr_inc) !, cr_inc,  cs_inc, ch_inc, ctotal_inc)    
+     &bminc_test, height_test, cl_inc,cw_inc,ch_inc, cs_inc, cr_inc) !, cr_inc,  cs_inc, ch_inc, ctotal_inc)    
      use types
      use iso_fortran_env, only : output_unit
  

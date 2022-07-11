@@ -65,7 +65,7 @@ module establish
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 2*(gc_available)
+    est_max = 2 *(gc_available)
     ! est_max = 2*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
         
@@ -109,14 +109,16 @@ module establish
     
     end subroutine
 
-    subroutine shrink(cl_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
+    subroutine shrink(cl_old,ch_old,cs_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
     &           cheart_sapl_npls,croot_sapl_npls, dens_new, cleaf_new,& 
-    &           cwood_new,croot_new)
+    &           cwood_new,cheart_new, csap_new, croot_new)
     
         ! !input variables
         ! integer, intent(in) :: npls
         real, intent(in) :: cl_old
         real, intent(in) :: cw_old
+        real, intent(in) :: ch_old
+        real, intent(in) :: cs_old
         real, intent(in) :: cr_old
         real, intent(in) :: est_pls
         real, intent(in) :: dens_old
@@ -129,6 +131,8 @@ module establish
         real, intent(out):: dens_new
         real, intent(out):: cleaf_new
         real, intent(out):: cwood_new
+        real, intent(out):: cheart_new
+        real, intent(out):: csap_new
         real, intent(out):: croot_new
         
         ! !internal variables
@@ -147,6 +151,10 @@ module establish
         cleaf_new = ((cl_old*dens_old)+(cleaf_sapl_npls*est_pls))/dens_new
         ! print*,'cleaf_new',cleaf_new,'cl_old', cl_old, 'dens_olds', dens_old,'cleaf_sapl',cleaf_sapl_npls
 
+        cheart_new = ((ch_old*dens_old)+(cheart_sapl_npls*est_pls))/dens_new
+
+        csap_new = ((cs_old*dens_old)+(csap_sapl_npls*est_pls))/dens_new
+
         cwood_sapl_npls = csap_sapl_npls + cheart_sapl_npls
         ! print*, 'cwood_sapl', cwood_sapl_npls, 'est_pls',est_pls, cwood_sapl_npls*est_pls
 
@@ -160,7 +168,8 @@ module establish
     end subroutine shrink
 
     subroutine sapling_allometry(npls_alive,cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls,croot_sapl_npls)
-    
+        !subroutine to calculate carbon in saplings compartments
+
         !input variables
         real, intent(in) :: npls_alive
         
@@ -178,19 +187,12 @@ module establish
 
         !internal variables
        
-        real :: aux, aux1, aux2, aux3, aux4, sla ! auxiliary variables to calculate cleaf_sapl
-
-        real :: aux5, aux6, aux7, aux8, aux9, aux10, dwood ! auxiliary variables to calculate cleaf_sapl
 
         real :: sla_sapl, diam_sapl, lai_sapl, height_sapl,dwood_sapl
 
         real :: klatosa_sapl = 8000.
 
         real :: pi = 3.14159
-
-        real :: k_rp = 1.6
-
-        real :: sapl_hw = 0.2
 
         real :: k_allom1_sapl = 100.
 
@@ -233,10 +235,10 @@ module establish
         !cheart_sapl_npls = (cheart_sapl*1000)/npls_alive
         !croot_sapl_npls = (croot_sapl*1000)/npls_alive
 
-        cleaf_sapl_npls = cleaf_sapl
-        csap_sapl_npls = csap_sapl
+        cleaf_sapl_npls  = cleaf_sapl
+        csap_sapl_npls   = csap_sapl
         cheart_sapl_npls = cheart_sapl
-        croot_sapl_npls = croot_sapl
+        croot_sapl_npls  = croot_sapl
 
 
 
