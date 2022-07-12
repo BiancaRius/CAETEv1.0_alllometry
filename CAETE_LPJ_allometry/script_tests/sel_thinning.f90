@@ -554,13 +554,18 @@ program self_thinning
                 
 
                 crown_area(j,k) = min(crown_area_max,k_allom1 * diam(j,k)**krp)
+                !crown_area(j,k)=k_allom1 * diam(j,k)**krp
                 !print*,'ca lpj', crown_area(j,k)
 
                 lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
                 !print*, 'lai', lai(j,k)
                 
                 height(j,k) = k_allom2 *diam(j,k)**k_allom3
+
+                if(height(j,k).gt.100.) then
                 
+                    print*, height(j,k), lai(j,k), crown_area(j,k), diam(j,k)*100
+                endif
                 !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
@@ -776,19 +781,24 @@ program self_thinning
             &      dens1(j,k))
                 ! pint*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
                 call sapling_allometry(alive_pls,cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k))
-                ! PINT*, 'bs',cl2(j,k)/1000
+                
                 call shrink(cl2(j,k),ch2(j,k),cs2(j,k),cw2(j,k),cr2(j,k),est_pls(j,k),dens1(j,k),&
             &      cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
             &      dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),cheart_new(j,k),&
             &      csap_new(j,k),croot_new(j,k))
-                !PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k),height(j,k)
+                ! if(cleaf_new(j,k).gt.0.) then
+                !     print*, 'after shrink',cleaf_new(j,k)/1000,cwood_new(j,k)/1000,croot_new(j,k)/1000
+                ! endif
+
+                !     PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k),height(j,k)
+                ! endif            
             
-                cl2(j,k) = cleaf_new(j,k)
-                cw2(j,k) = cwood_new(j,k)
-                ch2(j,k) = cheart_new(j,k)
-                cs2(j,k) = csap_new(j,k)
-                cr2(j,k) = croot_new(j,k)
-                dens1(j,k) = dens_est(j,k)
+                ! cl2(j,k) = cleaf_new(j,k)
+                ! cw2(j,k) = cwood_new(j,k)
+                ! ch2(j,k) = cheart_new(j,k)
+                ! cs2(j,k) = csap_new(j,k)
+                ! cr2(j,k) = croot_new(j,k)
+                ! dens1(j,k) = dens_est(j,k)
                 
                 if(FPC_pls_2(j,k).le.0.) then
                     ! print*, 'LT 0  ', FPC_pls_2(j,k),j
@@ -806,12 +816,12 @@ program self_thinning
                     ! print*,'count_pls', count_pls
                 endif
             
-                if(cleaf_new(j,k).le.0..or.cl2(j,k).eq.0.) then
+                if(cleaf_new(j,k).le.0..or.cl2(j,k).le.0.) then
+                    
                     greff(j,k) = 0.
                     mort_greff(j,k) = 0.
                     mort(j,k) = 1.
-                    ! print*,'aloooooooo',j
-
+                    
                 else    
                     greff(j,k) = carbon_increment(j)/(cleaf_new(j,k)*spec_leaf(j,k))
 
@@ -823,6 +833,8 @@ program self_thinning
                     ! print*, 'mort', mort(j,k)
                     !fpc_dec(j) = 0.
                 endif
+
+
             enddo
             
             !print*, 'NAO ULTRAPASSOU ==', 'este FPC_total_accu_2 tem que ser igual ao valor anterior==', FPC_total_accu_2
@@ -970,7 +982,7 @@ program self_thinning
             ! print*, 'cl2 before alloc', cl1_aux(j,k), cw1_aux(j,k), cr1_aux(j,k),&
                 ! &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k)
             ! print*,'bf', height(j,k)
-            call allocation(gc_area, cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
+            call allocation(cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
                 &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc2(j,k), height(j,k),&
                 &cl_inc(j,k), cw_inc(j,k),ch_inc(j,k),cs_inc(j,k), cr_inc(j,k))
 

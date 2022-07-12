@@ -141,30 +141,40 @@ module establish
         real :: cwood_sapl_npls
         
         
-        dens_new = dens_old + est_pls
+        if(cl_old.le.0.)then
+            dens_new = 0.
+            cleaf_new = 0.
+            cheart_new = 0.
+            csap_new = 0.
+            cwood_sapl_npls = 0.
+            cwood_new = 0.
+            croot_new = 0.
+        else
+            dens_new = dens_old + est_pls
 
 
         ! print*, dens_new, dens_old 
 
         ! print*, 'dens_new', dens_new, 'dens_old', dens_old
 
-        cleaf_new = ((cl_old*dens_old)+(cleaf_sapl_npls*est_pls))/dens_new
+            cleaf_new = ((cl_old*dens_old)+(cleaf_sapl_npls*est_pls))/dens_new
         ! print*,'cleaf_new',cleaf_new,'cl_old', cl_old, 'dens_olds', dens_old,'cleaf_sapl',cleaf_sapl_npls
 
-        cheart_new = ((ch_old*dens_old)+(cheart_sapl_npls*est_pls))/dens_new
+            cheart_new = ((ch_old*dens_old)+(cheart_sapl_npls*est_pls))/dens_new
 
-        csap_new = ((cs_old*dens_old)+(csap_sapl_npls*est_pls))/dens_new
+            csap_new = ((cs_old*dens_old)+(csap_sapl_npls*est_pls))/dens_new
 
-        cwood_sapl_npls = csap_sapl_npls + cheart_sapl_npls
+            cwood_sapl_npls = csap_sapl_npls + cheart_sapl_npls
         ! print*, 'cwood_sapl', cwood_sapl_npls, 'est_pls',est_pls, cwood_sapl_npls*est_pls
 
-        cwood_new = ((cw_old*dens_old)+(cwood_sapl_npls*est_pls))/dens_new
+            cwood_new = ((cw_old*dens_old)+(cwood_sapl_npls*est_pls))/dens_new
         ! print*,'cw_new',cwood_new/1000.,'cw_old', cw_old/1000.
 
 
-        croot_new = ((cr_old*dens_old)+(croot_sapl_npls*est_pls))/dens_new
+            croot_new = ((cr_old*dens_old)+(croot_sapl_npls*est_pls))/dens_new
         ! print*, 'cr new', croot_new/1000., 'crold', cr_old/1000.
-
+        endif
+        
     end subroutine shrink
 
     subroutine sapling_allometry(npls_alive,cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls,croot_sapl_npls)
