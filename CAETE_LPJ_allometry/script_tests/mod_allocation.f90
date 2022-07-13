@@ -1,21 +1,21 @@
-module types
-    implicit none
+! module types
+!     implicit none
  
-    ! FOR THE GNU FORTRAN COMPILER
-    integer,parameter,public :: l_1 = 2  ! standart Logical type
-    integer,parameter,public :: i_2 = 2  ! 16 bits integer
-    integer,parameter,public :: i_4 = 4  ! 32 bits integer
-    integer,parameter,public :: r_4 = 4  ! 32 bits float
-    integer,parameter,public :: r_8 = 8  ! 64 bits float
+!     ! FOR THE GNU FORTRAN COMPILER
+!     integer,parameter,public :: l_1 = 2  ! standart Logical type
+!     integer,parameter,public :: i_2 = 2  ! 16 bits integer
+!     integer,parameter,public :: i_4 = 4  ! 32 bits integer
+!     integer,parameter,public :: r_4 = 4  ! 32 bits float
+!     integer,parameter,public :: r_8 = 8  ! 64 bits float
  
- end module types
+!  end module types
  
  ! program allocation !module to test allocation logic module of LPJmL-Fire
  subroutine allocation(lm_1, hm_1, rm_1, dwood_1, sla_1, nind_1,&
      &bminc_1, height_1, cl_inc,cw_inc,ch_inc, cs_inc, cr_inc, ctotal_inc,&
      &lm_2, ch_2, cs_2, rm_2, cw_2) 
 
-     use types
+    
      use iso_fortran_env, only : output_unit
  
      !VARIABLES [INPUT] - vem do módulo de estabelecimento/FPC
@@ -25,99 +25,110 @@ module types
      
  
      !VARIABLES [OUTPUT] - o incremento de cada compartimento de carbono neste ano
-     real(r_8), intent(out) :: cl_inc !leaf increment (gC)
-     real(r_8), intent(out) :: cw_inc !wood increment (gC)
-     real(r_8), intent(out) :: cr_inc !root increment (gC)
-     real(r_8), intent(out) :: cs_inc !sapwood increment (gC)
-     real(r_8), intent(out) :: ch_inc !heartwood increment (gC)
-     real(r_8), intent(out) :: ctotal_inc !total carbon increment (gC)
-     real(r_8), intent(out) :: lm_2, ch_2, cs_2, rm_2, cw_2
+     real, intent(out) :: cl_inc !leaf increment (gC)
+     real, intent(out) :: cw_inc !wood increment (gC)
+     real, intent(out) :: cr_inc !root increment (gC)
+     real, intent(out) :: cs_inc !sapwood increment (gC)
+     real, intent(out) :: ch_inc !heartwood increment (gC)
+     real, intent(out) :: ctotal_inc !total carbon increment (gC)
+     real, intent(out) :: lm_2, ch_2, cs_2, rm_2, cw_2
 
-     integer(i_4),parameter :: nseg = 20 ! segment number to bisection loop
-     integer(i_4), parameter :: time = 1000
-     real(r_8),parameter :: pi   =  3.14159265
-     real(r_8),parameter :: xacc =  0.1     !x-axis precision threshold for the allocation solution
-     real(r_8),parameter :: yacc =  1.e-10  !y-axis precision threshold for the allocation solution
-     integer(i_4),parameter :: ntl=365
+     integer,parameter :: nseg = 20 ! segment number to bisection loop
+     integer, parameter :: time = 1000
+     real,parameter :: pi   =  3.14159265
+     real,parameter :: xacc =  0.1     !x-axis precision threshold for the allocation solution
+     real,parameter :: yacc =  1.e-10  !y-axis precision threshold for the allocation solution
+     integer,parameter :: ntl=365
      integer, parameter :: stdout = output_unit
  
  
-     integer(i_4) :: pls
-     integer(i_4) :: xmin, xmax
-     real(r_8) :: allom1 = 100
-     real(r_8) :: allom2 = 40.0
-     real(r_8) :: allom3 = 0.5
-     real(r_8) :: latosa = 8000.0
-     real(r_8) :: reinickerp = 1.6
-     real(r_8) :: ltor = 0.77302587552347657 !leaf:root from Philip
-     real(r_8) :: grid_area = 1000 !m2
-     real(r_8)  :: dwood   !in g/cm3 but must be in g/m2
-     real(r_8)  :: sla !m2/g
-     real(r_8)  :: nind !m2
-     real(r_8)  :: bminc !kgC/m2 - !total biomass increment this year for area
+     integer :: pls
+     integer :: xmin, xmax
+     real :: allom1 = 100
+     real :: allom2 = 40.0
+     real :: allom3 = 0.5
+     real :: latosa = 8000.0
+     real :: reinickerp = 1.6
+     real :: ltor = 0.77302587552347657 !leaf:root from Philip
+     real :: grid_area = 1000 !m2
+     real  :: dwood   !in g/cm3 but must be in g/m2
+     real  :: sla !m2/g
+     real  :: nind !m2
+     real  :: bminc !kgC/m2 - !total biomass increment this year for area
      
  
-     real(r_8)  :: lm_ind !in kgC/m2 but use in gC/ind [transformation below]
-     real(r_8)  :: sm_ind !in kgC/m2 but use in gC/ind [transformation below]
-     real(r_8)  :: hm_ind !in kgC/m2 but use in gC/ind [transformation below]
-     real(r_8)  :: rm_ind !in kgC/m2 but use in gC/ind [transformation below]
-     real(r_8)  :: cw_ind !to calculate sap and heartwood (in kgC/m2 but use in gC/ind)
-     real(r_8)  :: cwood
-     real(r_8)  :: litter_ag_fast
-     real(r_8)  :: litter_ag_slow
-     real(r_8)  :: litter_bg
-     real(r_8)  :: lai_ind
-     real(r_8)  :: crown_area
-     real(r_8)  :: crown_area_ind
-     real(r_8)  :: diameter
-     real(r_4)  :: height
-     real(r_8)  :: fpc_grid
-     real(r_8)  :: fpc_ind
-     real(r_8)  :: fpc_inc
-     real(r_8)  :: fpc_grid_old
+     real  :: lm_ind !in kgC/m2 but use in gC/ind [transformation below]
+     real  :: sm_ind !in kgC/m2 but use in gC/ind [transformation below]
+     real  :: hm_ind !in kgC/m2 but use in gC/ind [transformation below]
+     real  :: rm_ind !in kgC/m2 but use in gC/ind [transformation below]
+     real  :: cw_ind !to calculate sap and heartwood (in kgC/m2 but use in gC/ind)
+     real  :: cwood
+     real  :: litter_ag_fast
+     real  :: litter_ag_slow
+     real  :: litter_bg
+     real  :: lai_ind
+     real  :: crown_area
+     real  :: crown_area_ind
+     real  :: diameter
+     real  :: height
+     real  :: fpc_grid
+     real  :: fpc_ind
+     real  :: fpc_inc
+     real  :: fpc_grid_old
  
  
      !Local Variables
-     real(r_8)  :: bminc_ind !gC/ind - individual total biomass increment this year 
-     real(r_8)  :: lm2rm          !ratio of leafmass to fine rootmass
-     real(r_8)  :: lminc_ind      !individual leafmass increment this year
-     real(r_8)  :: rminc_ind      !individual fineroot mass increment this year
-     real(r_8)  :: lminc_ind_min  !min leafmass increment to maintain current sapwood
-     real(r_8)  :: rminc_ind_min  !min rootmass increment to support new leafmass
-     real(r_8)  :: sap_xsa        !cross sectional area of sapwood  
-     real(r_8)  :: sminc_ind      !individual sapmass increment this year
-     real(r_8) :: fpc_inc_tree     !this years total FPC increment for tree PFTs
-     real(r_8) :: fpc_tree_total   !total grid FPC for tree PFTs      
-     real(r_8) :: excess                           !total tree FPC or grass cover to be reduced
-     real(r_8) :: fpc_tree_max
-     real(r_8)  :: nind_kill        !reduction in individual density to reduce tree FPC to permitted maximum (indiv/m2)
-     real(r_8)  :: rm_kill          !reduction in grass PFT root mass to reduce grass cover to permitted maximum (gC)  
-     real(r_8)  :: lm_kill          !reduction in grass PFT leaf mass to reduce grass cover to permitted maximum (gC)
-     real(r_8)  :: lm_old
+     real  :: bminc_ind !gC/ind - individual total biomass increment this year 
+     real  :: lm2rm          !ratio of leafmass to fine rootmass
+     real  :: lminc_ind      !individual leafmass increment this year
+     real  :: rminc_ind      !individual fineroot mass increment this year
+     real  :: lminc_ind_min  !min leafmass increment to maintain current sapwood
+     real  :: rminc_ind_min  !min rootmass increment to support new leafmass
+     real  :: sap_xsa        !cross sectional area of sapwood  
+     real  :: sminc_ind      !individual sapmass increment this year
+     real :: fpc_inc_tree     !this years total FPC increment for tree PFTs
+     real :: fpc_tree_total   !total grid FPC for tree PFTs      
+     real :: excess                           !total tree FPC or grass cover to be reduced
+     real :: fpc_tree_max
+     real  :: nind_kill        !reduction in individual density to reduce tree FPC to permitted maximum (indiv/m2)
+     real  :: rm_kill          !reduction in grass PFT root mass to reduce grass cover to permitted maximum (gC)  
+     real  :: lm_kill          !reduction in grass PFT leaf mass to reduce grass cover to permitted maximum (gC)
+     real  :: lm_old
  
-     real(r_8)  :: lm !leaf mass
-     real(r_8)  :: sm !sapwood mass
-     real(r_8)  :: hm !heartwood mass
-     real(r_8)  :: rm !root mass
+     real  :: lm !leaf mass
+     real  :: sm !sapwood mass
+     real  :: hm !heartwood mass
+     real  :: rm !root mass
  
-     real(r_8)  :: x1             !working vars in bisection
-     real(r_8)  :: x2
-     real(r_8)  :: rtbis
-     real(r_8)  :: dx
-     real(r_8)  :: xmid
-     real(r_8)  :: root1, root2, root3
-     real(r_8)  :: sign
+     real  :: x1             !working vars in bisection
+     real  :: x2
+     real  :: rtbis
+     real  :: dx
+     real  :: xmid
+     real  :: root1, root2, root3
+     real  :: sign
      logical  :: normal
  
-     real(r_8)  :: fx1
-     real(r_8)  :: fmid
+     real  :: fx1
+     real  :: fmid
  
  
-     real(r_8)  :: lm1     !allometric leafmass requirement (leafmass req'd to keep sapwood alive; gC ind-1)
+     real  :: lm1     !allometric leafmass requirement (leafmass req'd to keep sapwood alive; gC ind-1)
  
      integer :: i
     
-     
+    !initializing variables
+     cl_inc = 0.
+     cw_inc = 0. !wood increment (gC)
+     cr_inc = 0. !root increment (gC)
+     cs_inc = 0.!sapwood increment (gC)
+     ch_inc = 0.!heartwood increment (gC)
+     ctotal_inc = 0.!total carbon increment (gC)
+     lm_2 = 0.
+     ch_2 = 0.
+     cs_2 = 0.
+     rm_2 = 0.
+     cw_2 = 0.
 
      dwood = dwood_1*1000000 !*1e6 transforms dwood to gC/m3
 
@@ -414,11 +425,11 @@ module types
 
          cw_2 = cs_2 + ch_2
          
-        !  print*, 'after alloc with inc'
-        !  print*, 'l', lm_2
-        !  print*, 'h', ch_2
-        !  print*, 's', cs_2
-        !  print*, 'r', rm_2
+         print*, 'after alloc with inc'
+         print*, 'l', lm_2
+         print*, 'h', ch_2
+         print*, 's', cs_2
+         print*, 'r', rm_2
         !  if(cl_inc.lt.0) then
         !     print*, cl_inc, lm_2, lm
         !  endif

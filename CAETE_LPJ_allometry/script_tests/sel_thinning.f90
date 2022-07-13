@@ -147,11 +147,11 @@ program self_thinning
     real, dimension (npls,time) :: ch_inc !heart increment from allocation (gC, average_in)
     real, dimension (npls,time) :: cs_inc !sap increment from allocation (gC, average_in)
     real, dimension (npls,time) :: ctotal_inc !total increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: cl2_aux !leaf carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: cw2_aux !wood carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: ch2_aux !heartwood carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: cs2_aux !sapwood carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: cr2_aux !root carbon after allocation (gC, avera_in)
+    real, dimension (npls,time) :: cl2_aux = 0. !leaf carbon after allocation (gC, avera_in)
+    real, dimension (npls,time) :: cw2_aux = 0. !wood carbon after allocation (gC, avera_in)
+    real, dimension (npls,time) :: ch2_aux = 0. !heartwood carbon after allocation (gC, avera_in)
+    real, dimension (npls,time) :: cs2_aux = 0.!sapwood carbon after allocation (gC, avera_in)
+    real, dimension (npls,time) :: cr2_aux = 0. !root carbon after allocation (gC, avera_in)
    
 
    
@@ -457,6 +457,11 @@ program self_thinning
         root_inc = 0.
         mort(:,k) = 0.
         npp_inc2(:,k) = 0.
+        cl2_aux(:,k) = 0.
+        cw2_aux(:,k) = 0.
+        cs2_aux(:,k) = 0.
+        ch2_aux(:,k) = 0.
+        cr2_aux(:,k) = 0.
       
         if(k.eq.1)then
             cl1(:,k) = cl1_initial(:,k)
@@ -793,9 +798,9 @@ program self_thinning
             &      cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k),&
             &      dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),cheart_new(j,k),&
             &      csap_new(j,k),croot_new(j,k))
-                if(cleaf_new(j,k).gt.0.) then
-                    print*, 'after shrink',cleaf_new(j,k)/1000,cwood_new(j,k)/1000,croot_new(j,k)/1000
-                endif
+                ! if(cleaf_new(j,k).gt.0.) then
+                !     print*, 'after shrink',cleaf_new(j,k)/1000,cwood_new(j,k)/1000,croot_new(j,k)/1000
+                ! endif
 
                 !PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k),height(j,k)
                 ! endif            
@@ -994,8 +999,20 @@ program self_thinning
                 &cl_inc(j,k), cw_inc(j,k),ch_inc(j,k),cs_inc(j,k), cr_inc(j,k),ctotal_inc(j,k),&
                 &cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k))
 
+                ! print*,'after alloc', cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k)
 
             if(dens1_aux(j,k).le.0.) then
+
+                cl2_aux(j,k) = 0.
+
+                cr2_aux(j,k) = 0. 
+                
+                cw2_aux(j,k) = 0.
+
+                ch2_aux(j,k) = 0.
+                
+                cs2_aux(j,k) = 0.
+
                 npp_inc(j,k) = 0.
 
                 npp_inc2(j,k) = 0.
