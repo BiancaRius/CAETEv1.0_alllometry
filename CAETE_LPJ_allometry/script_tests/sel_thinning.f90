@@ -478,8 +478,8 @@ program self_thinning
 
             cl1(:,k) = cl1_aux(:,k-1)
             cw1(:,k) = cw1_aux(:,k-1)
-            cs1(:,k) = cs1_initial(:,k)!cs1_aux(:,k-1) - provisorio
-            ch1(:,k) = ch1_initial(:,k)!ch1_aux(:,k-1) - provisorio
+            cs1(:,k) = cs1_initial(:,k-1)!cs1_aux(:,k-1) - provisorio
+            ch1(:,k) = ch1_initial(:,k-1)!ch1_aux(:,k-1) - provisorio
             cr1(:,k) = cr1_aux(:,k-1)
             dens1(:,k) = dens1_aux(:,k-1)
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
@@ -993,8 +993,9 @@ program self_thinning
             !!     
             ! print*, 'cl2 before alloc', cl1_aux(j,k), cw1_aux(j,k), cr1_aux(j,k),&
             !     &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc(j,k)
-            ! print*,'bf', height(j,k)
-            call allocation(cl1_aux(j,k), cw1_aux(j,k),cr1_aux(j,k),&
+            !print*,'outside alloc', cl1_aux(j,k), cw1_aux(j,k),ch1_aux(j,k),cs1_aux(j,k)
+
+            call allocation(cl1_aux(j,k), cw1_aux(j,k),ch1_aux(j,k),cs1_aux(j,k),cr1_aux(j,k),&
                 &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc2(j,k), height(j,k),&
                 &cl_inc(j,k), cw_inc(j,k),ch_inc(j,k),cs_inc(j,k), cr_inc(j,k),ctotal_inc(j,k),&
                 &cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k))
@@ -1070,13 +1071,15 @@ program self_thinning
                 carbon_increment(j) = leaf_inc(j) + root_inc(j) + wood_inc(j)
                 ! print*, 'final', carbon_increment(j)/1000.
 
-                cl1_aux(j,k) = cl1_aux(j,k) + leaf_inc(j)
+                cl1_aux(j,k) = cl2_aux(j,k) !leaf already with allocation !cl1_aux(j,k) + leaf_inc(j)
                 
-                !cs1_aux e ch1_aux
+                cs1_aux(j,k) = cs2_aux(j,k)
+                
+                ch1_aux(j,k) = ch2_aux(j,k)
 
-                cw1_aux(j,k) = cw1_aux(j,k) + wood_inc(j)
+                cw1_aux(j,k) = cw2_aux(j,k) !cw1_aux(j,k) + wood_inc(j)
                 
-                cr1_aux(j,k) = cr1_aux(j,k) + root_inc(j)
+                cr1_aux(j,k) = cr2_aux(j,k) !cr1_aux(j,k) + root_inc(j)
 
                 !saving value for avg individual for outputs
                 cleaf_avg_ind(j,k) = cl1_aux(j,k)

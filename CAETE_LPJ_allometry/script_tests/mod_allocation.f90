@@ -11,7 +11,7 @@
 !  end module types
  
  ! program allocation !module to test allocation logic module of LPJmL-Fire
- subroutine allocation(lm_1, hm_1, rm_1, dwood_1, sla_1, nind_1,&
+ subroutine allocation(lm_1, wm_1,hm_1, sm_1, rm_1, dwood_1, sla_1, nind_1,&
      &bminc_1, height_1, cl_inc,cw_inc,ch_inc, cs_inc, cr_inc, ctotal_inc,&
      &lm_2, ch_2, cs_2, rm_2, cw_2) 
 
@@ -19,7 +19,7 @@
      use iso_fortran_env, only : output_unit
  
      !VARIABLES [INPUT] - vem do módulo de estabelecimento/FPC
-     real, intent(in) :: lm_1, hm_1, rm_1 ,height_1
+     real, intent(in) :: lm_1, wm_1, rm_1, hm_1, sm_1, height_1
      real, intent(in) :: sla_1, nind_1, dwood_1 !variable traits
      real, intent(in) :: bminc_1 !valor aleatório usado tbm no estabelecimento e FPC posterior deve ser a NPP acumulada do ano
      
@@ -116,6 +116,8 @@
      real  :: lm1     !allometric leafmass requirement (leafmass req'd to keep sapwood alive; gC ind-1)
  
      integer :: i
+
+    !print*, 'inside alloc', lm_1, wm_1,hm_1, sm_1 
     
     !initializing variables
      cl_inc = 0.
@@ -142,7 +144,11 @@
   
      lm_ind = lm_1
 
-     cw_ind = hm_1
+     cw_ind = wm_1
+
+     hm_ind = hm_1
+
+     sm_ind = sm_1
 
      rm_ind = rm_1 
  
@@ -152,8 +158,8 @@
     
  
          lm  = (lm_ind)
-         sm  = (cw_ind *0.1) !provisorio
-         hm  = (cw_ind *0.9) !provisorio
+         sm  = sm_ind !(cw_ind *0.1) !provisorio
+         hm  = hm_ind !(cw_ind *0.9) !provisorio
          rm  = rm_ind
          bminc_ind  = bminc 
       
@@ -181,7 +187,7 @@
              &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
  
              !Normal allocation (positive increment to all living C compartments)
-            !  print*, 'normal'
+             !print*, 'normal'
              normal = .true.
  
              !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
@@ -335,7 +341,7 @@
          else 
  
              !Abnormal allocation: reduction in some C compartment(s) to satisfy allometry
-             
+             !print*, 'anormal'
              normal = .false.
  
              !Attempt to distribute this year's production among leaves and roots only
@@ -425,11 +431,11 @@
 
          cw_2 = cs_2 + ch_2
          
-         print*, 'after alloc with inc'
-         print*, 'l', lm_2
-         print*, 'h', ch_2
-         print*, 's', cs_2
-         print*, 'r', rm_2
+        !  print*, 'after alloc with inc'
+        !  print*, 'l', lm_2
+        !  print*, 'h', ch_2
+        !  print*, 's', cs_2
+        !  print*, 'r', rm_2
         !  if(cl_inc.lt.0) then
         !     print*, cl_inc, lm_2, lm
         !  endif
