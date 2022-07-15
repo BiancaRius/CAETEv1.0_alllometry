@@ -8,8 +8,8 @@ program self_thinning
     logical :: grass
     
     
-    integer, parameter :: npls = 30
-    integer, parameter :: time = 25
+    integer, parameter :: npls = 3000
+    integer, parameter :: time = 250
 
     integer, parameter :: grassess = 0.1*npls
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
@@ -42,7 +42,7 @@ program self_thinning
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 100!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 10000.!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     real :: gc_available!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
 
     real :: fpc_max_tree !95% of grid-cell (in m2)
@@ -64,6 +64,8 @@ program self_thinning
     real :: res_time_leaf = 2 !general residence time value for testing purpose
     real :: res_time_root = 2
     real :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real :: res_time_sap = 30 !ref: https://link.springer.com/article/10.1007/s00442-015-3220-y/tables/2
+    real :: res_time_heart = 40
     real :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
     real :: pi = 3.1415
 
@@ -483,8 +485,8 @@ program self_thinning
 
             cl1(:,k) = cl1_aux(:,k-1)
             cw1(:,k) = cw1_aux(:,k-1)
-            cs1(:,k) = cs1_initial(:,k-1)!cs1_aux(:,k-1) - provisorio
-            ch1(:,k) = ch1_initial(:,k-1)!ch1_aux(:,k-1) - provisorio
+            cs1(:,k) = cs1_aux(:,k-1)!cs1_aux(:,k-1) - provisorio
+            ch1(:,k) = ch1_aux(:,k-1)!ch1_aux(:,k-1) - provisorio
             cr1(:,k) = cr1_aux(:,k-1)
             dens1(:,k) = dens1_aux(:,k-1)
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
@@ -509,13 +511,13 @@ program self_thinning
         endif
 
            
-
+        ! print*, 'entenring', cl1(10,k), cs1(10,k), ch1(10,k), cr1(10,k),k
         do j = 1, npls
                 
                 !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
-            print*, 'entenring', cl1(j,k), j,k
+            
             !if(cl1(j,k).le.0) then
                 !print*, 'cl1 0',cl1(j,k),dens1(j,k), cr1(j,k), diam(j,k), height(j,k)
             if(dens1(j,k).le.1.e-10) then !densidade mínima de indivíduos (from LPJmfire code)
@@ -754,13 +756,13 @@ program self_thinning
                     
                     cleaf_new(j,k) = cl2(j,k)
                    
-                    cwood_new(j,k) = cw2(j,k)
+                    ! cwood_new(j,k) = cw2(j,k)
 
                     cheart_new (j,k) = ch2(j,k)
 
                     csap_new (j,k) = cs2(j,k)
 
-                    !cwood_new(j,k) = cheart_new(j,k) + csap_new(j,k)
+                    cwood_new(j,k) = cheart_new(j,k) + csap_new(j,k)
 
 
                     croot_new(j,k) = cr2(j,k)
@@ -938,8 +940,11 @@ program self_thinning
             cleaf_new(j,k) = cleaf_new(j,k) - (cleaf_new(j,k)/res_time_leaf)
             ! print*, 'cl2 after restime', cl2(j)/1000., (cl1(j)/res_time)/1000.
             ! print*, ''
+            csap_new(j,k) = csap_new(j,k) - (csap_new(j,k)/res_time_sap)
 
-            cwood_new(j,k) = cwood_new(j,k) - (cwood_new(j,k)/res_time_wood)
+            cheart_new(j,k) = cheart_new(j,k) - (cheart_new(j,k)/res_time_heart)
+
+            cwood_new(j,k) = csap_new(j,k) + cheart_new(j,k)
 
             croot_new(j,k) = croot_new(j,k) - (croot_new(j,k)/res_time_root)
 
@@ -1137,6 +1142,7 @@ program self_thinning
 
             npp_inc2(j,k) = npp_inc2(j,k) 
 
+            
             ! carbon_increment(j,k) = carbon_increment(j,k)
 
             ! delta_carbon_pls(j) = delta_carbon_pls(j)
@@ -1145,6 +1151,7 @@ program self_thinning
             ! print*,'cl final', cl1(j)/1000., j
 
         enddo
+        ! print*, 'out', cl1_aux(10,k), cs1_aux(10,k), ch1_aux(10,k), cr1_aux(10,k),k
 
 
     enddo
