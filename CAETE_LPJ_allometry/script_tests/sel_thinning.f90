@@ -30,7 +30,8 @@ program self_thinning
     real, dimension(npls,time) :: remaining  !taxa de redução
     real, dimension(npls,time) :: FPC_inc 
     real, dimension(npls,time) :: FPC_inc_cont 
-    real, dimension(npls,time) :: carbon_increment  ! used to calculate mort greff (Sitch et al 2003)
+    real, dimension(npls,time) :: carbon_increment_initial  ! used to calculate mort greff (Sitch et al 2003)
+    real, dimension(npls,time) :: carbon_increment ! used to calculate mort greff (Sitch et al 2003)
     real, dimension (npls) :: FPC_inc_grid
     
     real, dimension(time) :: FPC_total_initial = 0.0 !sum of FPC_grid
@@ -42,7 +43,7 @@ program self_thinning
     real, dimension(time):: FPC_total_accu_1 = 0.0
     real, dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 10000.!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real :: gc_area = 10000!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
     real :: gc_available!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
 
     real :: fpc_max_tree !95% of grid-cell (in m2)
@@ -64,8 +65,6 @@ program self_thinning
     real :: res_time_leaf = 2 !general residence time value for testing purpose
     real :: res_time_root = 2
     real :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
-    real :: res_time_sap = 30 !ref: https://link.springer.com/article/10.1007/s00442-015-3220-y/tables/2
-    real :: res_time_heart = 40
     real :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
     real :: pi = 3.1415
 
@@ -80,7 +79,6 @@ program self_thinning
     real, dimension(npls,time) :: ch2 !carbon on heartwood after allocation
     real, dimension(npls,time) :: cr2 !carbon on wood after allocation
     real, dimension(npls,time) :: dens2
-    real, dimension(npls,time) :: ctotal_inc2
 
     real, dimension(npls,time) :: cleaf_avg_ind
     real, dimension(npls,time) :: csap_avg_ind
@@ -98,9 +96,9 @@ program self_thinning
     ! Variables with generic values for testing the logic code
     real, dimension(npls,time) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
     real, dimension(npls,time) :: spec_leaf !m2/gC
-    real, dimension(npls,time) :: leaf_inc !kgC/ ind
-    real, dimension(npls,time) :: wood_inc !kgC/ ind
-    real, dimension(npls,time) :: root_inc !kgC/ ind
+    real, dimension(npls) :: leaf_inc !kgC/ ind
+    real, dimension(npls) :: wood_inc !kgC/ ind
+    real, dimension(npls) :: root_inc !kgC/ ind
 
     !variables with initial values
     real, dimension(npls,time) :: cl1_initial
@@ -111,7 +109,6 @@ program self_thinning
     real, dimension(npls,time) :: npp1_initial
     real, dimension(npls,time) :: FPC_pls_initial
     real, dimension(npls,time) :: dens1_initial
-    real, dimension(npls,time) :: ctotal_inc_initial = 0.
     
 
     !auxiliary variables for outputs
@@ -120,7 +117,6 @@ program self_thinning
     real, dimension (npls,time) :: ch1_aux
     real, dimension (npls,time) :: cs1_aux
     real, dimension (npls,time) :: cr1_aux
-    real, dimension (npls,time) :: ctotal_inc1_aux
     real, dimension (npls,time) :: FPC_pls_1_aux
     real, dimension (npls,time) :: dens1_aux
     real, dimension (time) :: FPC_total_accu_1_aux
@@ -151,7 +147,7 @@ program self_thinning
     real, dimension (npls,time) :: cw_inc !wood increment from allocation (gC, average_in)
     real, dimension (npls,time) :: ch_inc !heart increment from allocation (gC, average_in)
     real, dimension (npls,time) :: cs_inc !sap increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: ctotal_inc1 = 0. !total increment from allocation (gC, average_in)
+    real, dimension (npls,time) :: ctotal_inc !total increment from allocation (gC, average_in)
     real, dimension (npls,time) :: cl2_aux = 0. !leaf carbon after allocation (gC, avera_in)
     real, dimension (npls,time) :: cw2_aux = 0. !wood carbon after allocation (gC, avera_in)
     real, dimension (npls,time) :: ch2_aux = 0. !heartwood carbon after allocation (gC, avera_in)
@@ -390,13 +386,13 @@ program self_thinning
     ! to each compartment is being used for testing purpose. The actual values will be calculated
     ! in allocation routine.
     do j=1, npls
-        leaf_inc(j,k) = leaf_allocation * npp_inc_init(j,k)
+        leaf_inc(j) = leaf_allocation * npp_inc_init(j,k)
 
-        root_inc(j,k) = root_allocation * npp_inc_init(j,k) 
+        root_inc(j) = root_allocation * npp_inc_init(j,k) 
 
-        wood_inc(j,k) = wood_allocation * npp_inc_init(j,k)  
+        wood_inc(j) = wood_allocation * npp_inc_init(j,k)  
 
-        ctotal_inc_initial(j,k) = leaf_inc(j,k) + root_inc(j,k) + wood_inc(j,k)
+        carbon_increment_initial(j,k) = leaf_inc(j) + root_inc(j) + wood_inc(j)
     enddo   
 
 !!---------------------------------------------------
@@ -452,15 +448,14 @@ program self_thinning
         cs2(:,k) = 0.
         ch2(:,k) = 0.
         cr2(:,k) = 0.
-        ctotal_inc2(:,k) = 0.
         lai(:,k) = 0.
         dens2(:,k) = 0.
         crown_area(:,k) = 0.
         diam(:,k) = 0.
         annual_npp(:,k) = 0.
-        leaf_inc(:,k) = 0.
-        wood_inc(:,k) = 0.
-        root_inc(:,k) = 0.
+        leaf_inc = 0.
+        wood_inc = 0.
+        root_inc = 0.
         mort(:,k) = 0.
         npp_inc2(:,k) = 0.
         cl2_aux(:,k) = 0.
@@ -479,20 +474,22 @@ program self_thinning
             dens1(:,k) = dens1_initial(:,k)
             FPC_total_accu_1(k) = FPC_total_accu_initial(k)
             npp_inc(:,k) = npp_inc_init(:,k)
-            ctotal_inc1(:,k) = ctotal_inc_initial(:,k) 
+            carbon_increment(:,k) = carbon_increment_initial(:,k)
            
         else
 
             cl1(:,k) = cl1_aux(:,k-1)
             cw1(:,k) = cw1_aux(:,k-1)
-            cs1(:,k) = cs1_aux(:,k-1)!cs1_aux(:,k-1) - provisorio
-            ch1(:,k) = ch1_aux(:,k-1)!ch1_aux(:,k-1) - provisorio
+            cs1(:,k) = cs1_initial(:,k)!cs1_aux(:,k-1) - provisorio
+            ch1(:,k) = ch1_initial(:,k)!ch1_aux(:,k-1) - provisorio
             cr1(:,k) = cr1_aux(:,k-1)
             dens1(:,k) = dens1_aux(:,k-1)
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
             FPC_total_accu_1(k) = FPC_total_accu_1_aux(k-1)
-            ctotal_inc1(:,k) = ctotal_inc1_aux(:,k-1)
+            !!!atenção
+            carbon_increment(:,k) = carbon_increment_initial(:,k)
 
+        
             npp_inc(:,k)=0. !reinitializing for a new sampling
         
             xmin = 0.1
@@ -511,7 +508,7 @@ program self_thinning
         endif
 
            
-        ! print*, 'entenring', cl1(10,k), cs1(10,k), ch1(10,k), cr1(10,k),k
+
         do j = 1, npls
                 
                 !--------------------------------------------------------------------------
@@ -549,8 +546,6 @@ program self_thinning
                 dens2(j,k) = 0.
 
                 npp_inc2(j,k) = 0.
-
-                ctotal_inc2(j,k) = 0.
                 
                
             else
@@ -567,9 +562,7 @@ program self_thinning
 
                 cr2(j,k) = (cr1(j,k)/dens1(j,k)) 
 
-                npp_inc2(j,k) = (npp_inc(j,k)/dens1(j,k))
-                
-                ctotal_inc2 = (ctotal_inc1(j,k)/dens1(j,k))
+                npp_inc2(j,k) = (npp_inc(j,k)/dens1(j,k)) 
         
                   !----------------------------------------------------------------------------
                  !Structuring PLSs [diameter, crown area and leaf area index]
@@ -586,10 +579,10 @@ program self_thinning
                 
                 height(j,k) = k_allom2 *diam(j,k)**k_allom3
 
-                ! if(height(j,k).gt.100.) then
+                if(height(j,k).gt.30.) then
                 
-                !     print*, height(j,k), lai(j,k), crown_area(j,k), diam(j,k)*100
-                ! endif
+                    print*, height(j,k), lai(j,k), crown_area(j,k), diam(j,k)*100
+                endif
                 !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
@@ -745,7 +738,7 @@ program self_thinning
                     endif
                    
                                  
-                    greff(j,k) = ctotal_inc2(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
+                    greff(j,k) = carbon_increment(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
                     
 
                     mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
@@ -756,13 +749,13 @@ program self_thinning
                     
                     cleaf_new(j,k) = cl2(j,k)
                    
-                    ! cwood_new(j,k) = cw2(j,k)
+                    cwood_new(j,k) = cw2(j,k)
 
                     cheart_new (j,k) = ch2(j,k)
 
                     csap_new (j,k) = cs2(j,k)
 
-                    cwood_new(j,k) = cheart_new(j,k) + csap_new(j,k)
+                    !cwood_new(j,k) = cheart_new(j,k) + csap_new(j,k)
 
 
                     croot_new(j,k) = cr2(j,k)
@@ -791,7 +784,7 @@ program self_thinning
             !if the occupation is smaller than the stand area the mortality is defined only by
             !the growth efficiency and the loss of carbon through turnover
             count_pls = 0.
-            !print*, 'n ultrapassou', FPC_total_accu_2(k)
+            print*, 'n ultrapassou', FPC_total_accu_2(k)
             do j=1, npls
                
                 
@@ -811,7 +804,7 @@ program self_thinning
             &      dens_est(j,k),cleaf_new(j,k),cwood_new(j,k),cheart_new(j,k),&
             &      csap_new(j,k),croot_new(j,k))
                 ! if(cleaf_new(j,k).gt.0.) then
-                !     print*, 'after shrink',cleaf_new(j,k)/1000,cwood_new(j,k)/1000,croot_new(j,k)/1000
+                ! print*, 'after shrink',cleaf_new(j,k)/1000,cwood_new(j,k)/1000,croot_new(j,k)/1000
                 ! endif
 
                 !PRINT*, 'as', cl2(j,k)/1000, cw2(j,k)/1000, cr2(j,k)/1000, dens_est(j,k),height(j,k)
@@ -847,7 +840,7 @@ program self_thinning
                     mort(j,k) = 1.
                     
                 else    
-                    greff(j,k) = ctotal_inc2(j,k)/(cleaf_new(j,k)*spec_leaf(j,k))
+                    greff(j,k) = carbon_increment(j,k)/(cleaf_new(j,k)*spec_leaf(j,k))
 
                     mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k)))
                 
@@ -861,9 +854,13 @@ program self_thinning
 
             enddo
             
-            
+            !print*, 'NAO ULTRAPASSOU ==', 'este FPC_total_accu_2 tem que ser igual ao valor anterior==', FPC_total_accu_2
+
+            !exc_area = 0.
+
+            ! print*, 'NAO ULTRAPASSOU ==', FPC_total_accu_2(k)
         endif
-      
+        ! print*, 'NAO ULTRAPASSOU2 ==', FPC_total_accu_2(k)
         
         
         
@@ -895,16 +892,14 @@ program self_thinning
                 npp_inc(j,k) = 0
                 npp_inc2(j,k) = 0
                 annual_npp(j,k) = 0.
-                leaf_inc(j,k) = 0.
-                root_inc(j,k) = 0.
-                wood_inc(j,k) = 0.
+                leaf_inc(j) = 0.
+                root_inc(j) = 0.
+                wood_inc(j) = 0.
                 cl1(j,k) = 0.
                 cw1(j,k) = 0.
                 ch1(j,k) = 0.
                 cs1(j,k) = 0.
                 cr1(j,k) = 0.
-                ctotal_inc1(j,k) = 0.
-                ctotal_inc2(j,k) = 0.
             endif
 
             ! print*, 'testing', est_pls(j,k)
@@ -940,11 +935,8 @@ program self_thinning
             cleaf_new(j,k) = cleaf_new(j,k) - (cleaf_new(j,k)/res_time_leaf)
             ! print*, 'cl2 after restime', cl2(j)/1000., (cl1(j)/res_time)/1000.
             ! print*, ''
-            csap_new(j,k) = csap_new(j,k) - (csap_new(j,k)/res_time_sap)
 
-            cheart_new(j,k) = cheart_new(j,k) - (cheart_new(j,k)/res_time_heart)
-
-            cwood_new(j,k) = csap_new(j,k) + cheart_new(j,k)
+            cwood_new(j,k) = cwood_new(j,k) - (cwood_new(j,k)/res_time_wood)
 
             croot_new(j,k) = croot_new(j,k) - (croot_new(j,k)/res_time_root)
 
@@ -1010,7 +1002,7 @@ program self_thinning
 
             call allocation(cl1_aux(j,k), cw1_aux(j,k),ch1_aux(j,k),cs1_aux(j,k),cr1_aux(j,k),&
                 &dwood(j,k), spec_leaf(j,k), dens1_aux(j,k), npp_inc2(j,k), height(j,k),&
-                &cl_inc(j,k), cw_inc(j,k),ch_inc(j,k),cs_inc(j,k), cr_inc(j,k),ctotal_inc2(j,k),&
+                &cl_inc(j,k), cw_inc(j,k),ch_inc(j,k),cs_inc(j,k), cr_inc(j,k),ctotal_inc(j,k),&
                 &cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k))
 
                 ! print*,'after alloc', cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k)
@@ -1033,11 +1025,11 @@ program self_thinning
             
                 annual_npp(j,k) = 0.
 
-                leaf_inc(j,k) = 0.
+                leaf_inc(j) = 0.
 
-                root_inc(j,k) = 0.
+                root_inc(j) = 0.
 
-                wood_inc(j,k) = 0.
+                wood_inc(j) = 0.
 
                 !sapinc/heartinc
 
@@ -1050,10 +1042,6 @@ program self_thinning
                 cs1_aux(j,k) = 0.
 
                 cr1_aux(j,k) = 0.
-
-                ctotal_inc1_aux(j,k) = 0.
-
-                ctotal_inc2(j,k) = 0.
 
                 ! delta_carbon_pls(j) = 0.
 
@@ -1079,13 +1067,13 @@ program self_thinning
              ! to each compartment is being used for testing purpose. The actual values will be calculated
              ! in allocation routine.
 
-                leaf_inc(j,k) = leaf_allocation * npp_inc2(j,k)
+                leaf_inc(j) = leaf_allocation * npp_inc2(j,k)
 
-                root_inc(j,k) = root_allocation * npp_inc2(j,k) 
+                root_inc(j) = root_allocation * npp_inc2(j,k) 
 
-                wood_inc(j,k) = wood_allocation * npp_inc2(j,k)  
+                wood_inc(j) = wood_allocation * npp_inc2(j,k)  
 
-                ! carbon_increment(j,k) = leaf_inc(j,k) + root_inc(j,k) + wood_inc(j,k)
+                carbon_increment(j,k) = leaf_inc(j) + root_inc(j) + wood_inc(j)
                 ! print*, 'final', carbon_increment(j)/1000.
 
                 cl1_aux(j,k) = cl2_aux(j,k) !leaf already with allocation !cl1_aux(j,k) + leaf_inc(j)
@@ -1098,7 +1086,6 @@ program self_thinning
                 
                 cr1_aux(j,k) = cr2_aux(j,k) !cr1_aux(j,k) + root_inc(j)
 
-                ctotal_inc1_aux(j,k) = ctotal_inc2(j,k)
                 !saving value for avg individual for outputs
                 cleaf_avg_ind(j,k) = cl1_aux(j,k)
                 !csap avg e cheart avg
@@ -1122,28 +1109,24 @@ program self_thinning
             ! print*, 'cr1 com incremento após aloca', cr1(j)/1000., j
 
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
-            
+
             cl1_aux(j,k) = cl1_aux(j,k) * dens1_aux(j,k)
-            
             ! if(cl1_aux(j,k).ne.0.) then
             !     print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k)
             ! endif
             cw1_aux(j,k) = cw1_aux(j,k) * dens1_aux(j,k)
             ! print*, 'cw * dens', cw1_aux(j,k)/1000, dens1_aux(j,k)
 
-            ch1_aux(j,k) = ch1_aux(j,k) * dens1_aux(j,k)
+            !ch1_aux(j,k) = ch1_aux(j,k) * dens1_aux(j,k)
 
-            cs1_aux(j,k) = cs1_aux(j,k) * dens1_aux(j,k)
+            !cs1_aux(j,k) = cs1_aux(j,k) * dens1_aux(j,k)
 
             cr1_aux(j,k) = cr1_aux(j,k) * dens1_aux(j,k)
-
-            ctotal_inc1_aux(j,k) = ctotal_inc1_aux(j,k) * dens1_aux(j,k)
             ! print*, 'cr * dens', cr1_aux(j,k)/1000
 
             npp_inc2(j,k) = npp_inc2(j,k) 
 
-            
-            ! carbon_increment(j,k) = carbon_increment(j,k)
+            carbon_increment(j,k) = carbon_increment(j,k)
 
             ! delta_carbon_pls(j) = delta_carbon_pls(j)
 
@@ -1151,7 +1134,6 @@ program self_thinning
             ! print*,'cl final', cl1(j)/1000., j
 
         enddo
-        ! print*, 'out', cl1_aux(10,k), cs1_aux(10,k), ch1_aux(10,k), cr1_aux(10,k),k
 
 
     enddo

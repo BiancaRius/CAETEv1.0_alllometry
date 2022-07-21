@@ -260,8 +260,8 @@
  
                      if ((fmid *fx1 ) .le. 0. .or. xmid  .ge. x2 ) exit  !sign has changed or we are over the upper bound
  
-                     if (i > 20) write(stdout,*)'first alloc loop flag',i,pls,fmid *fx1 ,&
-                          &xmid ,x1 ,x2 ,dx ,bminc_ind 
+                    !  if (i > 20) write(stdout,*)'first alloc loop flag',i,pls,fmid *fx1 ,&
+                    !       &xmid ,x1 ,x2 ,dx ,bminc_ind 
  
                      if (i > 50) stop 'Too many iterations allocmod'
  
@@ -315,7 +315,7 @@
  
                      if (dx  < xacc .or. abs(fmid ) <= yacc) exit
  
-                     if (i > 20) write(stdout,*)'second alloc loop flag',i,pls,dx ,abs(fmid )
+                    !  if (i > 20) write(stdout,*)'second alloc loop flag',i,pls,dx ,abs(fmid )
                      if (i > 50) stop 'Too many iterations allocmod'
  
                      i = i + 1
