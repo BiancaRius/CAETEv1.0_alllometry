@@ -187,7 +187,7 @@
              &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
  
              !Normal allocation (positive increment to all living C compartments)
-             !print*, 'normal'
+             !print*, 'normal'height
              normal = .true.
  
              !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
@@ -410,7 +410,7 @@
          cw_inc = cs_inc + ch_inc
 
          ctotal_inc = cl_inc + cr_inc + cs_inc + ch_inc
-
+        !  print*, 'ctotal_inc', ctotal_inc
          if(cl_inc.le.0.)then
             cl_inc = 0. !this leaf goes to litter
          endif

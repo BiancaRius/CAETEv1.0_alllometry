@@ -96,9 +96,9 @@ program self_thinning
     ! Variables with generic values for testing the logic code
     real, dimension(npls,time) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
     real, dimension(npls,time) :: spec_leaf !m2/gC
-    real, dimension(npls) :: leaf_inc !kgC/ ind
-    real, dimension(npls) :: wood_inc !kgC/ ind
-    real, dimension(npls) :: root_inc !kgC/ ind
+    real, dimension(npls,time) :: leaf_inc !kgC/ ind
+    real, dimension(npls,time) :: wood_inc !kgC/ ind
+    real, dimension(npls,time) :: root_inc !kgC/ ind
 
     !variables with initial values
     real, dimension(npls,time) :: cl1_initial
@@ -375,6 +375,7 @@ program self_thinning
 
     do j = 1, npls
         npp_inc_init(j,:) = (x(j,:)*1000)
+        ! print*, 'npp_inc_init', npp_inc_init(j,:)
     enddo
         
         ! annual_npp(j,:) = (npp1_initial(j,:)/dens1_initial(j,:)) + (npp_inc_init(j,:)/dens1_initial(j,:))
@@ -386,13 +387,14 @@ program self_thinning
     ! to each compartment is being used for testing purpose. The actual values will be calculated
     ! in allocation routine.
     do j=1, npls
-        leaf_inc(j) = leaf_allocation * npp_inc_init(j,k)
+        leaf_inc(j,:) = leaf_allocation * (npp_inc_init(j,:)/dens1_initial(j,:))
 
-        root_inc(j) = root_allocation * npp_inc_init(j,k) 
+        root_inc(j,:) = root_allocation * (npp_inc_init(j,:)/dens1_initial(j,:)) 
 
-        wood_inc(j) = wood_allocation * npp_inc_init(j,k)  
+        wood_inc(j,:) = wood_allocation * (npp_inc_init(j,:)/dens1_initial(j,:))  
 
-        carbon_increment_initial(j,k) = leaf_inc(j) + root_inc(j) + wood_inc(j)
+        carbon_increment_initial(j,:) = leaf_inc(j,:) + root_inc(j,:) + wood_inc(j,:)
+        ! print*, carbon_increment_initial(j,k), leaf_inc(j), leaf_allocation, npp_inc_init(j,k)
     enddo   
 
 !!---------------------------------------------------
@@ -453,9 +455,9 @@ program self_thinning
         crown_area(:,k) = 0.
         diam(:,k) = 0.
         annual_npp(:,k) = 0.
-        leaf_inc = 0.
-        wood_inc = 0.
-        root_inc = 0.
+        leaf_inc(:,k) = 0.
+        wood_inc(:,k) = 0.
+        root_inc(:,k) = 0.
         mort(:,k) = 0.
         npp_inc2(:,k) = 0.
         cl2_aux(:,k) = 0.
@@ -510,7 +512,7 @@ program self_thinning
            
 
         do j = 1, npls
-                
+        !    print*, 'c inc', carbon_increment(j,k)     
                 !--------------------------------------------------------------------------
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
@@ -892,9 +894,9 @@ program self_thinning
                 npp_inc(j,k) = 0
                 npp_inc2(j,k) = 0
                 annual_npp(j,k) = 0.
-                leaf_inc(j) = 0.
-                root_inc(j) = 0.
-                wood_inc(j) = 0.
+                leaf_inc(j,k) = 0.
+                root_inc(j,k) = 0.
+                wood_inc(j,k) = 0.
                 cl1(j,k) = 0.
                 cw1(j,k) = 0.
                 ch1(j,k) = 0.
@@ -1025,11 +1027,11 @@ program self_thinning
             
                 annual_npp(j,k) = 0.
 
-                leaf_inc(j) = 0.
+                leaf_inc(j,k) = 0.
 
-                root_inc(j) = 0.
+                root_inc(j,k) = 0.
 
-                wood_inc(j) = 0.
+                wood_inc(j,k) = 0.
 
                 !sapinc/heartinc
 
@@ -1067,13 +1069,13 @@ program self_thinning
              ! to each compartment is being used for testing purpose. The actual values will be calculated
              ! in allocation routine.
 
-                leaf_inc(j) = leaf_allocation * npp_inc2(j,k)
+                leaf_inc(j,k) = leaf_allocation * npp_inc2(j,k)
 
-                root_inc(j) = root_allocation * npp_inc2(j,k) 
+                root_inc(j,k) = root_allocation * npp_inc2(j,k) 
 
-                wood_inc(j) = wood_allocation * npp_inc2(j,k)  
+                wood_inc(j,k) = wood_allocation * npp_inc2(j,k)  
 
-                carbon_increment(j,k) = leaf_inc(j) + root_inc(j) + wood_inc(j)
+                carbon_increment(j,k) = leaf_inc(j,k) + root_inc(j,k) + wood_inc(j,k)
                 ! print*, 'final', carbon_increment(j)/1000.
 
                 cl1_aux(j,k) = cl2_aux(j,k) !leaf already with allocation !cl1_aux(j,k) + leaf_inc(j)
