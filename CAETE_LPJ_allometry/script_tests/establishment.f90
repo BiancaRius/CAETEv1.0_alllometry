@@ -65,14 +65,15 @@ module establish
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 2 *(gc_available)
+    est_max = 4 *(gc_available)
+    ! print*, est_max
     ! est_max = 2*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
         
         ! print*, 'fpc perc', FPC_total_perc
     !lpjmlfire
     est = est_max * (1. - exp(5. * (FPC_total_perc- 1.))) / npls_alive
-    ! print*, 'testing lpjfire est',est
+    ! print*, 'testing lpjfire est',est, npls_alive, est_max
 
 
     ! if(FPC_total_perc.lt.0.9) then

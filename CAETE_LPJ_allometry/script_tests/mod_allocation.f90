@@ -409,7 +409,7 @@
          !print*, 'chinc', hm
          cw_inc = cs_inc + ch_inc
 
-         ctotal_inc = cl_inc + cr_inc + cs_inc + ch_inc
+         
         !  print*, 'ctotal_inc', ctotal_inc
          if(cl_inc.le.0.)then
             cl_inc = 0. !this leaf goes to litter
@@ -418,7 +418,7 @@
          if(cs_inc.le.0.) then
             cs_inc = 0. !this sap goes to heart (I think it already done in the code)
          endif
-
+         ctotal_inc = cl_inc + cr_inc + cs_inc + ch_inc
 
          !Compartments plus increment
          lm_2 = lm  + cl_inc
