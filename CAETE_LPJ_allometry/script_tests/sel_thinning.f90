@@ -9,7 +9,8 @@ program self_thinning
     
     
     integer, parameter :: npls = 3000
-    integer, parameter :: time = 250
+    integer, parameter :: time = 200
+
 
     integer, parameter :: grassess = 0.1*npls
     real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
@@ -491,7 +492,7 @@ program self_thinning
             FPC_pls_1(:,k) = FPC_pls_1_aux(:, k-1)
             FPC_total_accu_1(k) = FPC_total_accu_1_aux(k-1)
             !!!atenção
-            carbon_increment(:,k) = carbon_increment_aux(:,k-1)
+            carbon_increment(:,k) = carbon_increment_initial(:,k)!carbon_increment_aux(:,k-1)
 
         
             npp_inc(:,k)=0. !reinitializing for a new sampling
@@ -519,9 +520,9 @@ program self_thinning
         !transforming the carbon content from gC/m2 to gc/average individual 
         !(the carbon divided by dens gives the individual carbon, as in LPJ)
             
-            !if(cl1(j,k).le.0) then
+            if(cl1(j,k).le.0) then 
                 !print*, 'cl1 0',cl1(j,k),dens1(j,k), cr1(j,k), diam(j,k), height(j,k)
-            if(dens1(j,k).le.1.e-10) then !densidade mínima de indivíduos (from LPJmfire code)
+            ! if(dens1(j,k).le.1.e-10) then !densidade mínima de indivíduos (from LPJmfire code)
                 !print*, cl1(j,k), cr1(j,k), cw1(j,k), FPC_pls_2(j,k)
                 cl2(j,k) = 0.
 
@@ -571,49 +572,44 @@ program self_thinning
                 npp_inc2(j,k) = (npp_inc(j,k)/dens1(j,k)) 
 
                 carbon_increment(j,k) = carbon_increment(j,k)
-        
+                
                   !----------------------------------------------------------------------------
                  !Structuring PLSs [diameter, crown area and leaf area index]
                 diam(j,k) = (4*(cs2(j,k)+ch2(j,k)) / (dwood(j,k)*1000000.) / pi / k_allom2)**(1./(2. + k_allom3)) !Eqn 9
                 !print*, 'diam lpjmfire', diam(j,k)*100
                 
-
-                crown_area(j,k) = min(crown_area_max,k_allom1 * diam(j,k)**krp)
-                !crown_area(j,k)=k_allom1 * diam(j,k)**krp
-                !print*,'ca lpj', crown_area(j,k)
-
-                lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
-                !print*, 'lai', lai(j,k)
-                
                 height(j,k) = k_allom2 *diam(j,k)**k_allom3
 
-                ! if(height(j,k).gt.30.) then
+                crown_area(j,k) = min(crown_area_max,k_allom1 * diam(j,k)**krp)
+
                 
-                !     print*, height(j,k), lai(j,k), crown_area(j,k), diam(j,k)*100
-                ! endif
+                
+                    lai(j,k) = (cl2(j,k)*spec_leaf(j,k))/crown_area(j,k)
                 ! !------------------------------------------------------------------------------
                 !---------------------------------------------------------------------------
                 !Calculatin Foliage Projective Cover of average individual(FPC_ind), of the PLS(FPC_pls)
                 ! and of the grid cell (FPC_total)
 
-                FPC_ind(j,k) = (1-(exp(-0.5*lai(j,k))))
-                !print*, 'fpcind', FPC_ind(j,k)
-                
+                    FPC_ind(j,k) = (1-(exp(-0.5*lai(j,k))))              
                 
             
-                FPC_pls_2(j,k) = (crown_area(j,k) * dens1(j,k) * FPC_ind(j,k)) 
+                    FPC_pls_2(j,k) = (crown_area(j,k) * dens1(j,k) * FPC_ind(j,k))
+               
+                
                
             endif
+            ! print*, 'dens', dens1(j,k),j
             
             FPC_inc(j,k) = max(FPC_pls_2(j,k) - FPC_pls_1(j,k),0.)
             ! print*, 'fpc inc before', FPC_inc(j,k),j,k
-            
+            print*, FPC_pls_2(j,k),j
             FPC_total_2(k) = FPC_total_2(k) + (FPC_pls_2(j,k)) !accumulate the values in the variable FPC_total.
                                                         !the actual value will only be obtained when j = npls
             FPC_inc_grid(k) = FPC_inc_grid(k) + FPC_inc(j,k)
             if (j.eq.npls) then   !take the value accumulated until the last pls
               
                 FPC_total_accu_2(k) = FPC_total_2(k)
+                ! print*, FPC_total_accu_2(k)
 
                 FPC_inc_grid(k) = FPC_inc_grid(k)
 
@@ -658,7 +654,7 @@ program self_thinning
                 alive_pls = npls - dead_pls
                
                 
-                ! PRINT*,'dead2',dead_pls,'alive', alive_pls
+                PRINT*,'dead2',dead_pls,'alive', alive_pls
             endif
 
                     
@@ -697,19 +693,24 @@ program self_thinning
             do j = 1, npls
                                       
                     
-                    if(FPC_inc(j,k).le.0.)then
-                        FPC_inc_cont(j,k) =0.
-                    else
-                        FPC_inc_cont(j,k) = (FPC_inc(j,k)/FPC_inc_grid(k)) 
-                    endif
-                    
-                    if (FPC_inc_grid(k).gt.0) then
-                        FPC_dec(j,k) = min(FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k)))
-                    
-                    else 
-                        FPC_dec(j,k) = min(FPC_pls_2(j,k), (exc_area(k)/alive_pls))
+                    ! if(FPC_inc(j,k).le.0.)then
+                    !     FPC_inc_cont(j,k) =1.
+                    ! else
+                    !     FPC_inc_cont(j,k) = (FPC_inc(j,k)/FPC_inc_grid(k)) 
+                    ! endif
+                    FPC_dec(j,k) = min(FPC_pls_2(j,k),exc_area(k) *  FPC_pls_2(j,k) / FPC_total_accu_2(k))
+                    ! FPC_inc_cont(j,k) = (FPC_inc(j,k)/FPC_inc_grid(k)) 
+                    ! if (FPC_inc_grid(k).gt.0) then
+                        
+                    !     FPC_dec(j,k) = min(FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k)))
+                    !     ! if(FPC_inc(j,k).gt.0)then
+                    !     !     print*, FPC_dec(j,k), FPC_pls_2(j,k),(exc_area(k))*(FPC_inc_cont(j,k))
+                    !     ! endif
+                    ! else
+                        
+                    !     FPC_dec(j,k) = min(FPC_pls_2(j,k), (exc_area(k)/alive_pls))
                             
-                    endif
+                    ! endif
                     
                     
                         !!!ATENTIOif(height(j,k).gt.30.) then
@@ -721,21 +722,31 @@ program self_thinning
                
                     FPC_dec_prop(j,k) = (((FPC_pls_2(j,k) - FPC_dec(j,k))/FPC_pls_2(j,k))) !calculating shade mortality
                     ! if (FPC_inc(j,k).le.0) then
-                    !     FPC_dec_prop(j,k)= 0
-                        
+                    !     FPC_dec_prop(j,k)=0.
+                    ! endif
+                    ! ! print*, FPC_dec_prop(j,k)    
                     ! endif
                    
                                  
                     greff(j,k) = carbon_increment(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
-                    if(carbon_increment(j,k).le.0)then
-                        print*, 'greff', greff(j,k)
-                    endif
+                    ! if(carbon_increment(j,k).le.0)then
+                    !     print*, 'greff', greff(j,k)
+                    ! endif
 
                     mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
 
                         ! print*, 'mort_greff', mort_greff(j), j
 
                     mort(j,k) = 1 - (FPC_dec_prop(j,k) + mort_greff(j,k)) !sum of all mortality                   
+                    ! mort(j,k) = 1 - mort_greff(j,k)
+                    
+                    ! print*,'mort', mort(j,k)
+                    if(FPC_dec_prop(j,k).lt.1.)then
+                        mort(j,k) = mort(j,k)
+                    else
+                        mort(j,k) = 1-mort_greff(j,k)
+                        print*, mort(j,k)
+                    endif
                     ! if(FPC_dec_prop(j,k).gt.0.) print*, mort(j,k)
                     cleaf_new(j,k) = cl2(j,k)
                    
@@ -994,9 +1005,10 @@ program self_thinning
                 &cl_inc(j,k), cw_inc(j,k),ch_inc(j,k),cs_inc(j,k), cr_inc(j,k),ctotal_inc(j,k),&
                 &cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k))
 
+            ! print*, 'cl2',cl2_aux(j,k),j    
                 ! print*,'after alloc', cl2_aux(j,k), ch2_aux(j,k), cs2_aux(j,k), cr2_aux(j,k), cw2_aux(j,k)
 
-            if(dens1_aux(j,k).le.0.) then
+            if(dens1_aux(j,k).le.0..or.cl2_aux(j,k).le.0.) then
 
                 cl2_aux(j,k) = 0.
 

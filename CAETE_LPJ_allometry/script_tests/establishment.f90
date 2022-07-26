@@ -65,7 +65,7 @@ module establish
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 4 *(gc_available)
+    est_max = 1 *(gc_available)
     ! print*, est_max
     ! est_max = 2*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
