@@ -1,160 +1,162 @@
 
 program self_thinning
 
-    use csv_file
+    
+    ! use csv_file
     use establish
+    use types
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     
-    integer :: j,k
+    integer(i_4) :: j,k
     logical :: grass
     
-    integer :: file_unit
-    integer, parameter :: npls = 3000
-    integer, parameter :: time =200
+    integer(i_4) :: file_unit
+    integer(i_4), parameter :: npls = 3000
+    integer(i_4), parameter :: time =200
 
     integer, parameter :: grassess = 0.1*npls
-    real, dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
-    real, dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
-    real, dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
-    real, dimension(npls,time) :: height !Tree crown area (m2) (Sitch et al., 2003)
+    real(r_8), dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
+    real(r_8), dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
+    real(r_8), dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
+    real(r_8), dimension(npls,time) :: height !Tree crown area (m2) (Sitch et al., 2003)
 
     
-    ! real, dimension(npls) :: est_pls !establishment for a specific PLS
-    real, dimension(npls,time) :: FPC_ind !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
-    real, dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real, dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real, dimension(npls,time) :: FPC_dec  !'decrease FPC' in other words: the excedend of FPC in eac year [LPJ-GUESS - Phillip's video]
-    real, dimension(npls,time) :: FPC_dec_prop  !proportion of the decrease of a PLS
-    real, dimension(npls,time) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
-    real, dimension(npls,time) :: mort_greff  ! motallity from growth efficiency (Sitch et al 2003)
-    real, dimension(npls,time) :: greff  ! motallity from growth efficiency (Sitch et al 2003)
-    real, dimension(npls,time) :: remaining  !taxa de redução
-    real, dimension(npls,time) :: FPC_inc 
-    real, dimension(npls,time) :: FPC_inc_cont 
-    real, dimension(npls,time) :: carbon_increment_initial  ! used to calculate mort greff (Sitch et al 2003)
-    real, dimension(npls,time) :: carbon_increment ! used to calculate mort greff (Sitch et al 2003)
-    real, dimension (npls) :: FPC_inc_grid
+    ! real(r_8), dimension(npls) :: est_pls !establishment for a specific PLS
+    real(r_8), dimension(npls,time) :: FPC_ind !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_dec  !'decrease FPC' in other words: the excedend of FPC in eac year [LPJ-GUESS - Phillip's video]
+    real(r_8), dimension(npls,time) :: FPC_dec_prop  !proportion of the decrease of a PLS
+    real(r_8), dimension(npls,time) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
+    real(r_8), dimension(npls,time) :: mort_greff  ! motallity from growth efficiency (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: greff  ! motallity from growth efficiency (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: remaining  !taxa de redução
+    real(r_8), dimension(npls,time) :: FPC_inc 
+    real(r_8), dimension(npls,time) :: FPC_inc_cont 
+    real(r_8), dimension(npls,time) :: carbon_increment_initial  ! used to calculate mort greff (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: carbon_increment ! used to calculate mort greff (Sitch et al 2003)
+    real(r_8), dimension (npls) :: FPC_inc_grid
     
-    real, dimension(time) :: FPC_total_initial = 0.0 !sum of FPC_grid
-    real, dimension(time) :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
+    real(r_8), dimension(time) :: FPC_total_initial = 0.0 !sum of FPC_grid
+    real(r_8), dimension(time) :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
 
-    real, dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
-    real :: dead_pls, alive_pls, count_pls
+    real(r_8), dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
+    real(r_8) :: dead_pls, alive_pls, count_pls
     
-    real, dimension(time):: FPC_total_accu_1 = 0.0
-    real, dimension(time) :: FPC_total_accu_2 = 0.0
+    real(r_8), dimension(time):: FPC_total_accu_1 = 0.0
+    real(r_8), dimension(time) :: FPC_total_accu_2 = 0.0
 
-    real :: gc_area = 10000!grid cell size - 15 m2 FOR TESTING PURPOSE (the real value will be 1ha or 10000 m2)
+    real(r_8) :: gc_area = 10000!grid cell size - 15 m2 FOR TESTING PURPOSE (the real(r_8) value will be 1ha or 10000 m2)
 
-    real, dimension(time) :: gc_available
+    real(r_8), dimension(time) :: gc_available
 
-    real :: fpc_max_tree !95% of grid-cell (in m2)
-    real, dimension(time) :: exc_area   
+    real(r_8) :: fpc_max_tree !95% of grid-cell (in m2)
+    real(r_8), dimension(time) :: exc_area   
     
 
     !Parameters and constants
-    real :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
-    real :: k_allom2 = 40.0
-    real :: k_allom3 = 0.85
-    real :: krp = 1.6 !allometric constant (Table 3; Sitch et al., 2003)
-    real :: ltor = 0.77302587552347657
-    real :: k_est = 0.06 !establishment constant !Smith et al 2001 - Table A1
-    real :: leaf_allocation = 0.4 !% of NPP allocaed to leaves
-    real :: wood_allocation = 0.3  !% of NPP allocated to wood
-    real :: root_allocation = 0.3 !% of NPP allocated to roots
-    real :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
-    real :: k_mort2 = 0.3
-    real :: res_time_leaf = 2 !general residence time value for testing purpose
-    real :: res_time_root = 2
-    real :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
-    real :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
-    real :: pi = 3.1415
+    real(r_8) :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
+    real(r_8) :: k_allom2 = 40.0
+    real(r_8) :: k_allom3 = 0.85
+    real(r_8) :: krp = 1.6 !allometric constant (Table 3; Sitch et al., 2003)
+    real(r_8) :: ltor = 0.77302587552347657
+    real(r_8) :: k_est = 0.06 !establishment constant !Smith et al 2001 - Table A1
+    real(r_8) :: leaf_allocation = 0.4 !% of NPP allocaed to leaves
+    real(r_8) :: wood_allocation = 0.3  !% of NPP allocated to wood
+    real(r_8) :: root_allocation = 0.3 !% of NPP allocated to roots
+    real(r_8) :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
+    real(r_8) :: k_mort2 = 0.3
+    real(r_8) :: res_time_leaf = 2 !general residence time value for testing purpose
+    real(r_8) :: res_time_root = 2
+    real(r_8) :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real(r_8) :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
+    real(r_8) :: pi = 3.1415
 
     !Variables to allocation prototype
-    real, dimension(npls,time) :: npp_inc, npp_inc2  !incremento anual de C para cada PLS
-    real, dimension(npls,time) :: npp_inc_init  !incremento anual de C para cada PLS
+    real(r_8), dimension(npls,time) :: npp_inc, npp_inc2  !incremento anual de C para cada PLS
+    real(r_8), dimension(npls,time) :: npp_inc_init  !incremento anual de C para cada PLS
 
-    real, dimension(npls,time) :: annual_npp !quantidade de NPP com os incrementos.
-    real, dimension(npls,time) :: cl2 !carbon on leaves after allocation
-    real, dimension(npls,time) :: cw2 !carbon on wood after allocation
-    real, dimension(npls,time) :: cs2 !carbon on sapwood after allocation
-    real, dimension(npls,time) :: ch2 !carbon on heartwood after allocation
-    real, dimension(npls,time) :: cr2 !carbon on wood after allocation
-    real, dimension(npls,time) :: dens2
+    real(r_8), dimension(npls,time) :: annual_npp !quantidade de NPP com os incrementos.
+    real(r_8), dimension(npls,time) :: cl2 !carbon on leaves after allocation
+    real(r_8), dimension(npls,time) :: cw2 !carbon on wood after allocation
+    real(r_8), dimension(npls,time) :: cs2 !carbon on sapwood after allocation
+    real(r_8), dimension(npls,time) :: ch2 !carbon on heartwood after allocation
+    real(r_8), dimension(npls,time) :: cr2 !carbon on wood after allocation
+    real(r_8), dimension(npls,time) :: dens2
 
-    real, dimension(npls,time) :: cleaf_avg_ind
-    real, dimension(npls,time) :: csap_avg_ind
-    real, dimension(npls,time) :: cheart_avg_ind
-    real, dimension(npls,time) :: cwood_avg_ind
-    real, dimension(npls,time) :: croot_avg_ind
+    real(r_8), dimension(npls,time) :: cleaf_avg_ind
+    real(r_8), dimension(npls,time) :: csap_avg_ind
+    real(r_8), dimension(npls,time) :: cheart_avg_ind
+    real(r_8), dimension(npls,time) :: cwood_avg_ind
+    real(r_8), dimension(npls,time) :: croot_avg_ind
 
-    real, dimension(npls,time) :: cw1 !KgC/m2 (Cheart + Csap)
-    real, dimension(npls,time) :: cs1 !KgC/m2 (Cheart + Csap)
-    real, dimension(npls,time) :: ch1 !KgC/m2 (Cheart + Csap)
-    real, dimension(npls,time) :: cl1 !KgC/m2 
-    real, dimension(npls,time) :: cr1 !KgC/m2
-    real, dimension(npls,time) :: dens1
+    real(r_8), dimension(npls,time) :: cw1 !KgC/m2 (Cheart + Csap)
+    real(r_8), dimension(npls,time) :: cs1 !KgC/m2 (Cheart + Csap)
+    real(r_8), dimension(npls,time) :: ch1 !KgC/m2 (Cheart + Csap)
+    real(r_8), dimension(npls,time) :: cl1 !KgC/m2 
+    real(r_8), dimension(npls,time) :: cr1 !KgC/m2
+    real(r_8), dimension(npls,time) :: dens1
 
     ! Variables with generic values for testing the logic code
-    real, dimension(npls,time) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
-    real, dimension(npls,time) :: spec_leaf !m2/gC
-    real, dimension(npls) :: leaf_inc !kgC/ ind
-    real, dimension(npls) :: wood_inc !kgC/ ind
-    real, dimension(npls) :: root_inc !kgC/ ind
+    real(r_8), dimension(npls,time) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
+    real(r_8), dimension(npls,time) :: spec_leaf !m2/gC
+    real(r_8), dimension(npls) :: leaf_inc !kgC/ ind
+    real(r_8), dimension(npls) :: wood_inc !kgC/ ind
+    real(r_8), dimension(npls) :: root_inc !kgC/ ind
 
     !variables with initial values
-    real, dimension(npls,time) :: cl1_initial
-    real, dimension(npls,time) :: cw1_initial
-    real, dimension(npls,time) :: cs1_initial
-    real, dimension(npls,time) :: ch1_initial
-    real, dimension(npls,time) :: cr1_initial
-    real, dimension(npls,time) :: npp1_initial
-    real, dimension(npls,time) :: FPC_pls_initial
-    real, dimension(npls,time) :: dens1_initial
+    real(r_8), dimension(npls,time) :: cl1_initial
+    real(r_8), dimension(npls,time) :: cw1_initial
+    real(r_8), dimension(npls,time) :: cs1_initial
+    real(r_8), dimension(npls,time) :: ch1_initial
+    real(r_8), dimension(npls,time) :: cr1_initial
+    real(r_8), dimension(npls,time) :: npp1_initial
+    real(r_8), dimension(npls,time) :: FPC_pls_initial
+    real(r_8), dimension(npls,time) :: dens1_initial
     
 
     !auxiliary variables for outputs
-    real, dimension (npls,time) :: cl1_aux
-    real, dimension (npls,time) :: cw1_aux
-    real, dimension (npls,time) :: ch1_aux
-    real, dimension (npls,time) :: cs1_aux
-    real, dimension (npls,time) :: cr1_aux
-    real, dimension (npls,time) :: FPC_pls_1_aux
-    real, dimension (npls,time) :: dens1_aux
-    real, dimension (time) :: FPC_total_accu_1_aux
+    real(r_8), dimension (npls,time) :: cl1_aux
+    real(r_8), dimension (npls,time) :: cw1_aux
+    real(r_8), dimension (npls,time) :: ch1_aux
+    real(r_8), dimension (npls,time) :: cs1_aux
+    real(r_8), dimension (npls,time) :: cr1_aux
+    real(r_8), dimension (npls,time) :: FPC_pls_1_aux
+    real(r_8), dimension (npls,time) :: dens1_aux
+    real(r_8), dimension (time) :: FPC_total_accu_1_aux
 
 
     !creating random numbers for npp increment
     
-    real:: x(npls,time)
+    real(r_8):: x(npls,time)
 
     !variables for module of establishment
 
-    real, dimension (time) :: est
-    real, dimension (npls,time) :: est_pls
-    real, dimension (npls,time) :: cleaf_sapl
-    real, dimension (npls,time) :: csap_sapl
-    real, dimension (npls,time) :: cheart_sapl
-    real, dimension (npls,time) :: croot_sapl
-    real, dimension (npls,time) :: dens_est
-    real, dimension (npls,time) :: cleaf_new
-    real, dimension (npls,time) :: cwood_new
-    real, dimension (npls,time) :: csap_new
-    real, dimension (npls,time) :: cheart_new
-    real, dimension (npls,time) :: croot_new
+    real(r_8), dimension (time) :: est
+    real(r_8), dimension (npls,time) :: est_pls
+    real(r_8), dimension (npls,time) :: cleaf_sapl
+    real(r_8), dimension (npls,time) :: csap_sapl
+    real(r_8), dimension (npls,time) :: cheart_sapl
+    real(r_8), dimension (npls,time) :: croot_sapl
+    real(r_8), dimension (npls,time) :: dens_est
+    real(r_8), dimension (npls,time) :: cleaf_new
+    real(r_8), dimension (npls,time) :: cwood_new
+    real(r_8), dimension (npls,time) :: csap_new
+    real(r_8), dimension (npls,time) :: cheart_new
+    real(r_8), dimension (npls,time) :: croot_new
 
      !variables for module allocation
-    real, dimension (npls,time) :: cl_inc !leaf increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: cr_inc !root increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: cw_inc !wood increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: ch_inc !heart increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: cs_inc !sap increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: ctotal_inc !total increment from allocation (gC, average_in)
-    real, dimension (npls,time) :: cl2_aux = 0. !leaf carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: cw2_aux = 0. !wood carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: ch2_aux = 0. !heartwood carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: cs2_aux = 0.!sapwood carbon after allocation (gC, avera_in)
-    real, dimension (npls,time) :: cr2_aux = 0. !root carbon after allocation (gC, avera_in)
+    real(r_8), dimension (npls,time) :: cl_inc !leaf increment from allocation (gC, average_in)
+    real(r_8), dimension (npls,time) :: cr_inc !root increment from allocation (gC, average_in)
+    real(r_8), dimension (npls,time) :: cw_inc !wood increment from allocation (gC, average_in)
+    real(r_8), dimension (npls,time) :: ch_inc !heart increment from allocation (gC, average_in)
+    real(r_8), dimension (npls,time) :: cs_inc !sap increment from allocation (gC, average_in)
+    real(r_8), dimension (npls,time) :: ctotal_inc !total increment from allocation (gC, average_in)
+    real(r_8), dimension (npls,time) :: cl2_aux = 0. !leaf carbon after allocation (gC, avera_in)
+    real(r_8), dimension (npls,time) :: cw2_aux = 0. !wood carbon after allocation (gC, avera_in)
+    real(r_8), dimension (npls,time) :: ch2_aux = 0. !heartwood carbon after allocation (gC, avera_in)
+    real(r_8), dimension (npls,time) :: cs2_aux = 0.!sapwood carbon after allocation (gC, avera_in)
+    real(r_8), dimension (npls,time) :: cr2_aux = 0. !root carbon after allocation (gC, avera_in)
    
 
    
@@ -521,9 +523,9 @@ program self_thinning
             
             !if(cl1(j,k).le.0) then
                 !print*, 'cl1 0',cl1(j,k),dens1(j,k), cr1(j,k), diam(j,k), height(j,k)
-! ORIGINAL   ! if(dens1(j,k).le.1.e-10) then !densidade mínima de indivíduos (from LPJmfire code)
+            if(dens1(j,k).le.1.e-10) then !densidade mínima de indivíduos (from LPJmfire code)
                 !print*, cl1(j,k), cr1(j,k), cw1(j,k), FPC_pls_2(j,k)
-            if(dens1(j,k).lt.0.001) then !densidade mínima de indivíduos (from LPJmfire code)    
+            ! if(dens1(j,k).lt.0.001) then !densidade mínima de indivíduos (from LPJmfire code)    
                                     !quase uma mortalidade por tamanho máximo
                 cl2(j,k) = 0.
 
@@ -643,7 +645,7 @@ program self_thinning
         do j=1, npls
 
             
-            if (FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-1) then
+            if (FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-10) then
                 dead_pls = dead_pls +1
                 
             endif
@@ -662,7 +664,7 @@ program self_thinning
             ! FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
                       
 
-            if(FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-1)then
+            if(FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-10)then
                 FPC_inc(j,k) = 0.
                 FPC_inc_cont(j,k) = 0.
                 FPC_dec(j,k) = 0.                   
@@ -880,7 +882,7 @@ program self_thinning
                     mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k)))
                 
                     ! mort(j,k) = mort_greff(j,k)
-                    mort(j,k) = mort_greff(j,k)+0.3 !adicionando mortalidade pra quando nãoultrapassa
+                    mort(j,k) = mort_greff(j,k) !adicionando mortalidade pra quando nãoultrapassa
                     ! print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
                     !print*, 'mort_greff', mort_greff(j), j
                     ! print*, 'mort', mort(j,k)

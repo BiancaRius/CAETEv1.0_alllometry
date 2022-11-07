@@ -10,8 +10,7 @@
 !     MERCHANTABILITY or FITNESS FOR A PARTICULAR 2PURPOSE.  See the
 !     GNU General Public License for more details.
 
-!     You should have received a copy of the GNU General Public License
-!     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!     You should have recei(i_4)am.  If not, see <http://www.gnu.org/licenses/>.
 
 ! AUTHOR: Bianca Fazio Rius, Bárbara Cardeli, Carolina Blanco
 
@@ -24,7 +23,7 @@
     !4.6.1.Establishment in Smith et al. 2001)
     !Most of the equations are based on LPJ population mode (as described in Smith et al 2001) 
     !and can be found in Sitch et al., 2003 and Smith et al., 2001.
-    !In this mode, each PLS is represented by a population of average individuals.
+    !In this mode, each PLS (i_4)is represented by a population of average individuals.
     !All individuals of a PLS present the same features and the population is defined by
     !the density of individuals per m2.
 !--------------------------------------------------------------------------------------------------   
@@ -32,6 +31,8 @@
 
 module establish
     
+    use types
+
     implicit none
     public ::                    &      
         establishment           ,&
@@ -40,32 +41,33 @@ module establish
     contains
 
     subroutine establishment(j,gc_available,npls_alive, FPC_total_accu_2, gc_area, est, est_pls,dens)
-    
+    implicit none
+
     !input variables
-    integer, intent(in) :: j
-    real, intent(in) :: npls_alive
-    real, intent(in) :: FPC_total_accu_2
-    real, intent(in) :: gc_area
-    real, intent(in) :: gc_available
-    real, intent(in) :: dens
+    integer(i_4), intent(in) :: j
+    real(r_8), intent(in) :: npls_alive
+    real(r_8), intent(in) :: FPC_total_accu_2
+    real(r_8), intent(in) :: gc_area
+    real(r_8), intent(in) :: gc_available
+    real(r_8), intent(in) :: dens
     
 
     !output variables
-    real, intent(out):: est
-    real, intent(out):: est_pls
+    real(r_8), intent(out):: est
+    real(r_8), intent(out):: est_pls
     
     !internal variables
-    real :: est_max  !2 individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
-    real :: FPC_total_perc
+    real(r_8) :: est_max  !2 individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
+    real(r_8) :: FPC_total_perc
     ! print*, 'alive pls in est', npls
-    real, parameter :: dens_min = 1.e-1      !minimum individual density for persistence of PFT (indiv/m2)
+    real(r_8), parameter :: dens_min = 1.e-10      !minimum individual density for persistence of PFT (indiv/m2)
     
     
     ! if (dens.le.dens_min) then
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 10 *(gc_available)
+    est_max = 5 *(gc_available)
     ! print*, est_max
     ! est_max = 2*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
@@ -113,33 +115,34 @@ module establish
     subroutine shrink(cl_old,ch_old,cs_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
     &           cheart_sapl_npls,croot_sapl_npls, dens_new, cleaf_new,& 
     &           cwood_new,cheart_new, csap_new, croot_new)
-    
+    implicit none
+
         ! !input variables
         ! integer, intent(in) :: npls
-        real, intent(in) :: cl_old
-        real, intent(in) :: cw_old
-        real, intent(in) :: ch_old
-        real, intent(in) :: cs_old
-        real, intent(in) :: cr_old
-        real, intent(in) :: est_pls
-        real, intent(in) :: dens_old
-        real, intent(in) :: cleaf_sapl_npls
-        real, intent(in) :: csap_sapl_npls
-        real, intent(in) :: cheart_sapl_npls
-        real, intent(in) :: croot_sapl_npls
+        real(r_8), intent(in) :: cl_old
+        real(r_8), intent(in) :: cw_old
+        real(r_8), intent(in) :: ch_old
+        real(r_8), intent(in) :: cs_old
+        real(r_8), intent(in) :: cr_old
+        real(r_8), intent(in) :: est_pls
+        real(r_8), intent(in) :: dens_old
+        real(r_8), intent(in) :: cleaf_sapl_npls
+        real(r_8), intent(in) :: csap_sapl_npls
+        real(r_8), intent(in) :: cheart_sapl_npls
+        real(r_8), intent(in) :: croot_sapl_npls
 
         ! !output variables
-        real, intent(out):: dens_new
-        real, intent(out):: cleaf_new
-        real, intent(out):: cwood_new
-        real, intent(out):: cheart_new
-        real, intent(out):: csap_new
-        real, intent(out):: croot_new
+        real(r_8), intent(out):: dens_new
+        real(r_8), intent(out):: cleaf_new
+        real(r_8), intent(out):: cwood_new
+        real(r_8), intent(out):: cheart_new
+        real(r_8), intent(out):: csap_new
+        real(r_8), intent(out):: croot_new
         
         ! !internal variables
-        ! real :: dens_est_pls 
+        ! real(r_8) :: dens_est_pls 
         
-        real :: cwood_sapl_npls
+        real(r_8) :: cwood_sapl_npls
         
         
         if(cl_old.le.0.)then
@@ -181,39 +184,40 @@ module establish
     subroutine sapling_allometry(npls_alive,cleaf_sapl_npls, csap_sapl_npls, cheart_sapl_npls,croot_sapl_npls)
         !subroutine to calculate carbon in saplings compartments
 
+        implicit none
         !input variables
-        real, intent(in) :: npls_alive
+        real(r_8), intent(in) :: npls_alive
         
         ! !output variables
-        real, intent(out) :: cleaf_sapl_npls     
-        real, intent(out) :: csap_sapl_npls
-        real, intent(out) :: cheart_sapl_npls
-        real, intent(out) :: croot_sapl_npls
+        real(r_8), intent(out) :: cleaf_sapl_npls     
+        real(r_8), intent(out) :: csap_sapl_npls
+        real(r_8), intent(out) :: cheart_sapl_npls
+        real(r_8), intent(out) :: croot_sapl_npls
 
-        real :: cleaf_sapl !gC
-        real :: csap_sapl  !gC
-        real :: cheart_sapl !gC
-        real :: croot_sapl   !gC
+        real(r_8) :: cleaf_sapl !gC
+        real(r_8) :: csap_sapl  !gC
+        real(r_8) :: cheart_sapl !gC
+        real(r_8) :: croot_sapl   !gC
 
 
         !internal variables
        
 
-        real :: sla_sapl, diam_sapl, lai_sapl, height_sapl,dwood_sapl
+        real(r_8) :: sla_sapl, diam_sapl, lai_sapl, height_sapl,dwood_sapl
 
-        real :: klatosa_sapl = 8000.
+        real(r_8) :: klatosa_sapl = 8000.
 
-        real :: pi = 3.14159
+        real(r_8) :: pi = 3.14159
 
-        real :: k_allom1_sapl = 100.
+        real(r_8) :: k_allom1_sapl = 100.
 
-        real :: k_allom2_sapl = 40.
+        real(r_8) :: k_allom2_sapl = 40.
 
-        real :: k_allom3_sapl = 0.5
+        real(r_8) :: k_allom3_sapl = 0.5
 
-        real :: x_sapl = 3. !from lpjlmfire (pftparametersmod.f90)
+        real(r_8) :: x_sapl = 3. !from lpjlmfire (pftparametersmod.f90)
 
-        real :: reinickerp = 1.6
+        real(r_8) :: reinickerp = 1.6
         
 
        
