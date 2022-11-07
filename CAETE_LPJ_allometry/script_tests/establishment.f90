@@ -58,14 +58,14 @@ module establish
     real :: est_max  !2 individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
     real :: FPC_total_perc
     ! print*, 'alive pls in est', npls
-    real, parameter :: dens_min = 1.e-10      !minimum individual density for persistence of PFT (indiv/m2)
+    real, parameter :: dens_min = 1.e-1      !minimum individual density for persistence of PFT (indiv/m2)
     
     
     ! if (dens.le.dens_min) then
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 4 *(gc_available)
+    est_max = 10 *(gc_available)
     ! print*, est_max
     ! est_max = 2*(gc_area)
     FPC_total_perc = FPC_total_accu_2/gc_area
