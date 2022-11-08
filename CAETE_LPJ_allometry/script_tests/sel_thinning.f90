@@ -196,7 +196,7 @@ program self_thinning
 
 
     xmin = 0.2
-    xmax = 3.5
+    xmax = 2.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -218,8 +218,8 @@ program self_thinning
 
 !_______________________________________________
 !!    creating value for initial cheartwood
-    xmin = 10.
-    xmax = 30.
+    xmin = 5.
+    xmax = 20.
      
     x(:,:) = 0.
     call random_number(x)
@@ -241,8 +241,8 @@ program self_thinning
 !____________________________________________________
 !____________________________________________________
 !    creating value for initial csapwood
-    xmin = 1.
-    xmax = 3.5
+    xmin = 0.2
+    xmax = 2.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -293,7 +293,7 @@ program self_thinning
 !____________________________________________________
    !!    creating value for initial npp
     xmin = 0.5
-    xmax = 4.
+    xmax = 2.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -367,7 +367,7 @@ program self_thinning
 !____________________________
     !!calculates increment npp to be allocated
     xmin = 0.5
-    xmax = 4.5
+    xmax = 3.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -413,21 +413,21 @@ program self_thinning
     do k = 1, time
         do j=1,npls
 
-            FPC_pls_initial(j,k) = 0.1
+            FPC_pls_initial(j,k) = 1.
 
             FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
 
         
             if (j.eq.npls) then
                 FPC_total_accu_initial(k) = FPC_total_initial(k)
-                !print*, 'FPC_total_accu_initial', FPC_total_accu_initial(k),k
+                ! print*, 'FPC_total_accu_initial', FPC_total_accu_initial(k),k
             endif
 
         enddo
 
-        if(k.eq.1)then
-            print*,'FPC_total_accu_initial', FPC_total_accu_initial(k),k
-        endif
+        ! if(k.eq.1)then
+        !     print*,'FPC_total_accu_initial', FPC_total_accu_initial(k),k
+        ! endif
 
     enddo
 
@@ -489,7 +489,9 @@ program self_thinning
             FPC_pls_1(:,k) = FPC_pls_initial(:,k)
             dens1(:,k) = dens1_initial(:,k)
             FPC_total_accu_1(k) = FPC_total_accu_initial(k)
+            ! print*, 'fpc total accu 1, entrando no modelo', FPC_total_accu_1(k)
             npp_inc(:,k) = npp_inc_init(:,k)
+            ! print*, 'npp inc init', npp_inc_init(:,k)
             carbon_increment(:,k) = carbon_increment_initial(:,k)
            
         else
@@ -630,8 +632,9 @@ program self_thinning
                 ! endif
                
             endif
-            
-           
+            ! if(k.eq.1)then
+            !     print*, 'fpc_total_accu2', FPC_total_accu_2(k)
+            ! endif
             
         enddo
 
@@ -640,17 +643,22 @@ program self_thinning
 
         fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
         
-        if (k.eq.1) then
-            FPC_inc_grid(k) = 0.
+        ! if (k.eq.1) then
+        !     FPC_inc_grid(k) = 0.
             
-        else
-            FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
-            ! if(FPC_inc_grid(k).le.0.) then
-            !     FPC_inc_grid(k) = 0.
-            !     !  print*, FPC_inc_grid(k), 'inc grid', k
-            ! endif
+        ! else
+        !     FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
+        !     ! if(FPC_inc_grid(k).le.0.) then
+        !     !     FPC_inc_grid(k) = 0.
+        !     !     !  print*, FPC_inc_grid(k), 'inc grid', k
+        !     ! endif
            
-        endif
+        ! endif
+
+        FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
+        
+        if(k.eq.1)print*, 'inc k eq ', FPC_inc_grid(k), k,FPC_total_accu_2(k), FPC_total_accu_1(k) 
+
         dead_pls = 0.
         do j=1, npls
 
