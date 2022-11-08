@@ -171,6 +171,7 @@ program self_thinning
 !!!------------------------------------------------------
 
 ! !creating value for initial density
+!! this value is used to calculate the inc in tissues for the 1st day
 
 
     xmin = 0.5
@@ -230,6 +231,7 @@ program self_thinning
         enddo
     enddo
 
+!!!!!Transforms from kgC to gC (as in LPJ)
     do j = 1, npls      
 
         ch1_initial(j,:) =x(j,:)*1000.
@@ -251,7 +253,7 @@ program self_thinning
 
         enddo
     enddo
-
+!!!!!Transforms from kgC to gC (as in LPJ)
     do j = 1, npls      
 
         cs1_initial(j,:) =x(j,:)*1000.
@@ -259,7 +261,7 @@ program self_thinning
     enddo
 
 
-!provisorio para colocar o sap separamente
+!Total carbon in wood tissues is the sum of csap and cheart
     do j = 1, npls      
 
         cw1_initial(j,:) = cs1_initial(j,:) + ch1_initial(j,:)
@@ -281,7 +283,7 @@ program self_thinning
             
         enddo
     enddo
-
+!!!!!Transforms from kgC to gC (as in LPJ)
     do j = 1, npls      
 
         cr1_initial(j,:) =x(j,:)*1000.
@@ -302,7 +304,7 @@ program self_thinning
            
         enddo
     enddo
-
+!!!!!Transforms from kgC to gC (as in LPJ)
     do j = 1, npls      
 
         npp1_initial(j,:) =x(j,:)*1000.
@@ -376,7 +378,7 @@ program self_thinning
             
         enddo
     enddo  
-
+!!!!!Transforms from kgC to gC (as in LPJ)
     do j = 1, npls
         npp_inc_init(j,:) = (x(j,:)*1000)
     enddo
@@ -387,14 +389,15 @@ program self_thinning
 
 !-------------------------------------------------------------------------------
     ! !Increments to each compartments per individual. Here, the NPP proportions allocated
-    ! to each compartment is being used for testing purpose. The actual values will be calculated
-    ! in allocation routine.
+    ! to each compartment is being used for the first day. For the rest of the days it is
+    ! calculated from allocation routine
+
     do j=1, npls
         leaf_inc(j) = (leaf_allocation * npp_inc_init(j,k))/dens1_initial(j,k)
 
         root_inc(j) = (root_allocation * npp_inc_init(j,k))/dens1_initial(j,k)
  
-
+    !here wood_inc do not consider sap and heart separetely    
         wood_inc(j) = (wood_allocation * npp_inc_init(j,k))/dens1_initial(j,k)
   
 
@@ -407,16 +410,23 @@ program self_thinning
 !----------------------------------------------------------
         !Define a general value for FPC in order to initialize and 
         !use to calculate the FPC increments
-    do j=1,npls
+    do k = 1, time
+        do j=1,npls
 
-        FPC_pls_initial(j,k) = 1000.
+            FPC_pls_initial(j,k) = 0.1
 
-        FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
+            FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
+
         
-       
-        if (j.eq.npls) then
-            FPC_total_accu_initial(k) = FPC_total_initial(k)
-            
+            if (j.eq.npls) then
+                FPC_total_accu_initial(k) = FPC_total_initial(k)
+                !print*, 'FPC_total_accu_initial', FPC_total_accu_initial(k),k
+            endif
+
+        enddo
+
+        if(k.eq.1)then
+            print*,'FPC_total_accu_initial', FPC_total_accu_initial(k),k
         endif
 
     enddo
@@ -658,7 +668,7 @@ program self_thinning
                 alive_pls = npls - dead_pls
                
                 
-                PRINT*,'dead2',dead_pls,'alive', alive_pls
+                ! PRINT*,'dead2',dead_pls,'alive', alive_pls
             endif
 
             ! FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
