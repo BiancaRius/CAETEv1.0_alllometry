@@ -650,7 +650,7 @@ program self_thinning
         do j=1, npls
 
             
-            if (FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-10) then
+            if (FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-10) then !REVER ESSA MORTALIDADE POR DENSIDADE
                 dead_pls = dead_pls +1
                 
             endif
@@ -704,8 +704,15 @@ program self_thinning
 
             !------------------------------------------------------------
             
-
-            
+            do j = 1, npls
+                if(FPC_pls_2(j,k).gt.0) then
+                    FPC_dec(j,k) = min(FPC_pls_2(j,k), exc_area(k)*(FPC_pls_2(j,k)/FPC_total_accu_2(k)))
+                    ! print*, 'dec new', FPC_dec(j,k), FPC_pls_2(j,k), j
+                else
+                    FPC_dec(j,k) = 0
+                    print*,'0'
+                endif
+            enddo            
 
             do j = 1, npls
                
@@ -830,7 +837,7 @@ program self_thinning
             ! if(FPC_total_accu_2(k).lt.5000.) then
             !     print*,FPC_total_accu_2(k), k
             ! endif 
-            print*, 'n ultrapassou', FPC_total_accu_2(k), k
+            ! print*, 'n ultrapassou', FPC_total_accu_2(k), k
             do j=1, npls
                 
                 
