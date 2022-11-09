@@ -367,7 +367,7 @@ program self_thinning
 !____________________________
     !!calculates increment npp to be allocated
     xmin = 0.5
-    xmax = 3.5
+    xmax = 2.5
      
     x(:,:) = 0.
     call random_number(x)
@@ -621,7 +621,7 @@ program self_thinning
             
             FPC_total_2(k) = FPC_total_2(k) + (FPC_pls_2(j,k)) !accumulate the values in the variable FPC_total.
                                                         !the actual value will only be obtained when j = npls
-
+            
             if (j.eq.npls) then   !take the value accumulated until the last pls
               
                 FPC_total_accu_2(k) = FPC_total_2(k)
@@ -639,25 +639,12 @@ program self_thinning
         enddo
 
         !--------------------------------------------------------------------------- 
-        !Verifying if FPCs together occupy more than 95% of the plot area
-
-        fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
         
-        ! if (k.eq.1) then
-        !     FPC_inc_grid(k) = 0.
-            
-        ! else
-        !     FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
-        !     ! if(FPC_inc_grid(k).le.0.) then
-        !     !     FPC_inc_grid(k) = 0.
-        !     !     !  print*, FPC_inc_grid(k), 'inc grid', k
-        !     ! endif
-           
-        ! endif
+        
 
         FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
         
-        if(k.eq.1)print*, 'inc k eq ', FPC_inc_grid(k), k,FPC_total_accu_2(k), FPC_total_accu_1(k) 
+        if(FPC_inc_grid(k).le.0.)FPC_inc_grid(k)=0!print*, 'inc le ', FPC_inc_grid(k), k,FPC_total_accu_2(k), FPC_total_accu_1(k) 
 
         dead_pls = 0.
         do j=1, npls
@@ -698,7 +685,11 @@ program self_thinning
             
         enddo
 
-        
+        !Verifying if FPCs together occupy more than 95% of the plot area
+
+        fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
+        !---------------------------------------------------------------------------------------
+                
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
             print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k),k, FPC_total_accu_2(k)-fpc_max_tree
             
