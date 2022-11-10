@@ -29,9 +29,10 @@ program self_thinning
     real(r_8), dimension(npls,time) :: FPC_dec_prop  !proportion of the decrease of a PLS
     real(r_8), dimension(npls,time) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
     real(r_8), dimension(npls,time) :: nind_kill_prop  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
-    real(r_8), dimension(npls,time) :: mort_greff  ! motallity from growth efficiency (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: mort_greff  ! motallity from growth efficiency takes into account mort by wd (Sakschewski et al 2015)
     real(r_8), dimension(npls,time) :: greff  ! motallity from growth efficiency (Sitch et al 2003)
     real(r_8), dimension(npls,time) :: remaining  !taxa de redução
+    real(r_8), dimension(npls,time) :: mort_wd
     real(r_8), dimension(npls,time) :: FPC_inc 
     real(r_8), dimension(npls,time) :: FPC_inc_cont 
     real(r_8), dimension(npls,time) :: carbon_increment_initial  ! used to calculate mort greff (Sitch et al 2003)
@@ -66,7 +67,7 @@ program self_thinning
     real(r_8) :: wood_allocation = 0.3  !% of NPP allocated to wood
     real(r_8) :: root_allocation = 0.3 !% of NPP allocated to roots
     real(r_8) :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
-    real(r_8) :: k_mort2 = 0.3
+    real(r_8) :: k_mort2 = 0.5
     real(r_8) :: res_time_leaf = 2 !general residence time value for testing purpose
     real(r_8) :: res_time_root = 2
     real(r_8) :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
@@ -679,6 +680,7 @@ program self_thinning
                 greff(j,k) = 0.
                 mort(j,k) = 1.
                 mort_greff(j,k) = 0.
+                mort_wd(j,k) = 0.
                 dens2(j,k) = 0.
             endif
             ! if (FPC_inc(j,k).lt.0.)then
@@ -723,7 +725,7 @@ program self_thinning
 
                     FPC_dec_prop(j,k) = (dens1(j,k) * FPC_dec(j,k))/FPC_pls_2(j,k)
                     nind_kill_prop(j,k) = 1 - (dens1(j,k)-FPC_dec_prop(j,k))/dens1(j,k)
-                    print*, 'new kill', FPC_dec_prop(j,k), dens1(j,k), FPC_dec(j,k),j,nind_kill_prop(j,k)
+                    ! print*, 'new kill', FPC_dec_prop(j,k), dens1(j,k), FPC_dec(j,k),j,nind_kill_prop(j,k)
                 endif
     
                 ! print*, 'dec', FPC_dec_prop(j,k)
@@ -737,13 +739,21 @@ program self_thinning
                     greff(j,k) = 0.
                     mort(j,k) = 1.
                     mort_greff(j,k) = 0.
-        
+                    mort_wd(j,k) = 0.
+                    nind_kill_prop(j,k) = 0.        
                 else
-                                                    
+                
+
                     greff(j,k) = carbon_increment(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
+
+                    mort_wd(j,k) = exp(-2.66+(0.255/dwood(j,k)))
+                    ! print*, 'mort dwood', mort_wd(j,k)
                     
-                    mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
+                    ! mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
                         ! print*, 'mort_greff', mort_greff(j), j
+
+                    mort_greff(j,k) = mort_wd(j,k)/(1+k_mort2*greff(j,k))
+                    print*, 'mort greff dwood', mort_greff(j,k)
 
                     mort(j,k) = 1 - (nind_kill_prop(j,k) + mort_greff(j,k)) !sum of all mortality
                     ! print*, 'mort', mort(j,k)
