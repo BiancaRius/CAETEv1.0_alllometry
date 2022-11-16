@@ -26,11 +26,12 @@ program self_thinning
     real(r_8), dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
     real(r_8), dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
     real(r_8), dimension(npls,time) :: FPC_dec  !'decrease FPC' in other words: the excedend of FPC in eac year [LPJ-GUESS - Phillip's video]
-    real(r_8), dimension(npls,time) :: FPC_dec_prop  !proportion of the decrease of a PLS
+    real(r_8), dimension(npls,time) :: nind_kill_FPC !proportion of the decrease of a PLS
     real(r_8), dimension(npls,time) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
-    real(r_8), dimension(npls,time) :: nind_kill_prop  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
+    real(r_8), dimension(npls,time) :: nind_kill_total  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
     real(r_8), dimension(npls,time) :: mort_greff  ! motallity from growth efficiency takes into account mort by wd (Sakschewski et al 2015)
     real(r_8), dimension(npls,time) :: greff  ! motallity from growth efficiency (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: nind_kill_greff
     real(r_8), dimension(npls,time) :: remaining  !taxa de redução
     real(r_8), dimension(npls,time) :: mort_wd
     real(r_8), dimension(npls,time) :: FPC_inc 
@@ -452,7 +453,8 @@ program self_thinning
         FPC_inc(:,k) = 0.
         FPC_inc_cont (:,k) = 0.
         FPC_dec (:,k) = 0.
-        FPC_dec_prop (:,k) = 0.
+        nind_kill_FPC (:,k) = 0.
+        nind_kill_greff(:, k) = 0.
 
         cleaf_avg_ind(:,k) = 0.
         csap_avg_ind(:,k) = 0.
@@ -475,7 +477,7 @@ program self_thinning
         wood_inc = 0.
         root_inc = 0.
         mort(:,k) = 0.
-        nind_kill_prop(:,k) = 0.
+        ! nind_kill_prop(:,k) = 0.
         npp_inc2(:,k) = 0.
         cl2_aux(:,k) = 0.
         cw2_aux(:,k) = 0.
@@ -676,7 +678,7 @@ program self_thinning
                 FPC_inc(j,k) = 0.
                 FPC_inc_cont(j,k) = 0.
                 FPC_dec(j,k) = 0.                   
-                FPC_dec_prop(j,k) = 0.               
+                nind_kill_FPC(j,k) = 0.               
                 greff(j,k) = 0.
                 mort(j,k) = 1.
                 mort_greff(j,k) = 0.
@@ -704,13 +706,14 @@ program self_thinning
            
             ! Excedent area
            
-            exc_area(k) = FPC_total_accu_2(k) - fpc_max_tree
+            exc_area(k) = FPC_total_accu_2(k) - fpc_max_tree !quanto foi o excedente em área
 
             !------------------------------------------------------------
             !LPJmlFire scheme
             do j = 1, npls
-                if(FPC_pls_2(j,k).gt.0) then
+                if(FPC_pls_2(j,k).gt.0) then !se a ocupação é maior q zero = PLS vivo.
                     FPC_dec(j,k) = min(FPC_pls_2(j,k), exc_area(k)*(FPC_pls_2(j,k)/FPC_total_accu_2(k)))
+                    !quanto q a ocupação de um pls vai ter que reduzir. Essa redução é proporcional ao FPC (ocupação) do PLS em relação ao FPC total (soma de todos os FPC da célula-grade)
                     ! print*, 'dec new', FPC_dec(j,k), FPC_pls_2(j,k), j
                 else
                     FPC_dec(j,k) = 0
@@ -718,13 +721,14 @@ program self_thinning
                 endif
 
                 if(FPC_dec(j,k).le.0.) then
-                    FPC_dec_prop(j,k) = 0.
-                    print*, '000000000000'
-                    nind_kill_prop(j,k) = 0.
+                    nind_kill_FPC(j,k) = 0.
+                    ! print*, '000000000000'
+                    nind_kill_FPC(j,k) = 0.
                 else
-
-                    FPC_dec_prop(j,k) = (dens1(j,k) * FPC_dec(j,k))/FPC_pls_2(j,k)
-                    nind_kill_prop(j,k) = 1 - (dens1(j,k)-FPC_dec_prop(j,k))/dens1(j,k)
+                    nind_kill_FPC(j,k) = (dens1(j,k) * FPC_dec(j,k))/FPC_pls_2(j,k) !NIND_KILL.
+                    !numero de ind. que vão morrer (ind/m2) devido ocupação maior que 95%
+                    print*, nind_kill_FPC(j,k), dens1(j,k), 'FPCs', ((FPC_dec(j,k))/(FPC_pls_2(j,k)))
+                    ! nind_kill_prop(j,k) = 1 - (dens1(j,k)-FPC_dec_prop(j,k))/dens1(j,k)
                     ! print*, 'new kill', FPC_dec_prop(j,k), dens1(j,k), FPC_dec(j,k),j,nind_kill_prop(j,k)
                 endif
     
@@ -735,29 +739,40 @@ program self_thinning
                
                 if(FPC_pls_2(j,k).le.0.)then
                     FPC_dec(j,k) = 0.                   
-                    FPC_dec_prop(j,k) = 0.               
+                    nind_kill_FPC(j,k) = 0.               
                     greff(j,k) = 0.
                     mort(j,k) = 1.
                     mort_greff(j,k) = 0.
                     mort_wd(j,k) = 0.
-                    nind_kill_prop(j,k) = 0.        
+                    ! nind_kill_prop(j,k) = 0.        
                 else
                 
 
-                    greff(j,k) = carbon_increment(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency
+                    greff(j,k) = carbon_increment(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency in m2/gC
 
-                    mort_wd(j,k) = exp(-2.66+(0.255/dwood(j,k)))
+                    mort_wd(j,k) = exp(-2.66+(0.255/dwood(j,k))) !
                     ! print*, 'mort dwood', mort_wd(j,k)
                     
                     ! mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k))) !mortality by gowth efficiency
                         ! print*, 'mort_greff', mort_greff(j), j
 
                     mort_greff(j,k) = mort_wd(j,k)/(1+k_mort2*greff(j,k))
-                    print*, 'mort greff dwood', mort_greff(j,k)
+                    ! print*, 'mort greff dwood', mort_greff(j,k)
 
-                    mort(j,k) = 1 - (nind_kill_prop(j,k) + mort_greff(j,k)) !sum of all mortality
-                    ! print*, 'mort', mort(j,k)
-                                     
+                    
+                    ! mort(j,k) = max((FPC_dec_prop(j,k) + mort_greff(j,k),1)) !sum of all mortality
+                    ! print*, 'mort_total', mort(j,k)
+
+                    nind_kill_greff(j,k) = (dens1(j,k) * mort_greff(j,k)) !valores absolutos de ind.
+                    ! print*, 'NIND_KILL', nind_kill_greff(j,k)
+
+                    !soma nind_kill
+                    nind_kill_total (j,k) = nind_kill_FPC(j,k) + nind_kill_greff(j,k) !em ind/m2
+                    ! print*, 'NIND_KILL TOTAL', nind_kill_total(j,k), 'KILL_FPC',&
+                    ! nind_kill_FPC(j,k), 'KILL GREFF', nind_kill_greff(j,k)
+
+                    mort(j,k) = nind_kill_total(j,k)/dens1(j,k) !quanto vai morrer em relação a densidade atual
+
                     
                     cleaf_new(j,k) = cl2(j,k)
                    
@@ -852,16 +867,27 @@ program self_thinning
                     mort(j,k) = 1.
                     
                 else    
+                    
                     greff(j,k) = carbon_increment(j,k)/(cleaf_new(j,k)*spec_leaf(j,k))
 
-                    mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k)))
+                    mort_wd(j,k) = exp(-2.66+(0.255/dwood(j,k))) !
+
+                    mort_greff(j,k) = mort_wd(j,k)/(1+k_mort2*greff(j,k))
+
+                    ! mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k)))
+
+                    nind_kill_greff(j,k) = (dens1(j,k) * mort_greff(j,k))
+
+                    nind_kill_total (j,k) = nind_kill_greff(j,k)
                 
                     ! mort(j,k) = mort_greff(j,k)
-                    mort(j,k) = mort_greff(j,k) !adicionando mortalidade pra quando nãoultrapassa
+                    mort(j,k) = nind_kill_total(j,k)/dens1(j,k) !adicionando mortalidade pra quando nãoultrapassa
                     ! print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
                     !print*, 'mort_greff', mort_greff(j), j
                     ! print*, 'mort', mort(j,k)
                     !fpc_dec(j) = 0.
+
+                    ! print*, nind_kill_FPC(j,k), dens1(j,k), 'FPCs', ((FPC_dec(j,k))/(FPC_pls_2(j,k)))
                 endif
 
 
@@ -887,7 +913,7 @@ program self_thinning
             endif
 
             ! print*, 'mort',mort(j)   
-            remaining(j,k) = 1.0 - mort(j,k)
+            remaining(j,k) = 1. -mort(j,k)
            
             ! print*, 'remaining', remaining(j,k), 'mort', mort(j,k), j
            

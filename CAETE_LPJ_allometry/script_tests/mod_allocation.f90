@@ -10,9 +10,9 @@
 
 
      !VARIABLES [INPUT] - vem do módulo de estabelecimento/FPC
-     real(r_8), intent(in) :: lm_1, wm_1, rm_1, hm_1, sm_1, height_1
+     real(r_8), intent(in) :: lm_1, wm_1, rm_1, hm_1, sm_1, height_1 !valor atualizado do carbono do ano passado.
      real(r_8), intent(in) :: sla_1, nind_1, dwood_1 !variable traits
-     real(r_8), intent(in) :: bminc_1 !valor aleatório usado tbm no estabelecimento e FPC posterior deve ser a NPP acumulada do ano
+     real(r_8), intent(in) :: bminc_1 !valor aleatório usado tbm no estabelecimento efbmin FPC posterior deve ser a NPP acumulada do ano
      
  
      !VARIABLES [OUTPUT] - o incremento de cada compartimento de carbono neste ano
