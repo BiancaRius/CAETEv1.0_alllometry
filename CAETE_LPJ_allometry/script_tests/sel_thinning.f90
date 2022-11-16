@@ -684,6 +684,8 @@ program self_thinning
                 mort_greff(j,k) = 0.
                 mort_wd(j,k) = 0.
                 dens2(j,k) = 0.
+                nind_kill_greff(j,k) = 0
+                nind_kill_total(j,k) = 0
             endif
             ! if (FPC_inc(j,k).lt.0.)then
             !     print*, 'fpc negativo'
@@ -697,7 +699,7 @@ program self_thinning
         !---------------------------------------------------------------------------------------
                 
         if (FPC_total_accu_2(k) .gt. fpc_max_tree) then
-            ! print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k),k, FPC_total_accu_2(k)-fpc_max_tree
+            print*, 'ULTRAPASSSSSOOOOUUUUUUUUUUUUUUUUUUUU', FPC_total_accu_2(k),k, FPC_total_accu_2(k)-fpc_max_tree
             
             ! print*, FPC_inc_grid(k), 'inc grid ultrapassou', k
        
@@ -723,7 +725,7 @@ program self_thinning
                 if(FPC_dec(j,k).le.0.) then
                     nind_kill_FPC(j,k) = 0.
                     ! print*, '000000000000'
-                    nind_kill_FPC(j,k) = 0.
+                    
                 else
                     nind_kill_FPC(j,k) = (dens1(j,k) * FPC_dec(j,k))/FPC_pls_2(j,k) !NIND_KILL.
                     !numero de ind. que vão morrer (ind/m2) devido ocupação maior que 95%
@@ -767,12 +769,12 @@ program self_thinning
                     ! print*, 'NIND_KILL', nind_kill_greff(j,k)
 
                     !soma nind_kill
-                    nind_kill_total (j,k) = nind_kill_FPC(j,k) + nind_kill_greff(j,k) !em ind/m2
-                    print*, 'NIND_KILL TOTAL', nind_kill_total(j,k), 'KILL_FPC',&
-                    nind_kill_FPC(j,k), 'KILL GREFF', nind_kill_greff(j,k), 'DENS',dens1(j,k)
+                    nind_kill_total(j,k) = nind_kill_FPC(j,k) + nind_kill_greff(j,k) !em ind/m2
+                    ! print*, 'NIND_KILL TOTAL', nind_kill_total(j,k), 'KILL_FPC',&
+                    ! nind_kill_FPC(j,k), 'KILL GREFF', nind_kill_greff(j,k), 'DENS',dens1(j,k)
 
-                    mort(j,k) = (dens1(j,k)-nind_kill_total(j,k))/dens1(j,k) !quanto vai morrer em relação a densidade atual
-                    print*, 'quem ficou', mort(j,k)
+                    mort(j,k) = (1-(dens1(j,k)-nind_kill_total(j,k))/dens1(j,k)) !quanto vai morrer em relação a densidade atual
+                    ! print*, 'quem ficou', mort(j,k)
                     ! mort(j,k) = 1 - mort(j,k)
                     ! print*, 'quem morreu de vdd', mort(j,k)
                     
@@ -813,7 +815,7 @@ program self_thinning
             ! if(FPC_total_accu_2(k).lt.5000.) then
             !     print*,FPC_total_accu_2(k), k
             ! endif 
-            ! print*, 'n ultrapassou', FPC_total_accu_2(k), k
+            print*, 'n ultrapassou', FPC_total_accu_2(k), k
             do j=1, npls
                 
                 
@@ -880,14 +882,14 @@ program self_thinning
 
                     nind_kill_greff(j,k) = (dens1(j,k) * mort_greff(j,k))
 
-                    nind_kill_total (j,k) = nind_kill_greff(j,k)
+                    nind_kill_total(j,k) = nind_kill_greff(j,k)
                 
                     ! mort(j,k) = mort_greff(j,k)
-                    mort(j,k) = (dens1(j,k)-nind_kill_total(j,k))/dens1(j,k) 
+                    mort(j,k) = (1-(dens1(j,k)-nind_kill_total(j,k))/dens1(j,k)) 
                    !mort(j,k) = 1 - mort(j,k) !adicionando mortalidade pra quando nãoultrapassa
                     ! print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
                     !print*, 'mort_greff', mort_greff(j), j
-                    !print*, 'mort else', mort(j,k)
+                    ! print*, 'mort else', mort(j,k),nind_kill_total(j,k)
                     !fpc_dec(j) = 0.
 
                     ! print*, nind_kill_FPC(j,k), dens1(j,k), 'FPCs', ((FPC_dec(j,k))/(FPC_pls_2(j,k)))
@@ -918,7 +920,7 @@ program self_thinning
             ! print*, 'mort',mort(j)   
             remaining(j,k) = 1. - mort(j,k)
            
-            !print*, 'remaining', remaining(j,k), 'mort', mort(j,k), j
+            ! print*, 'remaining', remaining(j,k), 'mort', mort(j,k), j
            
             if (remaining(j,k) .le. 0.) then
                 ! print*, 'PLS dead===============================================================',j
@@ -1182,6 +1184,8 @@ program self_thinning
             npp_inc2(j,k) = npp_inc2(j,k) 
 
             carbon_increment(j,k) = carbon_increment(j,k)
+
+            ! print*, 'l', cl1_aux(j,k)/1000., 's',cs1_aux(j,k)/1000., 'r', cr1_aux(j,k)/1000., 'h',ch1_aux(j,k)/1000., dens1_aux(j,k)
 
             ! delta_carbon_pls(j) = delta_carbon_pls(j)
 
