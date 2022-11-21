@@ -76,21 +76,26 @@ module establish
     FPC_total_perc = FPC_total_accu_2/gc_area !The overall establishment rate for trees (esttree) is proportional to the fractional ground area not covered by trees.
     ! print*, 'fpc perc', FPC_total_perc
 
-    if(FPC_total_perc.le.0.9) then
-        est = 0.06*(1-FPC_total_perc)
-        ! print*, '<0.9',est
-    else
-        est = 0.06*(1-exp(-5*(1-FPC_total_perc)))*(1-FPC_total_perc)
-        ! print*, '>0.9',est
-    endif
+    ! if(FPC_total_perc.le.0.9) then
+    !     est = 0.06*(1-FPC_total_perc)
+    !     ! print*, '<0.9',est
+    ! else
+    !     est = 0.06*(1-exp(-5*(1-FPC_total_perc)))*(1-FPC_total_perc)
+    !     ! print*, '>0.9',est
+    ! endif
 
-    est_pls = est*(est_max/est_max*npls_alive)*FPC_pls*(1-FPC_total_perc)
-    ! print*, 'est_pls', est_pls    
-           
+    ! est_pls = est*(est_max/est_max*npls_alive)*FPC_pls*(1-FPC_total_perc)
+    ! print*, 'est_pls smith', est_pls  
+
+    est = est_max * (1. - exp(-5. * (1-FPC_total_perc)) / npls_alive)
+    est_pls = max(est * (1. - FPC_total_perc),0.)
+    
+    ! est_pls = ((est_max*(1-exp(-5*(1-FPC_total_perc))))*(1-FPC_total_perc))/npls_alive
+    ! print*, 'est pls sitch', est_pls
 
     end subroutine
 
-    subroutine shrink(cl_old,ch_old,cs_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
+    subroutine shrink(sla,wooddens,cl_old,ch_old,cs_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&
     &           cheart_sapl_npls,croot_sapl_npls, dens_new, cleaf_new,& 
     &           cwood_new,cheart_new, csap_new, croot_new)
     implicit none
@@ -108,6 +113,8 @@ module establish
         real(r_8), intent(in) :: csap_sapl_npls
         real(r_8), intent(in) :: cheart_sapl_npls
         real(r_8), intent(in) :: croot_sapl_npls
+        real(r_8), intent(in) :: wooddens
+        real(r_8), intent(in) :: sla
 
         ! !output variables
         real(r_8), intent(out):: dens_new
@@ -121,6 +128,18 @@ module establish
         ! real(r_8) :: dens_est_pls 
         
         real(r_8) :: cwood_sapl_npls
+        real(r_8) :: csap_new_tmp
+        real(r_8) :: allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
+        real(r_8) :: allom2 = 40.0
+        real(r_8) :: allom3 = 0.85
+        real(r_8) :: pi = 3.1415
+        real(r_8) :: stemdiam
+        real(r_8) :: height
+        real(r_8) :: crown_area
+        real(r_8) :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
+        real(r_8) :: reinickerp = 1.6
+        real(r_8) :: latosa = 8000.0
+        
         
         
         if(cl_old.le.0.)then
@@ -128,6 +147,7 @@ module establish
             cleaf_new = 0.
             cheart_new = 0.
             csap_new = 0.
+            csap_new_tmp = 0.
             cwood_sapl_npls = 0.
             cwood_new = 0.
             croot_new = 0.
@@ -139,22 +159,34 @@ module establish
 
         ! print*, 'dens_new', dens_new, 'dens_old', dens_old
 
+            ! csap_new_tmp = ((cs_old*dens_old)+(csap_sapl_npls*est_pls))/dens_new !temporary since part of it goes to heartwood
+            csap_new = ((cs_old*dens_old)+(csap_sapl_npls*est_pls))/dens_new !temporary since part of it goes to heartwood
+
+
             cleaf_new = ((cl_old*dens_old)+(cleaf_sapl_npls*est_pls))/dens_new
         ! print*,'cleaf_new',cleaf_new,'cl_old', cl_old, 'dens_olds', dens_old,'cleaf_sapl',cleaf_sapl_npls
 
             cheart_new = ((ch_old*dens_old)+(cheart_sapl_npls*est_pls))/dens_new
 
-            csap_new = ((cs_old*dens_old)+(csap_sapl_npls*est_pls))/dens_new
-
-            cwood_sapl_npls = csap_sapl_npls + cheart_sapl_npls
-        ! print*, 'cwood_sapl', cwood_sapl_npls, 'est_pls',est_pls, cwood_sapl_npls*est_pls
-
-            cwood_new = ((cw_old*dens_old)+(cwood_sapl_npls*est_pls))/dens_new
-        ! print*,'cw_new',cwood_new/1000.,'cw_old', cw_old/1000.
-
+            cwood_new = cheart_new + csap_new
+            ! print*,'cw_new',cwood_new/1000.
 
             croot_new = ((cr_old*dens_old)+(croot_sapl_npls*est_pls))/dens_new
         ! print*, 'cr new', croot_new/1000., 'crold', cr_old/1000.
+
+            ! stemdiam = (4. * (csap_new_tmp + cheart_new) / wooddens*1000000. / pi / allom2)**(1./(2. + allom3)) !Eqn 9
+
+            ! height = allom2 * stemdiam**allom3                           !Eqn C
+
+            ! crown_area = min(crown_area_max,allom1 * stemdiam**reinickerp) !Eqn D
+
+
+            !Recalculate sapwood mass, transferring excess sapwood to heartwood compartment, if necessary to satisfy Eqn A
+
+            ! csap_new = cleaf_new * height * wooddens * sla / latosa 
+
+            ! cheart_new = max(cheart_new + (csap_new_tmp - csap_new),0.)
+            ! print*, 'ch new', cheart_new, csap_new_tmp, csap_new
         endif
         
     end subroutine shrink

@@ -389,7 +389,7 @@
  
              hm  = hm  + abs(sminc_ind )
  
-             ! print*, pls, 'ANNORMAL'
+            !  print*, pls, 'ANNORMAL'
  
  
          endif !normal/abnormal allocation
@@ -436,7 +436,7 @@
         !     print*, cl_inc, lm_2, lm
         !  endif
 
-        !  if(ch_inc.lt.0) then
+        !  if(ch_inc.lt.0) thenhm
         !     print*, ch_inc, ch_2, hm
         !  endif
 
