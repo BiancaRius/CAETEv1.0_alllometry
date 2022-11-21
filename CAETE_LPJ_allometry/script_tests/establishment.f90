@@ -40,7 +40,7 @@ module establish
 
     contains
 
-    subroutine establishment(j,gc_available,npls_alive, FPC_total_accu_2, gc_area, est, est_pls,dens)
+    subroutine establishment(j,gc_available,npls_alive, FPC_total_accu_2, gc_area, est, est_pls, FPC_pls)
     implicit none
 
     !input variables
@@ -49,7 +49,8 @@ module establish
     real(r_8), intent(in) :: FPC_total_accu_2
     real(r_8), intent(in) :: gc_area
     real(r_8), intent(in) :: gc_available
-    real(r_8), intent(in) :: dens
+    real(r_8), intent(in) :: FPC_pls
+    
     
 
     !output variables
@@ -60,56 +61,33 @@ module establish
     real(r_8) :: est_max  !2 individuals m -2 yr -1 - reference: Levis et al 2004 (Eq 53)
     real(r_8) :: FPC_total_perc
     ! print*, 'alive pls in est', npls
-    real(r_8), parameter :: dens_min = 1.e-10      !minimum individual density for persistence of PFT (indiv/m2)
-    
-    
+    real(r_8), parameter :: dens_min = 1.e-1      !minimum individual density for persistence of PFT (indiv/m2)
+    real(r_8), parameter :: aprec_min_estab = 100. !miminum annual prec for establishment (mm) !reference: code LPL-LMfire
+    real(r_8), parameter :: eps = 1.e-6
+
+    ! print*, npls_alive
     ! if (dens.le.dens_min) then
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 5 *(gc_available)
-    ! print*, est_max
-    ! est_max = 2*(gc_area)
-    FPC_total_perc = FPC_total_accu_2/gc_area
-        
-        ! print*, 'fpc perc', FPC_total_perc
-    !lpjmlfire
-    est = est_max * (1. - exp(5. * (FPC_total_perc- 1.))) / npls_alive
-    ! print*, 'testing lpjfire est',est, npls_alive, est_max
-
-
-    ! if(FPC_total_perc.lt.0.9) then
-    !     !smith
-    !     est = 0.06*(1-FPC_total_perc)
-
-
-
-    ! !     est = est_max*(1 - FPC_total_perc)
-    ! !     ! print*, 'lt 0.9'
-    ! else
-    !     !smith
-    !     est = 0.06*(1-exp(-5*(1-FPC_total_perc)))*(1-FPC_total_perc)
-
-    ! !     est = est_max*(1 - exp(-5. * (1 - FPC_total_perc)))*(1 - FPC_total_perc)
-    ! !     ! print*, 'gt 0.9'
-
-    ! endif
-    ! ! print*, 'testing current est',est
-     
-    !lpjmlfire
-    est_pls = max(est * (1. - FPC_total_perc),0.)
-        ! ! print*, 'testing lpjfire est pls',est_pls
-
-
-    !smith
-    ! est_pls = est*(est_max/est_max*npls_alive)*FPC_total_perc*(1-FPC_total_perc)
-
-    ! est_pls = est/npls_alive
-        ! print*, 'testing cuurent est pls',est_pls
-        
-
-        ! print*, 'estab', est, est_pls, npls
+    est_max = 0.24 !based on Sitch et al 2003
     
+
+    FPC_total_perc = FPC_total_accu_2/gc_area !The overall establishment rate for trees (esttree) is proportional to the fractional ground area not covered by trees.
+    ! print*, 'fpc perc', FPC_total_perc
+
+    if(FPC_total_perc.le.0.9) then
+        est = 0.06*(1-FPC_total_perc)
+        ! print*, '<0.9',est
+    else
+        est = 0.06*(1-exp(-5*(1-FPC_total_perc)))*(1-FPC_total_perc)
+        ! print*, '>0.9',est
+    endif
+
+    est_pls = est*(est_max/est_max*npls_alive)*FPC_pls*(1-FPC_total_perc)
+    ! print*, 'est_pls', est_pls    
+           
+
     end subroutine
 
     subroutine shrink(cl_old,ch_old,cs_old,cw_old,cr_old,est_pls,dens_old,cleaf_sapl_npls,csap_sapl_npls,&

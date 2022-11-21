@@ -156,11 +156,16 @@
       
          ! ====== TREE ALLOCATION ======
  
-         lm1  = latosa*sm /dwood*height *sla !allometric leaf mass requirement *****ATENÇÃO*****
-        !print*, 'LM1', lm1, sm, dwood, height, sla, lm
+         lm1 = (latosa*sm)/(dwood*height*sla) !allometric leaf mass requirement *****ATENÇÃO*****
+        !  print*, 'LM1', lm1, 'lm', lm, sm, dwood, height, sla, lm, latosa
+        !  print*, 'latosa*sm', latosa*sm, 'denominador', dwood*height*sla, (latosa*sm)/(dwood*height*sla)
+        !  print*, 'lm1', lm1
          
-         lminc_ind_min  = lm1  - lm   !eqn (27)
-        !print*, 'LM MIN', lminc_ind_min 
+         lminc_ind_min  = lm1 - lm  !eqn (27)
+        !  if(lminc_ind_min.ge.0.)then
+        !     print*, 'LM MIN', lminc_ind_min, lm, lm1
+        !  endif
+        !   print*, 'LM MIN', lminc_ind_min
  
  
      
@@ -178,7 +183,7 @@
              &(rminc_ind_min  + lminc_ind_min ) .le. bminc_ind ) then
  
              !Normal allocation (positive increment to all living C compartments)
-             !print*, 'normal'height
+            !  print*, 'normal'
              normal = .true.
  
              !Calculation of leaf mass increment (lminc_ind) that satisfies Eqn (22)
@@ -191,7 +196,7 @@
              x2  = (bminc_ind  - (lm  / ltor - rm )) / (1. + 1. / ltor)
              
              dx  = x2  - x1 
- 
+            !  print*, 'x1', x2
              if (dx  < 0.01) then
  
                  !there seems to be rare cases where lminc_ind_min (x1) is almost equal to x2. In this case,

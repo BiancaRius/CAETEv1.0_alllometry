@@ -12,7 +12,7 @@ program self_thinning
     
     integer(i_4) :: file_unit
     integer(i_4), parameter :: npls = 3000
-    integer(i_4), parameter :: time =365
+    integer(i_4), parameter :: time = 500
 
     integer, parameter :: grassess = 0.1*npls
     real(r_8), dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
@@ -71,7 +71,7 @@ program self_thinning
     real(r_8) :: k_mort2 = 0.5
     real(r_8) :: res_time_leaf = 2 !general residence time value for testing purpose
     real(r_8) :: res_time_root = 2
-    real(r_8) :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real(r_8) :: res_time_wood = 100 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
     real(r_8) :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
     real(r_8) :: pi = 3.1415
 
@@ -177,8 +177,8 @@ program self_thinning
 !! this value is used to calculate the inc in tissues for the 1st day
 
 
-    xmin = 0.5
-    xmax = 10.
+    xmin = 0.05
+    xmax = 5.
      
     x(:,:) = 0.
     call random_number(x)
@@ -222,7 +222,7 @@ program self_thinning
 !_______________________________________________
 !!    creating value for initial cheartwood
     xmin = 5.
-    xmax = 30
+    xmax = 100
      
     x(:,:) = 0.
     call random_number(x)
@@ -318,6 +318,7 @@ program self_thinning
    !!    creating value for dwood
     xmin = 0.24
     xmax = 0.86
+    
      
     x(:,:) = 0.
     call random_number(x)
@@ -416,7 +417,7 @@ program self_thinning
     do k = 1, time
         do j=1,npls
 
-            FPC_pls_initial(j,k) = 1.
+            FPC_pls_initial(j,k) = 0.5
 
             FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
 
@@ -668,7 +669,7 @@ program self_thinning
                 alive_pls = npls - dead_pls
                
                 
-                ! PRINT*,'dead2',dead_pls,'alive', alive_pls
+                PRINT*,'dead2',dead_pls,'alive', alive_pls
             endif
 
             ! FPC_inc(j,k) = FPC_pls_2(j,k) - FPC_pls_1(j,k)
@@ -740,12 +741,14 @@ program self_thinning
             do j = 1, npls
                
                 if(FPC_pls_2(j,k).le.0.)then
+                    print*, 'MORTALITYY'
                     FPC_dec(j,k) = 0.                   
                     nind_kill_FPC(j,k) = 0.               
                     greff(j,k) = 0.
                     mort(j,k) = 1.
                     mort_greff(j,k) = 0.
                     mort_wd(j,k) = 0.
+                    dens1(j,k) = 0.
                     ! nind_kill_prop(j,k) = 0.        
                 else
                 
@@ -773,7 +776,9 @@ program self_thinning
                     ! print*, 'NIND_KILL TOTAL', nind_kill_total(j,k), 'KILL_FPC',&
                     ! nind_kill_FPC(j,k), 'KILL GREFF', nind_kill_greff(j,k), 'DENS',dens1(j,k)
 
-                    mort(j,k) = (1-(dens1(j,k)-nind_kill_total(j,k))/dens1(j,k)) !quanto vai morrer em relação a densidade atual
+                    !mort(j,k) = ((dens1(j,k)-nind_kill_total(j,k))/dens1(j,k)) !quanto vai morrer em relação a densidade atual
+                    mort(j,k) = nind_kill_total(j,k)/dens1(j,k)
+                    ! print*,'mort fpc', mort(j,k),nind_kill_total(j,k),dens1(j,k)
                     ! print*, 'quem ficou', mort(j,k)
                     ! mort(j,k) = 1 - mort(j,k)
                     ! print*, 'quem morreu de vdd', mort(j,k)
@@ -815,7 +820,7 @@ program self_thinning
             ! if(FPC_total_accu_2(k).lt.5000.) then
             !     print*,FPC_total_accu_2(k), k
             ! endif 
-            print*, 'n ultrapassou', FPC_total_accu_2(k), k
+            ! print*, 'n ultrapassou', FPC_total_accu_2(k), k
             do j=1, npls
                 
                 
@@ -826,7 +831,7 @@ program self_thinning
                 ! endif
             
                 call establishment(j,gc_available(k),alive_pls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k),&
-            &      dens1(j,k))
+            &       FPC_pls_2(j,k))
                 ! pint*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
                 call sapling_allometry(alive_pls,cleaf_sapl(j,k),csap_sapl(j,k),cheart_sapl(j,k),croot_sapl(j,k))
                 
@@ -848,7 +853,7 @@ program self_thinning
                 ! cr2(j,k) = croot_new(j,k)
                 ! dens1(j,k) = dens_est(j,k)
                 
-                if(FPC_pls_2(j,k).le.0.) then
+                if(FPC_pls_2(j,k).le.0..or.dens_est(j,k).lt.(1.e-1)) then
                     ! print*, 'LT 0  ', FPC_pls_2(j,k),j
                     cleaf_new(j,k) = 0.
                     cwood_new(j,k) = 0.
@@ -880,12 +885,13 @@ program self_thinning
 
                     ! mort_greff(j,k) = k_mort1/(1+(k_mort2*greff(j,k)))
 
-                    nind_kill_greff(j,k) = (dens1(j,k) * mort_greff(j,k))
+                    nind_kill_greff(j,k) = (dens_est(j,k) * mort_greff(j,k))
 
                     nind_kill_total(j,k) = nind_kill_greff(j,k)
                 
+                    mort(j,k) = nind_kill_total(j,k)/dens_est(j,k)
                     ! mort(j,k) = mort_greff(j,k)
-                    mort(j,k) = (1-(dens1(j,k)-nind_kill_total(j,k))/dens1(j,k)) 
+                    ! mort(j,k) = (1-(dens1(j,k)-nind_kill_total(j,k))/dens1(j,k)) 
                    !mort(j,k) = 1 - mort(j,k) !adicionando mortalidade pra quando nãoultrapassa
                     ! print*, 'greff', greff(j), carbon_increment(j)/1000., cl2(j)/1000., spec_leaf(j)
                     !print*, 'mort_greff', mort_greff(j), j
@@ -898,13 +904,8 @@ program self_thinning
 
             enddo
             
-            !print*, 'NAO ULTRAPASSOU ==', 'este FPC_total_accu_2 tem que ser igual ao valor anterior==', FPC_total_accu_2
-
-            !exc_area = 0.
-
-            ! print*, 'NAO ULTRAPASSOU ==', FPC_total_accu_2(k)
         endif
-        ! print*, 'NAO ULTRAPASSOU2 ==', FPC_total_accu_2(k)
+       
         
         
         
@@ -923,7 +924,7 @@ program self_thinning
             ! print*, 'remaining', remaining(j,k), 'mort', mort(j,k), j
            
             if (remaining(j,k) .le. 0.) then
-                ! print*, 'PLS dead===============================================================',j
+                print*, 'PLS dead===============================================================',j
                 ! goto 10 
                 dens2(j,k) = 0.
                 cleaf_new(j,k) = 0.
@@ -1169,7 +1170,7 @@ program self_thinning
             !     print*, 'cl * dens', cl1_aux(j,k)/1000.,j, dens1_aux(j,k)
             ! endif
             cw1_aux(j,k) = cw1_aux(j,k) * dens1_aux(j,k)
-            ! print*, 'CLw', cw1_aux(j,k)
+            ! print*, 'CLw', cw1_aux(j,k)/1000
             ! print*, 'cw * dens', cw1_aux(j,k)/1000, dens1_aux(j,k)
 
             ch1_aux(j,k) = ch1_aux(j,k) * dens1_aux(j,k)
@@ -1185,7 +1186,9 @@ program self_thinning
 
             carbon_increment(j,k) = carbon_increment(j,k)
 
-            ! print*, 'l', cl1_aux(j,k)/1000., 's',cs1_aux(j,k)/1000., 'r', cr1_aux(j,k)/1000., 'h',ch1_aux(j,k)/1000., dens1_aux(j,k)
+            print*, 'l', cl1_aux(j,k)/1000., 's',cs1_aux(j,k)/1000., 'r', cr1_aux(j,k)/1000., 'h', ch1_aux(j,k)/1000.,&
+            'dens',dens1_aux(j,k), 'height',height(j,k)
+
 
             ! delta_carbon_pls(j) = delta_carbon_pls(j)
 
