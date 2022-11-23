@@ -152,7 +152,7 @@
          sm  = sm_ind !(cw_ind *0.1) !provisorio
          hm  = hm_ind !(cw_ind *0.9) !provisorio
          rm  = rm_ind
-         bminc_ind  = bminc 
+         bminc_ind  = 1. !bminc !suposição: gC/dia
       
          ! ====== TREE ALLOCATION ======
  
@@ -337,7 +337,7 @@
          else 
  
              !Abnormal allocation: reduction in some C compartment(s) to satisfy allometry
-             !print*, 'anormal'
+            !  print*, 'anormal'
              normal = .false.
  
              !Attempt to distribute this year's production among leaves and roots only

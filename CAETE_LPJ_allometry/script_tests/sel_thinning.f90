@@ -1,4 +1,14 @@
-
+!Este módulo calcula as variáveis para indivíduos médios de cada PLS
+!Designa-se também a calcular o FPC (foliar projective cover) através
+!da estruturação alométrica dos PLSs. Além disso, calcula a mortalidade por espaço,
+!ou seja, considerando uma área disponível de 1ha, os PLSs lenhosos só podem ocupar
+!95% desta área. Caso ultrapassem esse montante, haverá penalização (redução na densidade 
+!de indivíduos) que impactará os compartimentos de carbono. Caso não ultrapassem, será 
+!possível que novos indivíduos se estabeleçam. Tais indivíduos são chamados de "sapling",
+!apresentam alometria própria, mas não há cohort, de modo que ao incorporá-los na população do 
+!PLSs, deve haver um ajustamento no balanço de carbono, o "shrink", que representa uma reestruturação
+!dos indivíduos médios.
+!Este código é baseado principalmente no modelo LPJ (Sitch et al 2003 e Smith et al 2001)
 program self_thinning
 
     
@@ -7,38 +17,39 @@ program self_thinning
     use types
     ! ================= VARIABLES TO USE DECLARATION ===================== !
     
-    integer(i_4) :: j,k
-    logical :: grass
+    integer(i_4) :: j !dimensão de PLSs
+    integer(i_4) :: k !dimensão de tempo
+    ! logical :: grass !gramíneas não estão sendo incorporadas no momento
     
     integer(i_4) :: file_unit
     integer(i_4), parameter :: npls = 3000
-    integer(i_4), parameter :: time = 200
+    integer(i_4), parameter :: time = 500
 
-    integer, parameter :: grassess = 0.1*npls
+    ! integer, parameter :: grassess = 0.1*npls !gramíneas não estão sendo incorporadas no momento
     real(r_8), dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real(r_8), dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real(r_8), dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
-    real(r_8), dimension(npls,time) :: height !Tree crown area (m2) (Sitch et al., 2003)
+    real(r_8), dimension(npls,time) :: height !Height (m) (Sitch et al., 2003)
 
     
     ! real(r_8), dimension(npls) :: est_pls !establishment for a specific PLS
-    real(r_8), dimension(npls,time) :: FPC_ind !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_ind    !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
     real(r_8), dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
     real(r_8), dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real(r_8), dimension(npls,time) :: FPC_dec  !'decrease FPC' in other words: the excedend of FPC in eac year [LPJ-GUESS - Phillip's video]
-    real(r_8), dimension(npls,time) :: nind_kill_FPC !proportion of the decrease of a PLS
-    real(r_8), dimension(npls,time) :: mort  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
-    real(r_8), dimension(npls,time) :: nind_kill_total  !equivalente ao 'mort_shade' no LPJ-GUESS [Phillip's video]
-    real(r_8), dimension(npls,time) :: mort_greff  ! motallity from growth efficiency takes into account mort by wd (Sakschewski et al 2015)
-    real(r_8), dimension(npls,time) :: greff  ! motallity from growth efficiency (Sitch et al 2003)
-    real(r_8), dimension(npls,time) :: nind_kill_greff
-    real(r_8), dimension(npls,time) :: remaining  !taxa de redução
-    real(r_8), dimension(npls,time) :: mort_wd
-    real(r_8), dimension(npls,time) :: FPC_inc 
-    real(r_8), dimension(npls,time) :: FPC_inc_cont 
+    real(r_8), dimension(npls,time) :: FPC_dec    !Quantidade de área que deve ser reduzida de um PLS em cada ano 
+    real(r_8), dimension(npls,time) :: nind_kill_FPC !Número de indivíduos que devem morrer para que o PLS cumpra sua redução
+    real(r_8), dimension(npls,time) :: nind_kill_greff !número de indivíduos a serem mortos por ineficiência de crescimento
+    real(r_8), dimension(npls,time) :: nind_kill_total !Número total de indivíduos que devem morrer (somando todas as fontes de mortalidade)
+    real(r_8), dimension(npls,time) :: mort  !% a ser descontada dos compartimentos de carbono por conta da mortalidade
+    real(r_8), dimension(npls,time) :: mort_greff  ! mortality from growth efficiency takes into account mort by wd (Sakschewski et al 2015)
+    real(r_8), dimension(npls,time) :: mort_wd  ! fator de mortalidade que entra na mort_greff considerando o wood density (Sakschewski et al 2015)
+    real(r_8), dimension(npls,time) :: greff  ! cálculo de eficiência de crescimento (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: remaining  !1 - mort (% multiplicada pelos estados dos PLSs para saber quanto do que existe deve permanecer)  real(r_8), dimension(npls,time) :: mort_wd
+    real(r_8), dimension(npls,time) :: FPC_inc !incremento em área para um PLS entre um ano e outro
+   
     real(r_8), dimension(npls,time) :: carbon_increment_initial  ! used to calculate mort greff (Sitch et al 2003)
     real(r_8), dimension(npls,time) :: carbon_increment ! used to calculate mort greff (Sitch et al 2003)
-    real(r_8), dimension (npls) :: FPC_inc_grid
+    ! real(r_8), dimension (npls) :: FPC_inc_grid
     
     real(r_8), dimension(time) :: FPC_total_initial = 0.0 !sum of FPC_grid
     real(r_8), dimension(time) :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
@@ -72,7 +83,7 @@ program self_thinning
     real(r_8) :: res_time_leaf = 2 !general residence time value for testing purpose
     real(r_8) :: res_time_root = 2
     real(r_8) :: res_time_sap = 2
-    real(r_8) :: res_time_wood = 10 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
+    real(r_8) :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
     real(r_8) :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
     real(r_8) :: pi = 3.1415
 
@@ -418,7 +429,7 @@ program self_thinning
     do k = 1, time
         do j=1,npls
 
-            FPC_pls_initial(j,k) = 0.5
+            FPC_pls_initial(j,k) = 1.
 
             FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
 
@@ -453,7 +464,6 @@ program self_thinning
         fpc_max_tree = 0.
         exc_area(k) = 0.
         FPC_inc(:,k) = 0.
-        FPC_inc_cont (:,k) = 0.
         FPC_dec (:,k) = 0.
         nind_kill_FPC (:,k) = 0.
         nind_kill_greff(:, k) = 0.
@@ -649,9 +659,9 @@ program self_thinning
         
         
 
-        FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
+        ! FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
         
-        if(FPC_inc_grid(k).le.0.)FPC_inc_grid(k)=0!print*, 'inc le ', FPC_inc_grid(k), k,FPC_total_accu_2(k), FPC_total_accu_1(k) 
+        ! if(FPC_inc_grid(k).le.0.)FPC_inc_grid(k)=0!print*, 'inc le ', FPC_inc_grid(k), k,FPC_total_accu_2(k), FPC_total_accu_1(k) 
 
         dead_pls = 0.
         do j=1, npls
@@ -678,7 +688,6 @@ program self_thinning
 
             if(FPC_pls_2(j,k).le.0..or.dens1(j,k).lt.1.e-1)then
                 FPC_inc(j,k) = 0.
-                FPC_inc_cont(j,k) = 0.
                 FPC_dec(j,k) = 0.                   
                 nind_kill_FPC(j,k) = 0.               
                 greff(j,k) = 0.
@@ -730,6 +739,7 @@ program self_thinning
                     
                 else
                     nind_kill_FPC(j,k) = (dens1(j,k) * FPC_dec(j,k))/FPC_pls_2(j,k) !NIND_KILL.
+                    ! print*, 'prop', FPC_dec(j,k)/FPC_pls_2(j,k)
                     !numero de ind. que vão morrer (ind/m2) devido ocupação maior que 95%
                     ! print*, nind_kill_FPC(j,k), dens1(j,k), 'FPCs', ((FPC_dec(j,k))/(FPC_pls_2(j,k)))
                     ! nind_kill_prop(j,k) = 1 - (dens1(j,k)-FPC_dec_prop(j,k))/dens1(j,k)
@@ -830,7 +840,7 @@ program self_thinning
                 ! if (height(j,k).le.0.) then
                 !     print*, height(j,k), cl2(j,k), cw2(j,k), cr2(j,k), FPC_pls_2(j,k), diam(j,k), FPC_inc(j,k)
                 ! endif
-                print*, 'alive_pls', alive_pls
+                ! print*, 'alive_pls', alive_pls
                 call establishment(j,gc_available(k),alive_pls, FPC_total_accu_2(k),gc_area, est(k),est_pls(j,k),&
             &       FPC_pls_2(j,k))
                 ! pint*,'establishment', FPC_total_accu_2(k), est(k),j,k, est_pls(j,k)
@@ -1164,7 +1174,7 @@ program self_thinning
 
             ! ch1_aux(j,k) = (ch1_aux(j,k) + cs1_aux(j,k)) - ch1_aux(j,k)/res_time_wood
 
-            ch1_aux(j,k) = ch1_aux(j,k) - (ch1_aux(j,k)/res_time_wood)
+            ch1_aux(j,k) = ch1_aux(j,k)  + (cs1_aux(j,k))
 
             cw1_aux(j,k) = cw1_aux(j,k) - (cw1_aux(j,k)/res_time_wood)
 
@@ -1672,12 +1682,7 @@ end program self_thinning
 !             FPC_inc = FPC_grid_t2 - FPC_grid_t1 !!incremento de cada PLS ! delta entre tempo 1 e 2
 !             ! print*, 'soma dos incrementos', sum(FPC_inc), 'diferença t2t1', FPC_total_t2-FPC_total_t1
 
-!             FPC_inc_cont = (FPC_inc/(FPC_total_t2-FPC_total_t1))  !contribuição relativa de cada PLS para o incremento total
-!             ! print*, 'FPC_INC_pls cont====', FPC_inc_cont
 
-!             fpc_dec = (exc_area)*(FPC_inc_cont) !porcentagem em relação ao exc de area que cada pls tem que reduzir o fpc
-!             mort = 1.0 - (((FPC_grid_t2-fpc_dec)/FPC_grid_t2)) 
-            
 !             !incluir outros fatores da mortalidade
             
 !             do j=1,npls

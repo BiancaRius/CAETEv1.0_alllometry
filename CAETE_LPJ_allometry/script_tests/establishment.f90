@@ -70,7 +70,7 @@ module establish
     !     print*, 'DENS MIN', dens, j
     ! endif
 
-    est_max = 0.24 !based on Sitch et al 2003
+    est_max = 2 !based on Sitch et al 2003
     
 
     FPC_total_perc = FPC_total_accu_2/gc_area !The overall establishment rate for trees (esttree) is proportional to the fractional ground area not covered by trees.
