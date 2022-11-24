@@ -8,7 +8,10 @@
 !apresentam alometria própria, mas não há cohort, de modo que ao incorporá-los na população do 
 !PLSs, deve haver um ajustamento no balanço de carbono, o "shrink", que representa uma reestruturação
 !dos indivíduos médios.
-!Este código é baseado principalmente no modelo LPJ (Sitch et al 2003 e Smith et al 2001)
+!A grande maioria dos cálculos aqui é feita para o indivíduo médio, portanto, a maioria das variáveis são
+!divididas pela densidade (indivíduos/m²). Pools são usados em gC.
+!Este código é baseado principalmente no modelo LPJ (Sitch et al 2003 e Smith et al 2001) e no código
+!do LPJ-MLFire
 program self_thinning
 
     
@@ -25,50 +28,73 @@ program self_thinning
     integer(i_4), parameter :: npls = 3000
     integer(i_4), parameter :: time = 500
 
+    !variables for mean individual in PLS populations
     ! integer, parameter :: grassess = 0.1*npls !gramíneas não estão sendo incorporadas no momento
     real(r_8), dimension(npls,time) :: lai !Leaf Area Index (m2/m2)
     real(r_8), dimension(npls,time) :: diam !Tree diameter in m. (Smith et al., 2001 - Supplementary)
     real(r_8), dimension(npls,time) :: crown_area !Tree crown area (m2) (Sitch et al., 2003)
     real(r_8), dimension(npls,time) :: height !Height (m) (Sitch et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_ind!Foliage projective cover (m²) for each average individual of a PLS (Stich et al., 2003)
 
-    
+    !variables for PLSs
+         !variables with 'initial' in the name are used only for the 1st day
     ! real(r_8), dimension(npls) :: est_pls !establishment for a specific PLS
-    real(r_8), dimension(npls,time) :: FPC_ind    !Foliage projective cover for each average individual of a PLS (Stich et al., 2003)
-    real(r_8), dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real(r_8), dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (Stich et al., 2003)
-    real(r_8), dimension(npls,time) :: FPC_dec    !Quantidade de área que deve ser reduzida de um PLS em cada ano 
-    real(r_8), dimension(npls,time) :: nind_kill_FPC !Número de indivíduos que devem morrer para que o PLS cumpra sua redução
-    real(r_8), dimension(npls,time) :: nind_kill_greff !número de indivíduos a serem mortos por ineficiência de crescimento
-    real(r_8), dimension(npls,time) :: nind_kill_total !Número total de indivíduos que devem morrer (somando todas as fontes de mortalidade)
+    real(r_8), dimension(npls,time) :: FPC_pls_1  !Total Foliage projective cover of a PLS (m²) (Stich et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_pls_2  !Total Foliage projective cover of a PLS (m²) (Stich et al., 2003)
+    real(r_8), dimension(npls,time) :: FPC_dec    !Quantidade de área que deve ser reduzida de um PLS em cada ano (m²)
+    real(r_8), dimension(npls,time) :: nind_kill_FPC !Número de indivíduos que devem morrer para que o PLS cumpra sua redução (indivíduos)
+    real(r_8), dimension(npls,time) :: nind_kill_greff !número de indivíduos a serem mortos por ineficiência de crescimento(indivíduos)
+    real(r_8), dimension(npls,time) :: nind_kill_total !Número total de indivíduos que devem morrer (somando todas as fontes de mortalidade)(indivíduos)
     real(r_8), dimension(npls,time) :: mort  !% a ser descontada dos compartimentos de carbono por conta da mortalidade
     real(r_8), dimension(npls,time) :: mort_greff  ! mortality from growth efficiency takes into account mort by wd (Sakschewski et al 2015)
     real(r_8), dimension(npls,time) :: mort_wd  ! fator de mortalidade que entra na mort_greff considerando o wood density (Sakschewski et al 2015)
     real(r_8), dimension(npls,time) :: greff  ! cálculo de eficiência de crescimento (Sitch et al 2003)
     real(r_8), dimension(npls,time) :: remaining  !1 - mort (% multiplicada pelos estados dos PLSs para saber quanto do que existe deve permanecer)  real(r_8), dimension(npls,time) :: mort_wd
-    real(r_8), dimension(npls,time) :: FPC_inc !incremento em área para um PLS entre um ano e outro
-   
+    real(r_8), dimension(npls,time) :: FPC_inc !incremento em área (m²) para um PLS entre um ano e outro
     real(r_8), dimension(npls,time) :: carbon_increment_initial  ! used to calculate mort greff (Sitch et al 2003)
-    real(r_8), dimension(npls,time) :: carbon_increment ! used to calculate mort greff (Sitch et al 2003)
+    real(r_8), dimension(npls,time) :: carbon_increment ! (gC)used to calculate mort greff (Sitch et al 2003)
     ! real(r_8), dimension (npls) :: FPC_inc_grid
-    
-    real(r_8), dimension(time) :: FPC_total_initial = 0.0 !sum of FPC_grid
-    real(r_8), dimension(time) :: FPC_total_accu_initial = 0.0 !sum of FPC_grid  
+        !Variables to allocation
+    real(r_8), dimension(npls,time) :: npp_inc_init  !incremento inicial anual de C para cada PLS
+    real(r_8), dimension(npls,time) :: npp_inc, npp_inc2  !incremento anual de C para cada PLS
+    real(r_8), dimension(npls,time) :: annual_npp !quantidade de NPP com os incrementos.
+    real(r_8), dimension(npls,time) :: cl1 !gC/m2 carbon on leaves
+    real(r_8), dimension(npls,time) :: cw1 !gC/m2 (Cheart + Csap)
+    real(r_8), dimension(npls,time) :: cs1 !gC/m2 carbon on sapwood
+    real(r_8), dimension(npls,time) :: ch1 !gC/m2 carbon on heartwood
+    real(r_8), dimension(npls,time) :: cr1 !gC/m2 carbon on fine roots
+    real(r_8), dimension(npls,time) :: dens1 !density of individuals (ind/m²) previous mortality and establishment
+    real(r_8), dimension(npls,time) :: cl2 !carbon on leaves after allocation (gC/ind)
+    real(r_8), dimension(npls,time) :: cw2 !carbon on wood after allocation (gC/ind)
+    real(r_8), dimension(npls,time) :: cs2 !carbon on sapwood after allocation (gC/ind)
+    real(r_8), dimension(npls,time) :: ch2 !carbon on heartwood after allocation (gC/ind)
+    real(r_8), dimension(npls,time) :: cr2 !carbon on wood after allocation (gC/ind)
+    real(r_8), dimension(npls,time) :: dens2 !density of individuals (ind/m²) after mortality and establishment
+     !variables with initial values
+    real(r_8), dimension(npls,time) :: cl1_initial
+    real(r_8), dimension(npls,time) :: cw1_initial
+    real(r_8), dimension(npls,time) :: cs1_initial
+    real(r_8), dimension(npls,time) :: ch1_initial
+    real(r_8), dimension(npls,time) :: cr1_initial
+    real(r_8), dimension(npls,time) :: npp1_initial
+    real(r_8), dimension(npls,time) :: FPC_pls_initial
+    real(r_8), dimension(npls,time) :: dens1_initial
 
-    real(r_8), dimension(time) :: FPC_total_2 = 0.0 !sum of FPC_grid in
-    real(r_8) :: dead_pls, alive_pls, count_pls
-    
-    real(r_8), dimension(time):: FPC_total_accu_1 = 0.0
-    real(r_8), dimension(time) :: FPC_total_accu_2 = 0.0
-
-    real(r_8) :: gc_area = 10000!grid cell size - 15 m2 FOR TESTING PURPOSE (the real(r_8) value will be 1ha or 10000 m2)
-
-    real(r_8), dimension(time) :: gc_available
-
+    !variables for grid cell scale
+        !variables with 'initial' in the name are used only for the 1st day
+    real(r_8), dimension(time) :: FPC_total_initial = 0.0 !sum of FPC_pls for that grid cell
+    real(r_8), dimension(time) :: FPC_total_accu_initial = 0.0 !variable to accumulate the FPC_total  
+    real(r_8), dimension(time) :: FPC_total_2 = 0.0 !!sum of the FPC_pls of all PLSs for that grid cell
+    real(r_8), dimension(time):: FPC_total_accu_1 = 0.0 !variable to accumulate the FPC_total 
+    real(r_8), dimension(time) :: FPC_total_accu_2 = 0.0 !variable to accumulate the FPC_total (used for updating)
+    real(r_8) :: dead_pls, alive_pls, count_pls !variables to account for the alive PLSs
     real(r_8) :: fpc_max_tree !95% of grid-cell (in m2)
-    real(r_8), dimension(time) :: exc_area   
+    real(r_8), dimension(time) :: gc_available !area available for individuals establishment (m²)  
+    real(r_8), dimension(time) :: exc_area  !excedent in area when the sum of FPCs is higher than fpc_max_tree
     
 
     !Parameters and constants
+    real(r_8) :: gc_area = 10000 !patch size (1ha)
     real(r_8) :: k_allom1 = 100. !allometric constant (Table 3; Sitch et al., 2003)
     real(r_8) :: k_allom2 = 40.0
     real(r_8) :: k_allom3 = 0.85
@@ -80,24 +106,16 @@ program self_thinning
     real(r_8) :: root_allocation = 0.3 !% of NPP allocated to roots
     real(r_8) :: k_mort1 = 0.01 !mortality parameter from Sitch et al 2003
     real(r_8) :: k_mort2 = 0.5
-    real(r_8) :: res_time_leaf = 2 !general residence time value for testing purpose
+    real(r_8) :: res_time_leaf = 2 !general residence time value
     real(r_8) :: res_time_root = 2
     real(r_8) :: res_time_sap = 2
     real(r_8) :: res_time_wood = 40 !ATENÇÃO! ESSE NUMERO PRECISA SER REVISADO POIS EM SITCH ET AL 2003 APENAS O SAPWOOD É PERDIDO POR TURNOVER
     real(r_8) :: crown_area_max = 30 !m2 !number from lplmfire code (establishment.f90)
     real(r_8) :: pi = 3.1415
 
-    !Variables to allocation prototype
-    real(r_8), dimension(npls,time) :: npp_inc, npp_inc2  !incremento anual de C para cada PLS
-    real(r_8), dimension(npls,time) :: npp_inc_init  !incremento anual de C para cada PLS
+   
 
-    real(r_8), dimension(npls,time) :: annual_npp !quantidade de NPP com os incrementos.
-    real(r_8), dimension(npls,time) :: cl2 !carbon on leaves after allocation
-    real(r_8), dimension(npls,time) :: cw2 !carbon on wood after allocation
-    real(r_8), dimension(npls,time) :: cs2 !carbon on sapwood after allocation
-    real(r_8), dimension(npls,time) :: ch2 !carbon on heartwood after allocation
-    real(r_8), dimension(npls,time) :: cr2 !carbon on wood after allocation
-    real(r_8), dimension(npls,time) :: dens2
+   
 
     real(r_8), dimension(npls,time) :: cleaf_avg_ind
     real(r_8), dimension(npls,time) :: csap_avg_ind
@@ -105,12 +123,7 @@ program self_thinning
     real(r_8), dimension(npls,time) :: cwood_avg_ind
     real(r_8), dimension(npls,time) :: croot_avg_ind
 
-    real(r_8), dimension(npls,time) :: cw1 !KgC/m2 (Cheart + Csap)
-    real(r_8), dimension(npls,time) :: cs1 !KgC/m2 (Cheart + Csap)
-    real(r_8), dimension(npls,time) :: ch1 !KgC/m2 (Cheart + Csap)
-    real(r_8), dimension(npls,time) :: cl1 !KgC/m2 
-    real(r_8), dimension(npls,time) :: cr1 !KgC/m2
-    real(r_8), dimension(npls,time) :: dens1
+    
 
     ! Variables with generic values for testing the logic code
     real(r_8), dimension(npls,time) :: dwood !wood density (g/cm-3) *Fearnside, 1997 - aleatory choices
@@ -119,15 +132,7 @@ program self_thinning
     real(r_8), dimension(npls) :: wood_inc !kgC/ ind
     real(r_8), dimension(npls) :: root_inc !kgC/ ind
 
-    !variables with initial values
-    real(r_8), dimension(npls,time) :: cl1_initial
-    real(r_8), dimension(npls,time) :: cw1_initial
-    real(r_8), dimension(npls,time) :: cs1_initial
-    real(r_8), dimension(npls,time) :: ch1_initial
-    real(r_8), dimension(npls,time) :: cr1_initial
-    real(r_8), dimension(npls,time) :: npp1_initial
-    real(r_8), dimension(npls,time) :: FPC_pls_initial
-    real(r_8), dimension(npls,time) :: dens1_initial
+   
     
 
     !auxiliary variables for outputs
@@ -139,7 +144,6 @@ program self_thinning
     real(r_8), dimension (npls,time) :: FPC_pls_1_aux
     real(r_8), dimension (npls,time) :: dens1_aux
     real(r_8), dimension (time) :: FPC_total_accu_1_aux
-
 
     !creating random numbers for npp increment
     
@@ -172,7 +176,8 @@ program self_thinning
     real(r_8), dimension (npls,time) :: ch2_aux = 0. !heartwood carbon after allocation (gC, avera_in)
     real(r_8), dimension (npls,time) :: cs2_aux = 0.!sapwood carbon after allocation (gC, avera_in)
     real(r_8), dimension (npls,time) :: cr2_aux = 0. !root carbon after allocation (gC, avera_in)
-   
+    real(r_8), dimension (npls,time) :: cl3_aux = 0. !leaf carbon after allocation (gC, avera_in)
+
 
    
   
@@ -429,7 +434,7 @@ program self_thinning
     do k = 1, time
         do j=1,npls
 
-            FPC_pls_initial(j,k) = 1.
+            FPC_pls_initial(j,k) = 0.5
 
             FPC_total_initial(k) = FPC_total_initial(k) + FPC_pls_initial(j,k)
 
@@ -658,7 +663,7 @@ program self_thinning
         !--------------------------------------------------------------------------- 
         
         
-
+        !once we adopted the mort by occupation from LPJML-Fire, the inc for the grid is not necessary any more
         ! FPC_inc_grid(k) = FPC_total_accu_2(k) - FPC_total_accu_1(k)
         
         ! if(FPC_inc_grid(k).le.0.)FPC_inc_grid(k)=0!print*, 'inc le ', FPC_inc_grid(k), k,FPC_total_accu_2(k), FPC_total_accu_1(k) 
@@ -739,7 +744,6 @@ program self_thinning
                     
                 else
                     nind_kill_FPC(j,k) = (dens1(j,k) * FPC_dec(j,k))/FPC_pls_2(j,k) !NIND_KILL.
-                    ! print*, 'prop', FPC_dec(j,k)/FPC_pls_2(j,k)
                     !numero de ind. que vão morrer (ind/m2) devido ocupação maior que 95%
                     ! print*, nind_kill_FPC(j,k), dens1(j,k), 'FPCs', ((FPC_dec(j,k))/(FPC_pls_2(j,k)))
                     ! nind_kill_prop(j,k) = 1 - (dens1(j,k)-FPC_dec_prop(j,k))/dens1(j,k)
@@ -765,6 +769,7 @@ program self_thinning
                 
 
                     greff(j,k) = carbon_increment(j,k)/(cl2(j,k)*spec_leaf(j,k)) !growth efficiency in m2/gC
+                    ! print*, 'c inc', carbon_increment(j,k)
 
                     mort_wd(j,k) = exp(-2.66+(0.255/dwood(j,k))) !
                     ! print*, 'mort dwood', mort_wd(j,k)
@@ -1035,7 +1040,6 @@ program self_thinning
        
         !-----------------------------------------------------------------------------
         !!!---------------------------------------------------------------------------
-        !!!Fictitious allocation process in order to test the logic developed
          !------------------------------------------------------------------------------
         !NPP increment (NPPt-NPPt-1); for testing purpose a general value was defined
         !Transforms NPP increment from m2 to NPP increment for each averge individual
@@ -1165,6 +1169,7 @@ program self_thinning
             !print*, 'densidade p/ ano seguinte =======', dens_1(j)
             ! Loss of carbon through residence time
            
+            cl2_aux(j,k) = cl2_aux(j,k) - (cl2_aux(j,k)/res_time_leaf)
 
             cl1_aux(j,k) = cl1_aux(j,k) - (cl1_aux(j,k)/res_time_leaf)
             ! print*, 'cl2 after restime', cl2(j)/1000., (cl1(j)/res_time)/1000.
@@ -1174,7 +1179,7 @@ program self_thinning
 
             ! ch1_aux(j,k) = (ch1_aux(j,k) + cs1_aux(j,k)) - ch1_aux(j,k)/res_time_wood
 
-            ch1_aux(j,k) = ch1_aux(j,k)  + (cs1_aux(j,k))
+            ch1_aux(j,k) = ch1_aux(j,k) - (ch1_aux(j,k)/res_time_wood)
 
             cw1_aux(j,k) = cw1_aux(j,k) - (cw1_aux(j,k)/res_time_wood)
 
@@ -1258,526 +1263,3 @@ program self_thinning
 
 end program self_thinning
 
-! open(unit=1,file='totalFPC.csv',status='unknown')
-!     ! do k=1, time
-!     !     FPC(k) = FPC_total_accu_2(k)
-!     !     call csv_write(1,/FPC,.true.)
-
-!     ! enddo 
-
-! a = (/1,2,3/)
-! b = (/4,5/)
-
-! call csv_write(1,a,.true.)
-! call csv_write(1,b,.true.)  
-! close(1)
-
-! open(unit=1,file='carbon_pools_time_5PLS.csv',action='write',status='replace')
-!     do k=1, time
-!        do j = 1,npls
-
-!             write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!         enddo
-!     enddo 
-! close(1)
-        
-!         open(unit=1,file='carbon_pools_time_5PLS_avgind.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-        
-!         open(unit=1,file='density_5PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=2,file='FPC_total_time_5PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(2)
-!     endif 
-
-!     if (npls.eq.20) then
-!         open(unit=1,file='carbon_pools_time_20PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-       
-!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo
-!         close(1)
-
-!         open(unit=1,file='carbon_pools_time_20PLS_avgind.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=1,file='density_20PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=2,file='FPC_total_time_20PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(2)
-!     endif
-    
-!     if (npls.eq.50) then
-!         open(unit=1,file='carbon_pools_time_50PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-       
-!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo
-!         close(1)
-        
-!         open(unit=1,file='carbon_pools_time_50PLS_avgind.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=1,file='density_50PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=2,file='FPC_total_time_50PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(2)
-
-
-!     endif
-
-!     if (npls.eq.100) then
-!         open(unit=1,file='carbon_pools_time_100PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-       
-!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo
-!         close(1)
-
-!         open(unit=1,file='carbon_pools_time_100PLS_avgind.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=1,file='density_100PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=2,file='FPC_total_time_100PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(2)
-!     endif
-
-!     if (npls.eq.500) then
-!         open(unit=1,file='carbon_pools_time_500PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-       
-!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo
-!         close(1)
-
-!         open(unit=1,file='carbon_pools_time_500PLS_avgind.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=1,file='density_500PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=2,file='FPC_total_time_500PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(2)
-!     endif
-    
-
-!     if (npls.eq.1000) then
-!         ! print*, 'savinggggg'
-!         ! open(unit=1,file='carbon_pools_time_1000PLS.csv',status='unknown')
-!         ! do k=1, time
-!         !     do j = 1,npls
-
-       
-!         !         write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!         !     enddo
-!         ! enddo
-!         ! close(1)
-
-!         ! open(unit=1,file='carbon_pools_time_1000PLS_avgind.csv',status='unknown')
-!         ! do k=1, time
-!         !     do j = 1,npls
-
-            
-!         !         write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!         !     enddo
-!         ! enddo 
-!         ! close(1)
-!         ! open(unit=1,file='density_1000PLS.csv',status='unknown')
-!         ! do k=1, time
-!         !     do j = 1,npls
-
-            
-!         !         write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!         !     enddo
-!         ! enddo 
-!         ! close(1)
-
-!         open(unit=1,file='FPC_total_time_1000PLS.csv',status='unknown')
-!         do k=1, time
-              
-!             write(1,*) FPC_total_accu_1_aux(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(1)
-!     endif
-
-
-!     if (npls.eq.3000) then
-!         open(unit=1,file='carbon_pools_time_3000PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-       
-!                 write(1,*) cl1_aux(j,k)/1000.,',',cw1_aux(j,k)/1000.,',', cr1_aux(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo
-!         close(1)
-
-!         open(unit=1,file='carbon_pools_time_3000PLS_avgind.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) cleaf_avg_ind(j,k)/1000.,',',cwood_avg_ind(j,k)/1000.,',', croot_avg_ind(j,k)/1000.,',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=1,file='density_3000PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) dens1_aux(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-
-!         open(unit=2,file='FPC_total_time_3000PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) FPC_total_accu_2(k),',',k, ',' , gc_area !newline
-        
-!         enddo    
-
-!         close(2)
-
-!         open(unit=2,file='exc_area_3000PLS.csv',status='unknown')
-!         do k=1, time
-        
-
-       
-!             write(2,*) exc_area(k),',',k, ',' 
-        
-!         enddo    
-
-!         close(2)
-
-!         open(unit=1,file='mortality_3000PLS.csv',status='unknown')
-!         do k=1, time
-!             do j = 1,npls
-
-            
-!                 write(1,*) mort(j,k),',',mort_greff(j,k),',',FPC_dec(j,k),',',remaining(j,k),',','pls',j,',',k !newline
-!             enddo
-!         enddo 
-!         close(1)
-!     endif
-
-    
-
-
-! end program self_thinning 
-  
-! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-  
-! !   do k = 1, 3 !Loop dos anos
-! !         if (k .eq. 1) then !*usando o time step t1 - INITIAL ALLOMETRY*
-
-! !             !Carbon on tissues (wood and leaf) per average-individual (this considers the individual density [dens])
-! !             cw1 = (cw1/dens)*1000. !*1000 transforma de kgC para gC - carbono
-            
-! !             cl1 = (cl1/dens)*1000.  !*1000 transforma de kgC para gC - carbono
-           
-! !             cr1 = (cr1/dens)*1000. !*1000 transforma de kgC para gC - carbono
-
-! !             !PLS structure [diam, crown area and leaf area index]
-! !             diam = ((4*(cw1))/((dwood*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-! !             crown_area = k_allom1*(diam**krp)
-! !             lai = (cl1*spec_leaf)/crown_area 
-            
-! !             !print*, crown_area, lai
-! !             !Net Primary Productive logic (may be per average-individual). NPP ano atual - NPP ano anterior
-! !             ! #1 NPP increment to each average-individual. Cada individuo médio de cada PLS vai ter um incremento
-!             npp_inc = 0.15/dens !this increment is fixed in 0.15kgC/yr (valor generalizado)
-
-!             ! #2 Annual NPP disponible to alloc 
-!             annual_npp = ((npp1/dens) + npp_inc)*1000 !*1000 transforma de kgC para gC
-
-!             !==================================================
-!             !INCREMENTS TO LEAF AND WOOD TISSUES PER INDIVIDUO
-
-!             leaf_inc = 0.35*npp_inc ![35% of NPP] - esse valor de 0.35 é calculado pela alocação
-!             root_inc = 0.35*npp_inc ![35% of NPP - Functional balance]
-!             wood_inc = 0.3*npp_inc  ![30% of NPP]
-
-!             !==================================================
-!             !CARBON TISSUES (atualização dos tecidos)
-
-!             cl2 = cl1 + leaf_inc !cl1 e leaf_inc já está dividido peela densidade
-!             cw2 = cw1 + wood_inc !cw1 e wood_inc já está dividido peela densidade
-!             cr2 = cr1 + root_inc
-
-!             !==================================================
-!             !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid) - calculado após
-!             ! a alocação e a estruturação do PLS
-            
-!             FPC_ind = (1-exp(-0.5*lai)) !FPC ind médio [m2]
-!             FPC_grid_t1 = crown_area*dens*FPC_ind !FPC of pls [occupation on grid cell considers all average-individual of PLS; m2]
-!             FPC_total_t1 = sum(FPC_grid_t1)
-
-
-!         else !*usando time step 2*
-
-!             !PLS structure [diam, crown area and leaf area index]
-!             diam = ((4*(cw2))/((dwood*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-!             crown_area = k_allom1*(diam**krp)
-!             lai = (cl2*spec_leaf)/crown_area 
-!             !print*, 'diametro_old', diam
-
-!             !==================================================
-!             !Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)               
-            
-!             FPC_ind = (1-exp(-0.5*lai)) !FPC ind médio [m2]
-!             FPC_grid_t2 = crown_area*dens*FPC_ind !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
-!             FPC_total_t2 = sum(FPC_grid_t2)
-!             ! print*, 'inc summing t1', FPC_total_t2
-            
-
-!         endif
-
-!         ! print*, k, 'diametro_old', diam, 'cl2_old', cl2, 'cw2_old', cw2, 'dens_ind_old', dens
-
-!         fpc_max_tree = gc_area*0.95 !utilizaremos 1 ha !! 5% é destinado ao novo estabelecimento
-
-!         if (FPC_total_t2 .gt. fpc_max_tree) then
-!             !Self-Thinning imposed when total tree cover above 'FPC MAX TREE' [max. of occupation]
-!             !partitioned among tree PLS in proportion to this year's FPC increment
-
-!             !Area excedent
-!             exc_area = FPC_total_t2 - fpc_max_tree
-!             ! print*, 'exc_area', exc_area
-
-!             !Contribuição excedente de cada PLS
-!             FPC_inc = FPC_grid_t2 - FPC_grid_t1 !!incremento de cada PLS ! delta entre tempo 1 e 2
-!             ! print*, 'soma dos incrementos', sum(FPC_inc), 'diferença t2t1', FPC_total_t2-FPC_total_t1
-
-
-!             !incluir outros fatores da mortalidade
-            
-!             do j=1,npls
-!                 if (mort(j).gt.1.)then
-!                     mort(j) = 1.
-!                 endif
-!             enddo
-!             ! print*, 'mort total', mort, 'mort', ((FPC_grid_t2-fpc_dec)/FPC_grid_t2), 'fpd dec',fpc_dec, sum(FPC_dec)
-!         else
-!             mort = 0.0
-!         endif
-!         remaining = 1.0-mort
-!         ! print*, 'remainig', remaining
-!         dens = dens*remaining 
-!         cl2 = cl2*remaining 
-!         cw2 = cw2*remaining 
-!         cr2 = cr2*remainig
-        
-!         carbon_pls = cl2 + cw2 + cr2
-
-!         carbon_grid_cell = sum(carbon_pls)
-
-!         ! print*, 'carbon_pls', carbon_pls, 'total carbon', carbon_grid_cell/1000.
-
-      
-
-
-!         !print*,'dens update', dens, 'cl2 updt', cl2, 'cw2 updt', cw2
-        
-!         do j = 1, npls
-!             if (remaining(j) .le. 0.) then
-                   
-!                 FPC_grid_t2(j) = 0.0
-!                     ! dens(j) = 0.0
-!                     ! diam(j) = 0.0
-!                     ! crown_area(j) = 0.0
-!                     ! lai(j) = 0.0
-!                     ! cl2(j) = 0.0
-!                     ! cw2 (j) = 0.0
-!                     ! FPC_ind(j) = 0.0
-!                     ! remaining(j) = 0.0 
-! ! 
-!             else
-! !          recalculate  PLS structure [diam, crown area and leaf area index]
-!                 diam(j) = ((4*(cw2(j)))/((dwood(j)*1000000.)*3.14*36))**(1/(2+0.22)) !nessa equação dwood deve estar em *g/m3*
-!                 crown_area(j) = k_allom1*(diam(j)**krp)
-!                 lai(j) = (cl2(j)*spec_leaf(j))/crown_area(j) 
-! ! 
-!                     ! ==================================================
-!                     ! Foliage Projective Cover (FPC_ind) & Fractional Projective Cover (FPC_grid)               
-!                     ! 
-!                 FPC_ind(j) = (1-exp(-0.5*lai(j))) !FPC ind médio [m2]
-!                 FPC_grid_t2(j) = crown_area(j)*dens(j)*FPC_ind(j) !FPC of PLS [occupation on grid cell considers all average-individual of PLS; m2]
-!                 FPC_grid_total_t2 = sum(FPC_grid_t2)
-! ! 
-!             endif
-!         enddo
-!         ! print*, k, 'SOMA_TOTAL',sum(FPC_grid_t2),'FPC pls', FPC_grid_t2, '95% area', fpc_max_tree, 'diametro', diam
-!         ! print*, 'exc_area', exc_area
-!         FPC_perc = FPC_grid_total_t2/gc_area
-        
-        
-        
-!        ! gen_est = k_est*(1-exp(-5*(1-FPC_perc)))*(1-FPC_perc) !Eqn 17 in Smith et al 2001 (se ocupação > 90%)
-        
-!         gen_est = k_est*(1-FPC_perc)
-
-
-        
-!         !print*, 'general establish', gen_est, FPC_grid_total_t2, 'FPC_perc', FPC_perc
-
-!         est_pls = gen_est*(carbon_pls/carbon_grid_cell)*FPC_grid_t2*(1-FPC_perc) !saplings/yr
-        
-!         !após o estabelecimento, os saplings devem ser adicionados à densidade de individuos
-!         !N_new = N_old + est_pls
-!         !update os pools de C
-
-!         ! if (k.ne.1) then
-!         ! !   print*, 'EST_PLS', est_pls, sum(est_pls), '+ DENS', dens+est_pls
-!         ! endif
-
-!         !update dens
-        
-!         dens_new = dens + est_pls
-
-!         !updating carbon pools according to the establishment of saplings (Eq. 20 in Smith 2001) -
-!         !ps: como nosso modelo ainda não tem crescimento nós optamos por utilizar o valor de carbono do indivíduo médio
-!         !do PLS para calcular quanto de carbono é incrementado para este compartimento
-        
-!         !!!!ATENÇÃO - DÚVIDA: isso mantém o balanço de carbono??????
-
-
-!     enddo
-!     !incremento da densidade populacional (Eqn 19 in SMith 2001)
-!     !update of biomass compartments (Eqn 20 in Smith 2001)
-!     !update of biomass compartments with establishment
-!     !veja no vídeo do Philip no minuto 45:06
-!     !inserir quantidade de carbono que vai pra liteira
