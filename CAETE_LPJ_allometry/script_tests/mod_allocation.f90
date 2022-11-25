@@ -380,7 +380,7 @@
 
             endif
 
-            !Calculate sminc_ind (must be negative)
+            !Calculate sminc_ind (may be negative)
       
             sminc_ind  = (lm  + lminc_ind ) * sla  /&
             & latosa * dwood * height  - sm   !eqn (35)
@@ -417,6 +417,7 @@
         ctotal_inc = cl_inc + cr_inc + cs_inc + ch_inc
 
         !Compartments plus increment
+        
         lm_2 = lm  + cl_inc
 
         ch_2 = hm + ch_inc
